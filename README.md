@@ -616,7 +616,7 @@ npm run deploy:template   # build + hosting del template
 npm run deploy:hosting
 ```
 
-URLs por defecto: `https://landing-admin.web.app` y `https://landing-template.web.app` (según el ID del sitio).
+URLs por defecto: `https://landing-admin-9452e.web.app` (admin) y `https://landing-template-9452e.web.app` (template).
 
 #### Modo recomendado: un deploy, muchos dominios
 

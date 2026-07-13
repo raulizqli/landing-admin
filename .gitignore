@@ -1,7 +1,7 @@
 .firebase/
-.firebaserc
 *.log
 .tmp-extract-test/
+.cursorrul
 
 node_modules/
 dist/

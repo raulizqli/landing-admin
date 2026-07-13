@@ -5,8 +5,9 @@
   "targets": {
     "landing-admin-9452e": {
       "hosting": {
-        "admin": ["landing-admin-9452e"],
-        "template": ["landing-template-9452e"]
+        "admin": [
+          "landing-admin-9452e"
+        ]
       }
     }
   }

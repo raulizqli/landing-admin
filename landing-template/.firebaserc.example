@@ -1,11 +1,11 @@
 {
   "projects": {
-    "default": "TU_PROJECT_ID"
+    "default": "landing-admin-9452e"
   },
   "targets": {
-    "TU_PROJECT_ID": {
+    "landing-admin-9452e": {
       "hosting": {
-        "template": ["landing-template"]
+        "template": ["landing-template-9452e"]
       }
     }
   }
