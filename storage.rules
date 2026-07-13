@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function userDocPath() {
+      return /databases/(default)/documents/users/$(request.auth.uid);
+    }
+
+    function userExists() {
+      return request.auth != null && firestore.exists(userDocPath());
+    }
+
+    function userData() {
+      return firestore.get(userDocPath()).data;
+    }
+
+    function isRoot() {
+      return userExists() && userData().role == 'root';
+    }
+
+    function isAdmin() {
+      return userExists() && userData().role == 'admin';
+    }
+
+    function isRegularUser() {
+      return userExists() && userData().role == 'user';
+    }
+
+    function canEditPage(pageId) {
+      return isRoot()
+        || (isAdmin()
+          && userData().keys().hasAll(['assignedPageIds'])
+          && pageId in userData().assignedPageIds)
+        || (isRegularUser()
+          && userData().keys().hasAll(['pageId'])
+          && userData().pageId == pageId);
+    }
+
+    match /pages/{pageId}/{fileName} {
+      allow read: if true;
+      allow write: if canEditPage(pageId)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /paginas/{pageId}/{fileName} {
+      allow read: if true;
+      allow write: if canEditPage(pageId)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

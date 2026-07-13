@@ -1,0 +1,42 @@
+{
+  "name": "@raulizqli/landing-ui",
+  "version": "0.1.0",
+  "description": "Componentes React compartidos para landings del ecosistema",
+  "type": "module",
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raulizqli/landing-admin.git",
+    "directory": "packages/landing-ui"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@raulizqli/landing-core": "^0.1.0"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./trackInteraction": "./src/trackInteraction.js",
+    "./LandingPage": "./src/LandingPage.jsx",
+    "./LandingMainContent": "./src/LandingMainContent.jsx",
+    "./Navbar": "./src/Navbar.jsx",
+    "./HeroCarousel": "./src/HeroCarousel.jsx",
+    "./PreHeroSection": "./src/PreHeroSection.jsx",
+    "./ServicesSection": "./src/ServicesSection.jsx",
+    "./CatalogSection": "./src/CatalogSection.jsx",
+    "./VideoSection": "./src/VideoSection.jsx",
+    "./TestimonialsSection": "./src/TestimonialsSection.jsx",
+    "./ContactSection": "./src/ContactSection.jsx",
+    "./SocialSection": "./src/SocialSection.jsx",
+    "./CustomEmbedSlot": "./src/CustomEmbedSlot.jsx",
+    "./CustomEmbedBlock": "./src/CustomEmbedBlock.jsx"
+  }
+}

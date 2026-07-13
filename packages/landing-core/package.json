@@ -1,0 +1,42 @@
+{
+  "name": "@raulizqli/landing-core",
+  "version": "0.1.0",
+  "description": "Modelo de página y utilidades compartidas para landings del ecosistema",
+  "type": "module",
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raulizqli/landing-admin.git",
+    "directory": "packages/landing-core"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./firebaseConfig": "./src/firebaseConfig.js",
+    "./hostname": "./src/hostname.js",
+    "./labels": "./src/labels.js",
+    "./phone": "./src/phone.js",
+    "./bookingCta": "./src/bookingCta.js",
+    "./customEmbeds": "./src/customEmbeds.js",
+    "./sectionAnchors": "./src/sectionAnchors.js",
+    "./sectionBackground": "./src/sectionBackground.js",
+    "./previewContent": "./src/previewContent.js",
+    "./catalog": "./src/catalog.js",
+    "./services": "./src/services.js",
+    "./testimonials": "./src/testimonials.js",
+    "./videoSection": "./src/videoSection.js",
+    "./heroVideo": "./src/heroVideo.js",
+    "./heroSlides": "./src/heroSlides.js",
+    "./maps": "./src/maps.js",
+    "./preHero": "./src/preHero.js",
+    "./socialLinks": "./src/socialLinks.js",
+    "./pageLoadErrors": "./src/pageLoadErrors.js",
+    "./pageModel": "./src/pageModel.js",
+    "./externalFirebase": "./src/externalFirebase.js"
+  }
+}

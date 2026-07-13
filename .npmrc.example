@@ -1,0 +1,5 @@
+# Copia a .npmrc en la raíz (o en ~/.npmrc) para instalar paquetes desde GitHub Packages.
+# En CI, usa NODE_AUTH_TOKEN o GITHUB_TOKEN con permiso read:packages.
+
+@raulizqli:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}

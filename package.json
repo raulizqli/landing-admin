@@ -1,0 +1,24 @@
+{
+  "name": "ecosistema-landings",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "landing-admin",
+    "landing-template"
+  ],
+  "scripts": {
+    "build:admin": "npm run build --prefix landing-admin",
+    "build:template": "npm run build --prefix landing-template",
+    "build": "npm run build:admin && npm run build:template",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
+    "deploy:functions": "cd functions && npm install && cd .. && firebase deploy --only functions",
+    "deploy:admin": "npm run build:admin && firebase deploy --only hosting:admin",
+    "deploy:template": "npm run deploy --prefix landing-template",
+    "deploy:hosting": "npm run deploy:admin && npm run deploy:template",
+    "extract:template-repo": "bash scripts/extract-template-repo.sh",
+    "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui"
+  },
+  "devDependencies": {
+    "firebase-tools": "^14.0.0"
+  }
+}

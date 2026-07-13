@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userExists() {
+      return isSignedIn() && exists(userDocPath());
+    }
+
+    function userData() {
+      return get(userDocPath()).data;
+    }
+
+    function isRoot() {
+      return userExists() && userData().role == 'root';
+    }
+
+    function isAdmin() {
+      return userExists() && userData().role == 'admin';
+    }
+
+    function isRegularUser() {
+      return userExists() && userData().role == 'user';
+    }
+
+    function canEditPage(pageId) {
+      return isRoot()
+        || (isAdmin()
+          && userData().keys().hasAll(['assignedPageIds'])
+          && pageId in userData().assignedPageIds)
+        || (isRegularUser()
+          && userData().keys().hasAll(['pageId'])
+          && userData().pageId == pageId);
+    }
+
+    // Primer root: el usuario autenticado crea su propio perfil una sola vez.
+    function canBootstrapOwnRootProfile(userId) {
+      return isSignedIn()
+        && request.auth.uid == userId
+        && !exists(/databases/$(database)/documents/users/$(userId))
+        && request.resource.data.role == 'root'
+        && request.resource.data.email == request.auth.token.email;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isRoot());
+      allow create: if isRoot() || canBootstrapOwnRootProfile(userId);
+      allow update, delete: if isRoot();
+    }
+
+    match /pages/{pageId} {
+      allow read: if true;
+      allow create: if isRoot();
+      allow update: if canEditPage(pageId);
+      allow delete: if isRoot();
+    }
+
+    match /paginas/{pageId} {
+      allow read: if true;
+      allow create: if isRoot();
+      allow update: if canEditPage(pageId);
+      allow delete: if isRoot();
+    }
+  }
+}

@@ -1,0 +1,21 @@
+.firebase/
+.firebaserc
+*.log
+.tmp-extract-test/
+
+node_modules/
+dist/
+dist-ssr/
+
+*.local
+.env.production
+
+.cursor/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+landing-template/Untitled

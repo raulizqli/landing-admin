@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "TU_PROJECT_ID"
+  },
+  "targets": {
+    "TU_PROJECT_ID": {
+      "hosting": {
+        "admin": ["landing-admin"],
+        "template": ["landing-template"]
+      }
+    }
+  }
+}
