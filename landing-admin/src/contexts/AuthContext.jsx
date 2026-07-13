@@ -5,7 +5,7 @@ import {
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { auth, db } from '../firebase';
-import { bootstrapRootProfileIfNeeded, getUserProfile } from '../utils/userAccess';
+import { ensureBootstrapRootProfile } from '../utils/userAccess';
 
 const AuthContext = createContext(null);
 
@@ -29,11 +29,7 @@ export function AuthProvider({ children }) {
 
         setUser(nextUser);
 
-        let nextProfile = await getUserProfile(db, nextUser.uid);
-        if (!nextProfile) {
-          nextProfile = await bootstrapRootProfileIfNeeded(db, nextUser);
-        }
-
+        const nextProfile = await ensureBootstrapRootProfile(db, nextUser);
         setProfile(nextProfile);
       } catch (error) {
         console.error('Error al cargar el perfil de usuario:', error);

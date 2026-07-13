@@ -35,27 +35,42 @@ export async function getUserProfile(db, uid) {
   return normalizeUserProfile(uid, snapshot.data());
 }
 
-export async function bootstrapRootProfileIfNeeded(db, authUser) {
-  if (!authUser?.uid || !BOOTSTRAP_ROOT_EMAIL) return null;
+/**
+ * Ensures the configured bootstrap email always has role `root`.
+ * Safe for demo: only upgrades the matching email; never demotes other roots.
+ */
+export async function ensureBootstrapRootProfile(db, authUser) {
+  if (!authUser?.uid || !BOOTSTRAP_ROOT_EMAIL) {
+    return authUser?.uid ? getUserProfile(db, authUser.uid) : null;
+  }
 
   const email = String(authUser.email ?? '').trim().toLowerCase();
-  if (!email || email !== BOOTSTRAP_ROOT_EMAIL) return null;
+  if (!email || email !== BOOTSTRAP_ROOT_EMAIL) {
+    return getUserProfile(db, authUser.uid);
+  }
 
   const existing = await getUserProfile(db, authUser.uid);
-  if (existing?.role) return existing;
+  if (existing?.role === 'root') {
+    return existing;
+  }
 
+  const now = new Date().toISOString();
   const profile = {
     email,
-    displayName: String(authUser.displayName ?? '').trim(),
+    displayName: String(authUser.displayName ?? existing?.displayName ?? '').trim(),
     role: 'root',
     assignedPageIds: [],
     pageId: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
   };
 
   await setDoc(doc(db, USERS_COLLECTION, authUser.uid), profile, { merge: true });
   return normalizeUserProfile(authUser.uid, profile);
+}
+
+export async function bootstrapRootProfileIfNeeded(db, authUser) {
+  return ensureBootstrapRootProfile(db, authUser);
 }
 
 export async function listUserProfiles(db) {

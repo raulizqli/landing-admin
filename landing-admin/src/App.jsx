@@ -21,11 +21,13 @@ import LandingMirror from './components/LandingMirror';
 import SiteHostingFieldsEditor from './components/SiteHostingFieldsEditor';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
+import CreatePageModal from './components/CreatePageModal';
 import { hydrateFormSocial } from './utils/socialLinks';
-import { loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
+import { createPageInHub, loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
 import { useAuth } from './contexts/AuthContext';
 import {
   canAccessHostingSettings,
+  canCreatePages,
   canEditPage,
   canManageUsers,
   filterAccessiblePages,
@@ -54,6 +56,8 @@ export default function App() {
   const [deviceView, setDeviceView] = useState('desktop');
   const [previewSource, setPreviewSource] = useState('mirror');
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showCreatePage, setShowCreatePage] = useState(false);
+  const [creatingPage, setCreatingPage] = useState(false);
   const [accessError, setAccessError] = useState('');
   const previewIframeRef = useRef(null);
 
@@ -61,6 +65,7 @@ export default function App() {
   const showPageList = !isSinglePageUser(profile);
   const canEditSelectedPage = canEditPage(profile, selectedId);
   const canManageHosting = canAccessHostingSettings(profile);
+  const canCreateNewPages = canCreatePages(profile);
 
   const localPreviewUrl = selectedId && TEMPLATE_PREVIEW_URL
     ? `${TEMPLATE_PREVIEW_URL}?pageId=${encodeURIComponent(selectedId)}&preview=true`
@@ -126,6 +131,11 @@ export default function App() {
           setSelectedId(first.id);
           const loaded = await loadPageForEditor(first.id, first);
           setFormData(hydrateForm({ id: first.id, ...loaded }));
+        } else if (canCreatePages(profile)) {
+          // Root with an empty hub: stay in the editor shell and create the first landing.
+          setSelectedId(null);
+          setFormData(null);
+          setAccessError('');
         } else if (import.meta.env.DEV && canManageUsers(profile)) {
           setSelectedId(DEMO_PREVIEW_ID);
           setFormData(hydrateForm({ id: DEMO_PREVIEW_ID }));
@@ -136,7 +146,11 @@ export default function App() {
         }
       } catch (error) {
         console.error('Error al leer Firestore:', error);
-        if (import.meta.env.DEV && canManageUsers(profile)) {
+        if (canCreatePages(profile)) {
+          setSelectedId(null);
+          setFormData(null);
+          setAccessError('');
+        } else if (import.meta.env.DEV && canManageUsers(profile)) {
           setSelectedId(DEMO_PREVIEW_ID);
           setFormData(hydrateForm({ id: DEMO_PREVIEW_ID }));
         } else {
@@ -159,7 +173,7 @@ export default function App() {
   const handleSaveChanges = async (e) => {
     e.preventDefault();
     if (isDemoPreview) {
-      alert('Modo demo: crea un documento en Firestore (colección "pages") para guardar cambios.');
+      alert('Modo demo: crea una landing con “Nueva landing” para guardar en Firestore.');
       return;
     }
     if (!canEditSelectedPage) {
@@ -168,18 +182,39 @@ export default function App() {
     }
     setSaving(true);
     try {
-      await savePageFromEditor(selectedId, formData);
+      const result = await savePageFromEditor(selectedId, formData);
       setLandings((current) => current.map((landing) => (
         landing.id === selectedId
           ? { id: selectedId, ...hydratePageForm({ ...formData, id: selectedId }) }
           : landing
       )));
-      alert(`¡Cambios guardados con éxito en la nube para [${selectedId}]!`);
+      if (result?.migratedToExternal) {
+        alert(`Contenido publicado en el Firebase externo. El hub solo guarda dominio y credenciales de [${selectedId}].`);
+      } else {
+        alert(`¡Cambios guardados con éxito en la nube para [${selectedId}]!`);
+      }
     } catch (error) {
       console.error(error);
       alert('No se pudieron guardar los cambios. Revisa la consola y las reglas de Firestore.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCreatePage = async ({ pageId, name, specialty }) => {
+    setCreatingPage(true);
+    try {
+      const created = await createPageInHub({ pageId, name, specialty });
+      setLandings((current) => {
+        const next = [{ id: pageId, ...created }, ...current.filter((item) => item.id !== pageId)];
+        return next;
+      });
+      setAccessError('');
+      setSelectedId(pageId);
+      setFormData(hydrateForm({ id: pageId, ...created }));
+      setShowCreatePage(false);
+    } finally {
+      setCreatingPage(false);
     }
   };
 
@@ -213,7 +248,7 @@ export default function App() {
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-gray-900 text-white font-sans text-sm tracking-widest uppercase animate-pulse">Cargando Sistema...</div>;
 
-  if (accessError && !formData) {
+  if (accessError && !formData && !canCreateNewPages) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#F4F1EA] p-6 font-sans">
         <div className="max-w-md bg-white border border-[#2A342D]/10 rounded-2xl shadow-xl p-8 text-center">
@@ -242,6 +277,15 @@ export default function App() {
             <p className="text-[10px] text-gray-400 truncate" title={user.email}>{user.email}</p>
             <p className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wide">{getRoleLabel(profile.role)}</p>
             <div className="flex gap-2">
+              {canCreateNewPages && (
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePage(true)}
+                  className="flex-1 text-[10px] px-2 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-500 font-semibold"
+                >
+                  + Landing
+                </button>
+              )}
               {canManageUsers(profile) && (
                 <button
                   type="button"
@@ -262,6 +306,18 @@ export default function App() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
+          {canCreateNewPages && accessibleLandings.length === 0 && (
+            <div className="mb-3 rounded-lg border border-indigo-500/30 bg-indigo-600/10 px-3 py-3">
+              <p className="text-[11px] text-indigo-100 mb-2">Aún no hay landings. Crea la primera para la demo.</p>
+              <button
+                type="button"
+                onClick={() => setShowCreatePage(true)}
+                className="w-full text-[11px] font-semibold px-2 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-500"
+              >
+                + Nueva landing
+              </button>
+            </div>
+          )}
           {accessibleLandings.length === 0 && import.meta.env.DEV && canManageUsers(profile) && (
             <button
               type="button"
@@ -401,7 +457,18 @@ export default function App() {
             </div>
           </form>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-400 text-xs">Selecciona un sitio de la izquierda para comenzar a editar.</div>
+          <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-3 px-6 text-center">
+            <p>Selecciona un sitio de la izquierda para comenzar a editar.</p>
+            {canCreateNewPages && (
+              <button
+                type="button"
+                onClick={() => setShowCreatePage(true)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-700"
+              >
+                + Crear primera landing
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -461,6 +528,13 @@ export default function App() {
           onClose={() => setShowUserManagement(false)}
         />
       )}
+
+      <CreatePageModal
+        open={showCreatePage}
+        creating={creatingPage}
+        onClose={() => setShowCreatePage(false)}
+        onCreate={handleCreatePage}
+      />
     </div>
   );
 }
