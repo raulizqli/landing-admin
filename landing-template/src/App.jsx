@@ -110,7 +110,7 @@ export default function App() {
             setResolvedPageId(null);
             setRouteData(null);
             setError(
-              'No se pudo identificar la landing. Configura el dominio en el admin, VITE_PAGINA_ID o ?pageId=.',
+              `No se pudo identificar la landing en "${window.location.hostname}". Asigna customDomain en el admin, define VITE_PAGINA_ID en el build, o abre con ?pageId=ID-del-documento.`,
             );
             setLoading(false);
           }

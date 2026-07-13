@@ -42,9 +42,9 @@ export async function resolvePageContext({
         routeData: normalizePageData(route.routeData),
       };
     }
-    return null;
   }
 
+  // Fallback when domain is not mapped (e.g. default *.web.app URL).
   const fromEnv = String(envPageId ?? '').trim();
   if (fromEnv) {
     return {
