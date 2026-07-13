@@ -57,6 +57,10 @@ export function canManageUsers(profile) {
   return normalizeRole(profile?.role) === ROLES.ROOT;
 }
 
+export function canCreatePages(profile) {
+  return normalizeRole(profile?.role) === ROLES.ROOT;
+}
+
 export function canAccessHostingSettings(profile) {
   const role = normalizeRole(profile?.role);
   return role === ROLES.ROOT || role === ROLES.ADMIN;

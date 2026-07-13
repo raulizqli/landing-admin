@@ -69,13 +69,17 @@ export default function SiteHostingFieldsEditor({ formData, onChange }) {
           <legend className="px-1 text-[10px] font-bold text-amber-700 uppercase">
             Proyecto Firebase externo
           </legend>
+          <p className="text-[10px] text-amber-800 leading-relaxed">
+            Flujo demo → producción:
+          </p>
+          <ol className="list-decimal list-inside text-[10px] text-amber-900/90 space-y-1 leading-relaxed">
+            <li>Crea el proyecto en la cuenta Firebase del cliente.</li>
+            <li>Activa Firestore + Storage y copia las credenciales web aquí.</li>
+            <li>Aplica reglas de lectura pública en <code className="bg-white px-1 rounded">pages</code> (y Storage) en esa cuenta.</li>
+            <li>Pulsa <strong>Guardar y Publicar</strong>: el contenido se copia al proyecto externo y el hub solo guarda dominio + credenciales.</li>
+          </ol>
           <p className="text-[10px] text-amber-800">
-            El hub (proyecto del admin) guarda solo el dominio y estas credenciales. El contenido
-            completo se lee y escribe en el proyecto externo. Configura reglas de lectura pública en
-            {' '}
-            <code className="bg-white px-1 rounded">pages</code>
-            {' '}
-            y Storage en esa cuenta.
+            Mientras está desactivado, todo vive en el hub (ideal para la demo).
           </p>
           {EXTERNAL_FIELDS.map(({ key, label }) => (
             <div key={key} className="space-y-1">
