@@ -158,7 +158,7 @@ export default function App() {
           return;
         }
 
-        setError(getPageLoadErrorMessage(err));
+        setError(`${getPageLoadErrorMessage(err)}${err?.code ? ` [${err.code}]` : ''}`);
       } finally {
         if (!cancelled) setLoading(false);
       }

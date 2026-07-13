@@ -1,4 +1,6 @@
 // Keep in sync with landing-admin/src/utils/appCheck.js
+// Public template: App Check is opt-in. Enforcing it without registering
+// every Hosting/custom domain in reCAPTCHA breaks anonymous Firestore reads.
 
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getHubApp } from './firebaseClients';
@@ -20,13 +22,21 @@ function configureDebugToken() {
 export function initHubAppCheck() {
   if (initialized || typeof window === 'undefined') return null;
 
-  const siteKey = String(import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim();
-  if (!siteKey) {
+  const enabled = String(import.meta.env.VITE_ENABLE_APP_CHECK ?? '').trim() === 'true';
+  if (!enabled) {
     if (import.meta.env.DEV) {
-      console.warn(
-        '[App Check] Falta VITE_RECAPTCHA_SITE_KEY. Crea una clave reCAPTCHA v3 y regístrala en Firebase Console → App Check.',
+      console.info(
+        '[App Check] Desactivado en el template (sitio público). Actívalo con VITE_ENABLE_APP_CHECK=true cuando el dominio esté en reCAPTCHA v3.',
       );
     }
+    return null;
+  }
+
+  const siteKey = String(import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim();
+  if (!siteKey) {
+    console.warn(
+      '[App Check] VITE_ENABLE_APP_CHECK=true pero falta VITE_RECAPTCHA_SITE_KEY.',
+    );
     return null;
   }
 
