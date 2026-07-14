@@ -184,7 +184,8 @@ export default function SiteHostingFieldsEditor({ formData, onChange, pageId }) 
             />
             <p className="text-[10px] text-gray-500">
               Vercel: Project → Settings → Git → Deploy Hooks.
-              Netlify: Site settings → Build & deploy → Build hooks.
+              Netlify: Site configuration → Build & deploy → Build hooks.
+              Guía paso a paso: README → «Publicar el template en otro hosting».
             </p>
           </div>
         )}

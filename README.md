@@ -791,49 +791,149 @@ Mientras el checkbox esté **apagado**, demo y contenido viven en el hub. Las ed
 
 ## Publicar el template en otro hosting (desde el admin)
 
-La **creación de la cuenta** en Vercel / Netlify / Cloudflare / otro Firebase Hosting es **manual**. El admin solo guarda la config y dispara el deploy.
+Objetivo: el **sitio público** (`landing-template`) vive en Vercel / Netlify / Cloudflare / otro Firebase Hosting (cuenta creada **a mano**). El **admin** no crea esa cuenta: solo guarda la config por landing y, al pulsar **Publicar hosting**, dispara un Deploy Hook (o un workflow de GitHub).
 
-### Campos por landing
+```
+┌─────────────────────┐     POST Deploy Hook      ┌──────────────────────┐
+│  Admin (hub)        │ ───────────────────────►  │  Vercel / Netlify /… │
+│  «Publicar hosting» │                           │  (build del template)│
+└──────────┬──────────┘                           └──────────────────────┘
+           │
+           │ Cloud Function triggerHostingDeploy
+           ▼
+    Firebase Functions (proyecto hub)
+```
 
-| Campo | Uso |
-|-------|-----|
-| `hostingProvider` | `hub` \| `webhook` \| `github` |
-| `hostingDeployHookUrl` | Deploy Hook (Vercel/Netlify/…) |
-| `hostingGithubOwner` / `Repo` / `Workflow` / `Ref` | Para `workflow_dispatch` |
-| `hostingPublicUrl` | URL pública de referencia |
+### Dónde se hace cada cosa
 
-Con contenido externo, estos campos se guardan en el **hub** (junto a dominio y credenciales).
+| Paso | Dónde | Quién |
+|------|--------|--------|
+| Crear el sitio y el Deploy Hook | Panel de **Vercel/Netlify/…** (hosting del template) | Tú / ops |
+| Variables `VITE_FIREBASE_*` | En ese mismo hosting (env del **build** del template) — valores del **proyecto hub** | Tú / ops |
+| Pegar el hook y pulsar publicar | **Admin** → landing → acordeón **Hosting, analytics y pie** → bloque **Hosting del template** | root o admin |
+| Desplegar la Cloud Function (una vez) | Terminal, raíz del monorepo `ecosistema-landings` | Devs |
+| Secrets opcionales globales | Firebase → Functions (env del hub) | Devs |
 
-### Flujo recomendado (webhook)
+**No confundir:**
 
-1. Crea el proyecto/sitio a mano en el hosting.
-2. Conecta el repo o sube el build del `landing-template` (con `VITE_FIREBASE_*` del **hub**).
-3. Genera un **Deploy Hook** y pégalo en el admin → **Hosting del template**.
-4. Guarda la página.
-5. Pulsa **Publicar hosting** (root o admin).
+| Pieza | Qué es |
+|-------|--------|
+| Hosting del **admin** | Sigue en Firebase Hosting del **hub** (este repo / CI habitual). |
+| Hosting del **template** | Puede ser el hub **o** Vercel/Netlify/… (esta guía es para “otro hosting”). |
+| `VITE_FIREBASE_*` del template | Siempre del **hub**: el template necesita leer rutas/`customDomain` del hub (y luego el contenido, hub o externo). |
 
-La Cloud Function `triggerHostingDeploy` hace `POST` al hook.
+### Ejemplo completo: Vercel (recomendado)
 
-### Alternativa GitHub Actions
+Supongamos la landing `dra-maria` y el sitio Vercel `https://dra-maria.vercel.app`.
 
-1. Usa el workflow [`.github/workflows/deploy-template-manual.yml`](.github/workflows/deploy-template-manual.yml) (`workflow_dispatch`).
-2. En Cloud Functions, define el env `GITHUB_DEPLOY_TOKEN` (PAT con `actions:write`).
-3. En la landing: provider `github`, owner, repo, workflow `deploy-template-manual.yml`, branch.
-4. **Publicar hosting** dispara el workflow.
+#### 1) En Vercel (hosting del template) — manual
 
-### Hook global del hub
+1. Entra a [vercel.com](https://vercel.com) → **Add New Project**.
+2. Importa el repo que construye `landing-template` (este monorepo o un repo solo del template).
+3. **Root Directory / Build** según tu setup, por ejemplo:
+   - Build Command: `npm run build:template` (desde la raíz del monorepo), **o**
+   - Root = `landing-template/` con `npm run build` si el `package.json` del template basta.
+4. **Output** = carpeta `dist` del template (`landing-template/dist` si el root es el monorepo; ajusta según Vercel).
+5. En **Settings → Environment Variables**, añade las del **hub** (las mismas que usa el admin en producción), por ejemplo:
 
-Si muchas landings comparten el mismo sitio multi-dominio del hub, puedes fijar en Functions:
+| Variable | Ejemplo (inventado) |
+|----------|---------------------|
+| `VITE_FIREBASE_API_KEY` | `AIza…` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | `landing-admin-9452e.firebaseapp.com` |
+| `VITE_FIREBASE_PROJECT_ID` | `landing-admin-9452e` |
+| `VITE_FIREBASE_STORAGE_BUCKET` | `landing-admin-9452e.appspot.com` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `123456789` |
+| `VITE_FIREBASE_APP_ID` | `1:123…:web:…` |
+| `VITE_FIREBASE_MEASUREMENT_ID` | `G-XXXX` (opcional) |
 
-`DEFAULT_TEMPLATE_DEPLOY_HOOK_URL`
+   Si el sitio es **multi-dominio**, **no** fijes `VITE_PAGINA_ID` (la app resuelve por `customDomain`).  
+   Si es **un build por cliente**, añade `VITE_PAGINA_ID=dra-maria`.
 
-Con `hostingProvider: hub` y sin hook por página, se usa ese URL.
+6. Haz el **primer deploy** desde Vercel (para verificar que el sitio abre).
+7. Crea el hook: **Project → Settings → Git → Deploy Hooks** → Create Hook  
+   - Name: `admin-publish`  
+   - Branch: la que despliegas (`main` / `master`)  
+   - Copia la URL, tipo:  
+     `https://api.vercel.com/v1/integrations/deploy/prj_xxxx/yyyy`
 
-### Desplegar la función
+En **Netlify** el equivalente es: **Site configuration → Build & deploy → Build hooks → Add build hook**.
+
+#### 2) En el admin (hub) — por landing
+
+1. Abre el CMS (admin del hub), inicia sesión como **root** o **admin**.
+2. Selecciona la landing `dra-maria`.
+3. Baja al acordeón **Hosting, analytics y pie**.
+4. En **Hosting del template**:
+   - **Proveedor** → `Webhook (Vercel / Netlify / Cloudflare / custom)`.
+   - **URL pública** (opcional) → `https://dra-maria.vercel.app` o `https://dra-maria.com`.
+   - **Deploy Hook URL** → pega la URL de Vercel del paso anterior.
+5. **Guardar y Publicar** (persiste estos campos en Firestore del hub).
+6. Pulsa **Publicar hosting**.  
+   Eso llama a la Cloud Function `triggerHostingDeploy`, que hace `POST` al Deploy Hook → Vercel vuelve a construir el template.
+
+Si el botón falla con “Cloud Functions no están desplegadas”, falta el paso 3.
+
+#### 3) En tu máquina / CI — una sola vez (Functions)
+
+En la **raíz** del repo `ecosistema-landings` (proyecto Firebase **hub**):
 
 ```bash
 npm run deploy:functions
 ```
+
+Eso despliega, entre otras, `triggerHostingDeploy`. Sin esta función, el botón del admin no puede avisar a Vercel.
+
+#### 4) Después, día a día
+
+| Quieres… | Qué haces |
+|----------|-----------|
+| Cambiar textos/fotos de la landing | Solo **Guardar y Publicar** en el admin (Firestore). **No** hace falta redeploy del hosting. |
+| Actualizar el **código** del template o forzar rebuild | **Publicar hosting** en el admin (o redeploy manual en Vercel). |
+
+### Campos por landing (referencia)
+
+Se editan en el admin → **Hosting, analytics y pie**. Con Firebase externo de contenido, estos campos siguen guardándose en el **hub**.
+
+| Campo (Firestore) | En la UI | Uso |
+|----------------|----------|-----|
+| `hostingProvider` | Proveedor | `hub` · `webhook` · `github` |
+| `hostingDeployHookUrl` | Deploy Hook URL | Obligatorio si proveedor = `webhook` |
+| `hostingPublicUrl` | URL pública | Solo referencia (no despliega sola) |
+| `hostingGithubOwner` / `Repo` / `Workflow` / `Ref` | Campos GitHub | Solo si proveedor = `github` |
+
+### Alternativa: GitHub Actions (sin Deploy Hook de Vercel)
+
+Útil si el rebuild lo hace un workflow del repo (ej. [`.github/workflows/deploy-template-manual.yml`](.github/workflows/deploy-template-manual.yml)).
+
+1. **En GitHub** — el workflow ya existe en el monorepo (`workflow_dispatch`).
+2. **En Firebase Functions (hub)** — define el secreto `GITHUB_DEPLOY_TOKEN` (Personal Access Token con permiso `actions:write` sobre el repo). Cómo fijarlo depende de tu setup v2; lo habitual es al desplegar Functions con params/env, por ejemplo en `functions/.env` local (no lo subas al git) o secrets del proyecto, y luego `npm run deploy:functions`.
+3. **En el admin** (misma sección **Hosting del template**):
+   - Proveedor → `GitHub Actions (workflow_dispatch)`
+   - Owner → `raulizqli` (ejemplo)
+   - Repo → `landing-admin` (ejemplo)
+   - Workflow → `deploy-template-manual.yml`
+   - Branch → `master`
+4. **Publicar hosting** → la Function dispara `workflow_dispatch`.
+
+### Opcional: hook global del hub
+
+Si **todas** las landings “provider = Hub” comparten el **mismo** sitio del template multi-dominio y un solo Deploy Hook:
+
+1. Genera ese hook en Vercel/Netlify (como arriba).
+2. En el entorno de **Cloud Functions del hub**, define:
+
+   `DEFAULT_TEMPLATE_DEPLOY_HOOK_URL=https://api.vercel.com/v1/integrations/deploy/...`
+
+3. En cada landing: proveedor **Hub**, **sin** pegar hook por página (o puedes pegarlo igual y manda el de la página).
+4. **Publicar hosting** usará el hook de la página si existe; si no, el global.
+
+`GITHUB_DEPLOY_TOKEN` solo hace falta si usas proveedor **GitHub**, no para webhooks de Vercel.
+
+### Checklist rápido (caso Vercel)
+
+1. **Vercel** — proyecto del template + `VITE_FIREBASE_*` del hub + primer deploy + Deploy Hook.
+2. **Admin** — landing → Hosting del template → Webhook + pegar hook → Guardar → **Publicar hosting**.
+3. **Repo / máquina** — `npm run deploy:functions` (una vez, o cuando cambies Functions).
 
 ---
 
