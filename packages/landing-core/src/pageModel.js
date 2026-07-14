@@ -1,19 +1,27 @@
 
 import { createEmptySlide, normalizeHeroSlide } from './heroSlides';
 import { normalizeTestimonials } from './testimonials';
-import { normalizeServices } from './services';
+import {
+  normalizeServices,
+  normalizeServicesCarouselAutoplay,
+  normalizeServicesCarouselPerView,
+  normalizeServicesDisplayMode,
+} from './services.js';
 import { normalizeCatalogItems } from './catalog';
 import { normalizeGalleryItems } from './gallery';
 import { normalizeBlogPosts } from './blog';
 import { normalizeSectionThemes, parseColorToHex } from './sectionBackground';
 import { normalizeExternalFirebase } from './externalFirebase';
 import { normalizeHostname } from './hostname';
+import { normalizeContactMapLayout } from './maps';
 import { normalizeCustomLabels, normalizeLabelLanguage } from './labels';
 import { normalizeCustomEmbeds, isCustomSectionVisible } from './customEmbeds';
 import { DEFAULT_VERTICAL, normalizeVertical } from './verticals';
 import { normalizeNavAlign } from './sectionVisibility';
 import { normalizeNavSpecialtyCase } from './navDisplay';
 import { normalizeLegalDocuments } from './legalDocuments';
+import { normalizePreHeroImageSide } from './preHero';
+import { normalizeHostingDeployFields } from './hostingDeploy';
 
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
@@ -37,6 +45,7 @@ export const EMPTY_PAGE = {
   navCtaTextColor: DEFAULT_NAV_CTA_TEXT_COLOR,
   preHeroEnabled: false,
   preHeroMode: 'banner',
+  preHeroImageSide: 'left',
   preHeroImageUrl: '',
   preHeroTitle: '',
   preHeroText: '',
@@ -44,10 +53,14 @@ export const EMPTY_PAGE = {
   heroSectionEnabled: true,
   aboutTagline: '',
   aboutBio: '',
+  aboutBioEnabled: true,
   aboutSectionEnabled: true,
   servicesSectionEnabled: false,
   servicesSectionTitle: '',
   servicesSectionText: '',
+  servicesDisplayMode: 'stack',
+  servicesCarouselPerView: 3,
+  servicesCarouselAutoplay: false,
   services: [],
   catalogSectionEnabled: false,
   catalogSectionTitle: '',
@@ -56,6 +69,8 @@ export const EMPTY_PAGE = {
   gallerySectionEnabled: false,
   gallerySectionTitle: '',
   gallerySectionText: '',
+  galleryPortfolioUrl: '',
+  galleryPortfolioLabel: '',
   galleryItems: [],
   videoSectionEnabled: false,
   videoSectionTitle: '',
@@ -72,6 +87,7 @@ export const EMPTY_PAGE = {
   location: '',
   locationMapsUrl: '',
   showLocationMap: false,
+  contactMapLayout: 'below',
   email: '',
   phone: '',
   phoneIsWhatsapp: false,
@@ -102,6 +118,13 @@ export const EMPTY_PAGE = {
     messagingSenderId: '',
     appId: '',
   },
+  hostingProvider: 'hub',
+  hostingDeployHookUrl: '',
+  hostingGithubOwner: '',
+  hostingGithubRepo: '',
+  hostingGithubWorkflow: 'deploy-template-manual.yml',
+  hostingGithubRef: 'master',
+  hostingPublicUrl: '',
   sectionThemes: {},
   showHeroSpecialty: false,
   labelLanguage: 'es',
@@ -187,6 +210,10 @@ export function normalizePageData(data = {}) {
   if (next.preHeroMode !== undefined) {
     next.preHeroMode = normalizePreHeroMode(next.preHeroMode);
   }
+  next.preHeroImageSide = normalizePreHeroImageSide(next.preHeroImageSide);
+  next.servicesDisplayMode = normalizeServicesDisplayMode(next.servicesDisplayMode);
+  next.servicesCarouselPerView = normalizeServicesCarouselPerView(next.servicesCarouselPerView);
+  next.servicesCarouselAutoplay = normalizeServicesCarouselAutoplay(next.servicesCarouselAutoplay);
   if (next.navCtaTarget !== undefined) {
     next.navCtaTarget = normalizeNavCtaTarget(next.navCtaTarget);
   }
@@ -215,6 +242,7 @@ export function normalizePageData(data = {}) {
   next.preHeroEnabled = next.preHeroEnabled === true;
   next.heroSectionEnabled = next.heroSectionEnabled !== false;
   next.aboutSectionEnabled = next.aboutSectionEnabled !== false;
+  next.aboutBioEnabled = next.aboutBioEnabled !== false;
   next.servicesSectionEnabled = next.servicesSectionEnabled === true;
   next.catalogSectionEnabled = next.catalogSectionEnabled === true;
   next.gallerySectionEnabled = next.gallerySectionEnabled === true;
@@ -225,6 +253,7 @@ export function normalizePageData(data = {}) {
   next.socialSectionEnabled = next.socialSectionEnabled !== false;
   next.footerSectionEnabled = next.footerSectionEnabled !== false;
   next.showLocationMap = next.showLocationMap === true;
+  next.contactMapLayout = normalizeContactMapLayout(next.contactMapLayout);
   next.phoneIsWhatsapp = next.phoneIsWhatsapp === true;
   next.socialIconOnly = next.socialIconOnly === true;
   next.showHeroSpecialty = next.showHeroSpecialty === true;
@@ -242,14 +271,22 @@ export function normalizePageData(data = {}) {
     || embed.quoteText
     || embed.ctaText
     || embed.ctaButtonUrl
+    || embed.imageUrl
+    || embed.portfolioUrl
     || embed.faqItems.some((item) => item.question || item.answer)
     || embed.steps.some((item) => item.title || item.description)
+    || embed.serviceItems.some((item) => (
+      item.title || item.description || item.imageUrl || (Array.isArray(item.listItems) && item.listItems.some(Boolean))
+    ))
   ));
 
+  next.galleryPortfolioUrl = String(next.galleryPortfolioUrl ?? '').trim();
+  next.galleryPortfolioLabel = String(next.galleryPortfolioLabel ?? '').trim();
 
   next.customDomain = normalizeHostname(next.customDomain);
   next.useExternalFirebase = next.useExternalFirebase === true;
   next.externalFirebase = normalizeExternalFirebase(next.externalFirebase);
+  Object.assign(next, normalizeHostingDeployFields(next));
 
   Object.assign(next, normalizeLegalDocuments(next));
 

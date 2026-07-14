@@ -45,6 +45,7 @@ import {
 import { applyLockedPageLayout } from './utils/layoutLock';
 import { isFlagEnabled } from './utils/sectionVisibility';
 import { normalizeCustomEmbeds } from './utils/customEmbeds';
+import { getEditorSectionFill } from './utils/editorSectionFill';
 
 const TEMPLATE_PREVIEW_URL = (
   import.meta.env.VITE_TEMPLATE_PREVIEW_URL?.replace(/\/$/, '')
@@ -330,9 +331,9 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-gray-100 text-gray-800 overflow-hidden font-sans">
+    <div className="flex h-dvh w-full max-w-full bg-gray-100 text-gray-800 overflow-hidden font-sans">
       {/* 1. BARRA LATERAL */}
-      <div className="w-64 bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0">
+      <div className="w-64 bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0 min-h-0">
         <div className="p-4 border-b border-gray-800">
           <h1 className="text-base font-bold tracking-tight text-indigo-400">Multi-Landing CMS</h1>
           <p className="text-[11px] text-gray-500">Vista Previa Integrada</p>
@@ -412,7 +413,7 @@ export default function App() {
       </div>
 
       {/* 2. FORMULARIO */}
-      <div className="w-5/12 overflow-y-auto p-6 bg-white border-r border-gray-200 shadow-inner shrink-0">
+      <div className="w-5/12 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-6 bg-white border-r border-gray-200 shadow-inner">
         {formData ? (
           <form onSubmit={handleSaveChanges} className="space-y-4">
             <div className="flex justify-between items-center border-b pb-4">
@@ -430,6 +431,7 @@ export default function App() {
 
             <EditorSection
               sectionKey="identity"
+              fillStatus={getEditorSectionFill('identity', formData)}
               title="Identidad y apariencia"
               description="Nombre, tipo de negocio, idioma, fondo y textos de respaldo"
               defaultOpen
@@ -452,6 +454,7 @@ export default function App() {
 
             <EditorSection
               sectionKey="nav"
+              fillStatus={getEditorSectionFill('nav', formData)}
               title="Navegación"
               description="Layout, menú, CTA y colores"
               onActivate={activatePreviewSection}
@@ -463,6 +466,7 @@ export default function App() {
             {canManageLayout && (
               <EditorSection
                 sectionKey="visibility"
+                fillStatus={getEditorSectionFill('visibility', formData)}
                 title="Visibilidad de secciones"
                 description="Activa o desactiva bloques (el navbar siempre queda)"
                 onActivate={activatePreviewSection}
@@ -474,6 +478,7 @@ export default function App() {
             {showEditorSection('preHeroEnabled', false) && (
               <EditorSection
                 sectionKey="preHero"
+                fillStatus={getEditorSectionFill('preHero', formData)}
                 title="Pre-hero"
                 description="Bloque editorial antes del carrusel"
                 onActivate={activatePreviewSection}
@@ -491,6 +496,7 @@ export default function App() {
             {showEditorSection('heroSectionEnabled', true) && (
               <EditorSection
                 sectionKey="hero"
+                fillStatus={getEditorSectionFill('hero', formData)}
                 title="Hero"
                 description="Especialidad, diapositivas, colores y botones"
                 defaultOpen={false}
@@ -510,8 +516,9 @@ export default function App() {
             {showEditorSection('aboutSectionEnabled', true) && (
               <EditorSection
                 sectionKey="about"
+                fillStatus={getEditorSectionFill('about', formData)}
                 title="Acerca de"
-                description="Título, frase, biografía y colores"
+                description="Título, frase, texto descriptivo y colores"
                 onActivate={activatePreviewSection}
               >
                 <AboutFieldsEditor formData={formData} onChange={setFormData} />
@@ -521,6 +528,7 @@ export default function App() {
             {showEditorSection('servicesSectionEnabled', false) && (
               <EditorSection
                 sectionKey="services"
+                fillStatus={getEditorSectionFill('services', formData)}
                 title="Servicios"
                 description="Áreas de atención, colores y etiquetas"
                 onActivate={activatePreviewSection}
@@ -538,6 +546,7 @@ export default function App() {
             {showEditorSection('catalogSectionEnabled', false) && (
               <EditorSection
                 sectionKey="catalog"
+                fillStatus={getEditorSectionFill('catalog', formData)}
                 title="Catálogo"
                 description="Productos o recursos, colores y etiquetas"
                 onActivate={activatePreviewSection}
@@ -555,6 +564,7 @@ export default function App() {
             {showEditorSection('gallerySectionEnabled', false) && (
               <EditorSection
                 sectionKey="gallery"
+                fillStatus={getEditorSectionFill('gallery', formData)}
                 title="Galería"
                 description="Imágenes del espacio, colores y etiquetas"
                 onActivate={activatePreviewSection}
@@ -572,6 +582,7 @@ export default function App() {
             {showEditorSection('videoSectionEnabled', false) && (
               <EditorSection
                 sectionKey="video"
+                fillStatus={getEditorSectionFill('video', formData)}
                 title="Video"
                 description="Sección de video y colores"
                 onActivate={activatePreviewSection}
@@ -587,6 +598,7 @@ export default function App() {
             {showEditorSection('testimonialsEnabled', false) && (
               <EditorSection
                 sectionKey="testimonials"
+                fillStatus={getEditorSectionFill('testimonials', formData)}
                 title="Testimonios"
                 description="Citas, colores y etiquetas"
                 onActivate={activatePreviewSection}
@@ -604,6 +616,7 @@ export default function App() {
             {showEditorSection('blogSectionEnabled', false) && (
               <EditorSection
                 sectionKey="blog"
+                fillStatus={getEditorSectionFill('blog', formData)}
                 title="Blog / noticias"
                 description="Entradas con layouts, colores y etiquetas"
                 onActivate={activatePreviewSection}
@@ -621,6 +634,7 @@ export default function App() {
             {showEditorSection('contactSectionEnabled', true) && (
               <EditorSection
                 sectionKey="contact"
+                fillStatus={getEditorSectionFill('contact', formData)}
                 title="Contacto"
                 description="Ubicación, email, teléfono y etiquetas"
                 onActivate={activatePreviewSection}
@@ -638,6 +652,7 @@ export default function App() {
             {showEditorSection('socialSectionEnabled', true) && (
               <EditorSection
                 sectionKey="social"
+                fillStatus={getEditorSectionFill('social', formData)}
                 title="Redes sociales"
                 description="Enlaces, colores y etiquetas"
                 onActivate={activatePreviewSection}
@@ -650,6 +665,7 @@ export default function App() {
             {(canManageLayout || hasActiveCustomEmbeds) && (
               <EditorSection
                 sectionKey="embeds"
+                fillStatus={getEditorSectionFill('embeds', formData)}
                 title="Secciones personalizadas"
                 description="FAQ, proceso, CTA, texto, cita o código HTML"
                 onActivate={activatePreviewSection}
@@ -658,18 +674,24 @@ export default function App() {
                   formData={formData}
                   onChange={setFormData}
                   canManageLayout={canManageLayout}
+                  pageId={selectedId}
                 />
               </EditorSection>
             )}
 
             <EditorSection
               sectionKey="footer"
+              fillStatus={getEditorSectionFill('footer', formData)}
               title="Hosting, analytics y pie"
               description="Dominio, Firebase externo, GA4, documentos legales y colores del footer"
               onActivate={activatePreviewSection}
             >
               {canManageHosting && (
-                <SiteHostingFieldsEditor formData={formData} onChange={setFormData} />
+                <SiteHostingFieldsEditor
+                  formData={formData}
+                  onChange={setFormData}
+                  pageId={selectedId}
+                />
               )}
               <div className="space-y-2">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase">Google Analytics (GA4)</label>
@@ -706,8 +728,8 @@ export default function App() {
       </div>
 
       {/* 3. SIMULADOR DE VISTA PREVIA */}
-      <div className="flex-1 min-h-0 bg-gray-200 p-6 flex flex-col overflow-hidden">
-        <div className="w-full flex justify-between items-center mb-4 shrink-0 gap-3">
+      <div className="flex-1 min-h-0 min-w-0 bg-gray-200 p-6 flex flex-col overflow-hidden">
+        <div className="w-full min-w-0 flex justify-between items-center mb-4 shrink-0 gap-3 overflow-x-auto">
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Monitor de Aspecto en Vivo</span>
           <div className="flex items-center gap-2">
             <div className="bg-white p-1 rounded-lg shadow-sm border text-[11px] font-medium space-x-1">

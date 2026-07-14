@@ -55,3 +55,12 @@ export function shouldShowMapsEmbed(data, maps = resolveMapsUrls(data)) {
   if (data?.showLocationMap !== true) return false;
   return Boolean(maps.embedUrl);
 }
+
+export const CONTACT_MAP_LAYOUTS = [
+  { value: 'below', label: 'Debajo del contacto' },
+  { value: 'beside', label: 'Al lado (escritorio)' },
+];
+
+export function normalizeContactMapLayout(value) {
+  return value === 'beside' ? 'beside' : 'below';
+}

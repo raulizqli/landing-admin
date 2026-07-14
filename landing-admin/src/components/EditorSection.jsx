@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 
 export default function EditorSection({
@@ -7,6 +6,7 @@ export default function EditorSection({
   description,
   defaultOpen = false,
   onActivate,
+  fillStatus = null,
   children,
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -21,6 +21,8 @@ export default function EditorSection({
     if (next) activate();
   };
 
+  const showFillBadge = Boolean(fillStatus?.label) && !open;
+
   return (
     <section
       className={`rounded-xl border transition ${
@@ -32,13 +34,30 @@ export default function EditorSection({
       <button
         type="button"
         onClick={toggle}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left min-w-0"
         aria-expanded={open}
       >
-        <div className="min-w-0">
-          <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wide">{title}</h3>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wide">{title}</h3>
+            {showFillBadge && (
+              <span
+                className={`inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  fillStatus.filled
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-gray-100 text-gray-500 border border-gray-200'
+                }`}
+                title={fillStatus.filled ? 'Sección con información capturada' : 'Sección sin contenido todavía'}
+              >
+                {fillStatus.filled ? '● ' : '○ '}
+                {fillStatus.label}
+              </span>
+            )}
+          </div>
           {description && (
-            <p className="text-[10px] text-gray-400 mt-0.5 truncate">{description}</p>
+            <p className={`text-[10px] text-gray-400 mt-0.5 truncate ${!open && showFillBadge ? 'sr-only' : ''}`}>
+              {description}
+            </p>
           )}
         </div>
         <span className="text-gray-400 text-sm shrink-0" aria-hidden>

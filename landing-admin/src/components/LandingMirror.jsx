@@ -1,7 +1,30 @@
-
 import { useEffect, useRef } from 'react';
 import { LandingPage } from '@raulizqli/landing-ui';
 import { withPreviewContent } from '@raulizqli/landing-core/previewContent';
+
+function getScrollParent(node) {
+  let current = node?.parentElement;
+  while (current && current !== document.body) {
+    const { overflowY } = window.getComputedStyle(current);
+    if (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') {
+      return current;
+    }
+    current = current.parentElement;
+  }
+  return null;
+}
+
+/** Scroll target inside its nearest overflow parent only (avoids moving the admin form / page). */
+function scrollIntoScrollParent(target, behavior = 'smooth') {
+  if (!target) return;
+  const parent = getScrollParent(target);
+  if (!parent) return;
+
+  const parentRect = parent.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const nextTop = parent.scrollTop + (targetRect.top - parentRect.top);
+  parent.scrollTo({ top: Math.max(0, nextTop), behavior });
+}
 
 export default function LandingMirror({ previewData, previewSeed, scrollSectionId }) {
   const rootRef = useRef(null);
@@ -16,13 +39,12 @@ export default function LandingMirror({ previewData, previewSeed, scrollSectionI
       const escaped = typeof CSS !== 'undefined' && CSS.escape
         ? CSS.escape(scrollSectionId)
         : String(scrollSectionId).replace(/"/g, '\\"');
-      const el = root.querySelector(`#${escaped}`)
+      let el = root.querySelector(`#${escaped}`)
         || root.querySelector(`[data-preview-section="${escaped}"]`);
-      if (scrollSectionId === 'custom-embeds' && !el) {
-        root.querySelector('.custom-embed-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
+      if (!el && scrollSectionId === 'custom-embeds') {
+        el = root.querySelector('.custom-embed-section');
       }
-      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollIntoScrollParent(el, 'smooth');
     }, 80);
 
     return () => window.clearTimeout(timer);

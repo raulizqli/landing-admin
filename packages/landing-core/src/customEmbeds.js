@@ -1,3 +1,12 @@
+import {
+  createEmptyService,
+  normalizeService,
+  normalizeServicesCarouselAutoplay,
+  normalizeServicesCarouselPerView,
+  normalizeServicesDisplayMode,
+  isServiceItemVisible,
+} from './services.js';
+import { normalizePreHeroImageSide } from './preHero.js';
 
 export const EMBED_PLACEMENTS = [
   { value: 'before_pre_hero', label: 'Antes del pre-hero' },
@@ -20,6 +29,20 @@ export const EMBED_PLACEMENTS = [
  * Stored in `customEmbeds[]` with a `type` field (legacy items default to `embed`).
  */
 export const CUSTOM_SECTION_TYPES = [
+  {
+    value: 'pre_hero',
+    label: 'Pre-hero',
+    description: 'Bloque imagen + texto (banner o editorial).',
+    defaultTitle: '',
+    defaultPlacement: 'before_pre_hero',
+  },
+  {
+    value: 'services',
+    label: 'Servicios',
+    description: 'Lista o carrusel de servicios / temas.',
+    defaultTitle: 'Servicios',
+    defaultPlacement: 'after_about',
+  },
   {
     value: 'faq',
     label: 'Preguntas frecuentes',
@@ -56,6 +79,13 @@ export const CUSTOM_SECTION_TYPES = [
     defaultPlacement: 'after_hero',
   },
   {
+    value: 'portfolio',
+    label: 'Portafolio externo',
+    description: 'Enlace o embed a Pixieset, SmugMug, Format, Adobe Portfolio, etc.',
+    defaultTitle: 'Portafolio',
+    defaultPlacement: 'after_gallery',
+  },
+  {
     value: 'embed',
     label: 'Código / integración',
     description: 'Calendly, PayPal, formularios u otros widgets HTML.',
@@ -64,8 +94,17 @@ export const CUSTOM_SECTION_TYPES = [
   },
 ];
 
+export const PORTFOLIO_PROVIDERS = [
+  { value: 'pixieset', label: 'Pixieset' },
+  { value: 'smugmug', label: 'SmugMug' },
+  { value: 'format', label: 'Format' },
+  { value: 'adobe', label: 'Adobe Portfolio' },
+  { value: 'custom', label: 'Otro / personalizado' },
+];
+
 const PLACEMENT_VALUES = new Set(EMBED_PLACEMENTS.map((item) => item.value));
 const TYPE_VALUES = new Set(CUSTOM_SECTION_TYPES.map((item) => item.value));
+const PORTFOLIO_PROVIDER_VALUES = new Set(PORTFOLIO_PROVIDERS.map((item) => item.value));
 
 export function normalizePlacement(value) {
   const placement = String(value ?? '').trim();
@@ -75,6 +114,17 @@ export function normalizePlacement(value) {
 export function normalizeSectionType(value) {
   const type = String(value ?? '').trim();
   return TYPE_VALUES.has(type) ? type : 'embed';
+}
+
+export function normalizePortfolioProvider(value) {
+  const provider = String(value ?? '').trim().toLowerCase();
+  return PORTFOLIO_PROVIDER_VALUES.has(provider) ? provider : 'custom';
+}
+
+export function normalizePreHeroMode(value) {
+  if (value === 'grafico' || value === 'banner') return 'banner';
+  if (value === 'editorial' || value === 'split') return 'split';
+  return 'banner';
 }
 
 export function getPlacementLabel(value) {
@@ -122,6 +172,15 @@ function normalizeStepItems(items) {
   }));
 }
 
+function normalizeServiceItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items.map(normalizeService);
+}
+
+export function getVisibleServiceItems(items) {
+  return normalizeServiceItems(items).filter(isServiceItemVisible);
+}
+
 export function createEmptyCustomEmbed(overrides = {}) {
   const typeMeta = getSectionTypeMeta(overrides.type || 'embed');
 
@@ -141,6 +200,15 @@ export function createEmptyCustomEmbed(overrides = {}) {
     ctaButtonUrl: '',
     faqItems: [createEmptyFaqItem()],
     steps: [createEmptyStepItem(), createEmptyStepItem(), createEmptyStepItem()],
+    imageUrl: '',
+    preHeroMode: 'split',
+    preHeroImageSide: 'left',
+    serviceItems: [createEmptyService()],
+    servicesDisplayMode: 'stack',
+    servicesCarouselPerView: 3,
+    servicesCarouselAutoplay: false,
+    portfolioUrl: '',
+    portfolioProvider: 'custom',
     fullWidth: false,
     sortOrder: 0,
     ...overrides,
@@ -150,12 +218,46 @@ export function createEmptyCustomEmbed(overrides = {}) {
 
 export function createCustomSectionByType(type, overrides = {}) {
   const typeMeta = getSectionTypeMeta(type);
-  return createEmptyCustomEmbed({
+  const base = {
     type: typeMeta.value,
     title: typeMeta.defaultTitle,
     placement: typeMeta.defaultPlacement,
     ...overrides,
-  });
+  };
+
+  if (typeMeta.value === 'pre_hero') {
+    return createEmptyCustomEmbed({
+      ...base,
+      preHeroMode: 'split',
+      preHeroImageSide: 'left',
+      imageUrl: '',
+      body: '',
+    });
+  }
+
+  if (typeMeta.value === 'services') {
+    return createEmptyCustomEmbed({
+      ...base,
+      body: '',
+      serviceItems: [createEmptyService(), createEmptyService()],
+      servicesDisplayMode: 'stack',
+      servicesCarouselPerView: 3,
+      servicesCarouselAutoplay: false,
+    });
+  }
+
+  if (typeMeta.value === 'portfolio') {
+    return createEmptyCustomEmbed({
+      ...base,
+      body: '',
+      portfolioUrl: '',
+      portfolioProvider: 'custom',
+      ctaButtonLabel: 'Ver portafolio completo',
+      htmlCode: '',
+    });
+  }
+
+  return createEmptyCustomEmbed(base);
 }
 
 export function normalizeCustomEmbeds(embeds) {
@@ -163,6 +265,7 @@ export function normalizeCustomEmbeds(embeds) {
 
   return embeds.map((embed, index) => {
     const type = normalizeSectionType(embed.type || (embed.htmlCode || embed.codigo ? 'embed' : 'text'));
+    const defaultCtaLabel = type === 'portfolio' ? 'Ver portafolio completo' : 'Reservar cita';
 
     return {
       id: String(embed.id || `embed-${index}`).trim() || `embed-${index}`,
@@ -176,10 +279,19 @@ export function normalizeCustomEmbeds(embeds) {
       quoteText: String(embed.quoteText ?? embed.cita ?? '').trim(),
       quoteAttribution: String(embed.quoteAttribution ?? embed.autor ?? '').trim(),
       ctaText: String(embed.ctaText ?? '').trim(),
-      ctaButtonLabel: String(embed.ctaButtonLabel ?? 'Reservar cita').trim() || 'Reservar cita',
+      ctaButtonLabel: String(embed.ctaButtonLabel ?? defaultCtaLabel).trim() || defaultCtaLabel,
       ctaButtonUrl: String(embed.ctaButtonUrl ?? '').trim(),
       faqItems: normalizeFaqItems(embed.faqItems),
       steps: normalizeStepItems(embed.steps),
+      imageUrl: String(embed.imageUrl ?? embed.preHeroImageUrl ?? embed.imagenUrl ?? '').trim(),
+      preHeroMode: normalizePreHeroMode(embed.preHeroMode),
+      preHeroImageSide: normalizePreHeroImageSide(embed.preHeroImageSide),
+      serviceItems: normalizeServiceItems(embed.serviceItems),
+      servicesDisplayMode: normalizeServicesDisplayMode(embed.servicesDisplayMode),
+      servicesCarouselPerView: normalizeServicesCarouselPerView(embed.servicesCarouselPerView),
+      servicesCarouselAutoplay: normalizeServicesCarouselAutoplay(embed.servicesCarouselAutoplay),
+      portfolioUrl: String(embed.portfolioUrl ?? '').trim(),
+      portfolioProvider: normalizePortfolioProvider(embed.portfolioProvider),
       fullWidth: embed.fullWidth === true,
       sortOrder: Number.isFinite(Number(embed.sortOrder)) ? Number(embed.sortOrder) : index,
     };
@@ -206,6 +318,23 @@ export function isCustomSectionVisible(embed) {
   }
   if (type === 'quote') {
     return Boolean(String(embed.quoteText ?? '').trim());
+  }
+  if (type === 'pre_hero') {
+    const imageUrl = String(embed.imageUrl ?? '').trim();
+    if (!imageUrl) return false;
+    if (normalizePreHeroMode(embed.preHeroMode) === 'split') {
+      return Boolean(title || String(embed.body ?? '').trim());
+    }
+    return true;
+  }
+  if (type === 'services') {
+    return getVisibleServiceItems(embed.serviceItems).length > 0;
+  }
+  if (type === 'portfolio') {
+    return Boolean(
+      String(embed.portfolioUrl ?? '').trim()
+      || String(embed.htmlCode ?? '').trim(),
+    );
   }
   // embed
   return Boolean(title || String(embed.htmlCode ?? '').trim());

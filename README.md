@@ -29,9 +29,19 @@ Paginas/{id} en hub (ruta)   + contenido en proyecto Firebase externo (otra cuen
 - **Un documento** en Firestore = una landing.
 - **Modo multi-dominio:** un solo build en Hosting; cada dominio apunta al mismo sitio y la app busca `customDomain` en el hub.
 - **Modo por sitio:** varios sitios de Hosting con `VITE_PAGINA_ID` distinto en cada build (alternativa legacy).
-- **Proyecto externo:** el hub guarda dominio + credenciales; el contenido vive en otra cuenta Firebase.
+- **Proyecto externo (solo datos):** el hub guarda dominio + credenciales web; el **contenido** vive en otra cuenta Firebase. El admin suele quedar en Hosting del hub; el **template** puede desplegarse en el hub o en otro hosting (cuenta manual + Deploy Hook desde el admin).
 
-**Stack en producción:** un solo proyecto Firebase con Firestore + Storage + Analytics + **Hosting** (admin y landings). No se requiere Vercel ni otro hosting externo.
+**Stack en producción (hub):** Firestore (rutas), Hosting (admin + template), reglas, Auth/usuarios CMS y Analytics del deploy. No se requiere Vercel ni otro hosting externo.
+
+| Pieza | ¿Dónde vive? |
+|-------|----------------|
+| Hosting del admin | Proyecto **hub** (mismo que el CMS) |
+| Hosting del `landing-template` | Proyecto **hub** por defecto; también puede desplegarse en **otro hosting** (cuenta manual + Deploy Hook desde el admin) |
+| Dominios de clientes (`customDomain`) | Apuntan al Hosting donde sirvas el template (hub u otro) |
+| Contenido de la landing (textos, slides…) | Hub **o** proyecto Firebase externo del cliente |
+| Imágenes subidas | Storage del hub **o** del proyecto externo (según `useExternalFirebase`) |
+
+Cuando activas “datos en otro proyecto Firebase”, **no** mueves el hosting: solo el documento de contenido y el Storage asociados a esa página.
 
 ---
 
@@ -298,6 +308,7 @@ Cada documento en la colección **`pages`** representa una landing. La colecció
 | `location` | string | Ubicación del consultorio |
 | `locationMapsUrl` | string | Enlace de Google Maps o URL embed (`/maps/embed?pb=...`) |
 | `showLocationMap` | boolean | Mostrar mapa embebido en la sección contacto |
+| `contactMapLayout` | `'below'` \| `'beside'` | Posición del mapa: debajo (default) o al lado en escritorio (en móvil siempre abajo) |
 | `email` | string | Email público |
 | `phone` | string | Teléfono público |
 | `phoneIsWhatsapp` | boolean | Si es `true`, el teléfono abre WhatsApp en lugar de llamada |
@@ -319,6 +330,7 @@ Cada documento en la colección **`pages`** representa una landing. La colecció
 |-------|------|-------------|
 | `preHeroEnabled` | boolean | Mostrar la sección (por defecto `false`) |
 | `preHeroMode` | `'banner'` \| `'split'` | Imagen completa o foto + título/texto editables |
+| `preHeroImageSide` | `'left'` \| `'right'` | En modo `split`: lado de la imagen (por defecto `left`) |
 | `preHeroImageUrl` | string | URL o imagen subida a Storage |
 | `preHeroTitle` | string | Título (solo modo `split`) |
 | `preHeroText` | string | Párrafos separados por línea en blanco (solo modo `split`) |
@@ -341,17 +353,6 @@ Array de diapositivas. Cada elemento:
 
 Al guardar, el admin sincroniza `heroTitle` y `heroSubtitle` desde la primera diapositiva (compatibilidad con datos antiguos).
 
-### Sección de video (`videoSection`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `videoSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `videoSectionUrl` | string | Enlace YouTube, Vimeo o `.mp4` directo |
-| `videoSectionTitle` | string | Título opcional sobre el reproductor |
-| `videoSectionText` | string | Texto introductorio opcional (párrafos con línea en blanco) |
-
-Reproductor 16:9 con controles visibles, ubicado entre «Catálogo» y «Testimonios».
-
 ### Servicios y temas (`services`)
 
 | Campo | Tipo | Descripción |
@@ -359,17 +360,32 @@ Reproductor 16:9 con controles visibles, ubicado entre «Catálogo» y «Testimo
 | `servicesSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
 | `servicesSectionTitle` | string | Título de la sección |
 | `servicesSectionText` | string | Texto introductorio opcional |
+| `servicesDisplayMode` | `'stack'` \| `'carousel'` | Lista vertical o carrusel |
+| `servicesCarouselPerView` | `1`–`4` | Ítems visibles por página del carrusel (default `3`) |
+| `servicesCarouselAutoplay` | boolean | `true` = avance automático (~5 s); `false` = solo botones. En automático se pausa al pasar el mouse |
 | `services` | array | Lista de servicios o temas |
 
 Cada elemento de `services`:
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
+| `layout` | string | `title` · `title_description` · `title_list` (ver abajo) |
 | `title` | string | Nombre del servicio o tema |
-| `description` | string | Descripción breve |
-| `imageUrl` | string | Icono o imagen opcional |
+| `description` | string | Texto (layouts con descripción) |
+| `listItems` | string[] | Ítems de lista, una línea cada uno (layout `title_list`) |
+| `imageUrl` | string | Imagen **opcional** en los tres layouts |
 
-Ubicada entre «Sobre mí» y la sección de catálogo. Solo se muestran ítems con `title` o `description`.
+Layouts de ítem:
+
+| `layout` | Contenido |
+|----------|-----------|
+| `title` | Solo título (+ imagen opcional) |
+| `title_description` | Título + descripción (+ imagen opcional) |
+| `title_list` | Título + viñetas (`listItems`) (+ imagen opcional) |
+
+Aliases legacy al leer: `list` / `title_description_image` → `title_description`; `title_image` → `title`; `title_list_image` → `title_list`.
+
+Ubicada entre «Sobre mí» y la sección de catálogo. Solo se muestran ítems visibles según su layout (título/descripción/lista/imagen).
 
 ### Catálogo de productos (`catalog`)
 
@@ -390,7 +406,39 @@ Cada elemento de `catalogItems`:
 | `price` | string | Precio visible opcional (ej. `$2,500 MXN`) |
 | `link` | string | Enlace opcional («Ver más») |
 
-Ubicada entre «Servicios» y la sección de video. Útil para lentes, armazones, paquetes u otros productos.
+Ubicada entre «Servicios» y «Galería». Útil para lentes, armazones, paquetes u otros productos.
+
+### Galería (`gallery`)
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `gallerySectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
+| `gallerySectionTitle` | string | Título de la sección |
+| `gallerySectionText` | string | Intro opcional |
+| `galleryPortfolioUrl` | string | URL opcional al portafolio completo externo (Pixieset, SmugMug, Format, etc.) |
+| `galleryPortfolioLabel` | string | Texto del botón CTA (si vacío: etiqueta `gallery.viewPortfolio`) |
+| `galleryItems` | array | Fotos de la galería |
+
+Cada elemento de `galleryItems`:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `imageUrl` | string | Imagen (obligatoria para publicarse) |
+| `caption` | string | Leyenda opcional |
+| `alt` | string | Texto alternativo opcional |
+
+Ubicada entre «Catálogo» y «Video». Ideal para una selección curada; el CTA apunta al portafolio grande externo.
+
+### Sección de video (`videoSection`)
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `videoSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
+| `videoSectionUrl` | string | Enlace YouTube, Vimeo o `.mp4` directo |
+| `videoSectionTitle` | string | Título opcional sobre el reproductor |
+| `videoSectionText` | string | Texto introductorio opcional (párrafos con línea en blanco) |
+
+Reproductor 16:9 con controles visibles, ubicado entre «Galería» y «Testimonios».
 
 ### Testimonios (`testimonials`)
 
@@ -408,7 +456,59 @@ Cada elemento de `testimonials`:
 | `quote` | string | Frase del testimonio (obligatoria para mostrarse) |
 | `imageUrl` | string | Foto opcional (URL o Firebase Storage) |
 
-Ubicada entre la sección de video y «Contacto». Solo se muestran entradas con `quote` no vacío.
+Ubicada entre la sección de video y «Blog» / «Contacto». Solo se muestran entradas con `quote` no vacío. Sin foto, se muestran iniciales del `title` (o una comilla tipográfica).
+
+### Blog / noticias (`blog`)
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `blogSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
+| `blogSectionTitle` | string | Título de la sección |
+| `blogSectionText` | string | Intro opcional |
+| `blogPosts` | array | Entradas / bloques |
+
+Cada elemento de `blogPosts`:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `layout` | string | `title_text` · `title_text_image_left` · `title_image_right_text` · `title_image` · `image_only` |
+| `title` | string | Título del bloque |
+| `text` | string | Cuerpo |
+| `imageUrl` | string | Imagen (según layout) |
+| `imageAlt` | string | Alt opcional |
+
+Ubicada entre «Testimonios» y «Contacto».
+
+### Secciones personalizadas (`customEmbeds`)
+
+Array de bloques extras insertables en distintas posiciones (`placement`: `before_pre_hero`, `after_hero`, `after_gallery`, `after_contact`, …).
+
+| Campo común | Tipo | Descripción |
+|-------------|------|-------------|
+| `id` | string | Identificador estable |
+| `enabled` | boolean | Activo |
+| `type` | string | Tipo de bloque (ver abajo) |
+| `label` | string | Nombre interno (solo admin) |
+| `title` | string | Título visible |
+| `placement` | string | Ancla de posición |
+| `fullWidth` | boolean | Sin contenedor central |
+| `sortOrder` | number | Orden relativo |
+
+Tipos:
+
+| `type` | Uso / campos relevantes |
+|--------|-------------------------|
+| `pre_hero` | Bloque banner/split (`preHeroMode`, `preHeroImageSide`, `imageUrl`, `body`) |
+| `services` | Servicios extra (`serviceItems` con los mismos layouts, `servicesDisplayMode`, `servicesCarouselPerView`, `servicesCarouselAutoplay`) |
+| `portfolio` | Portafolio externo: `portfolioUrl`, `portfolioProvider` (`pixieset` \| `smugmug` \| `format` \| `adobe` \| `custom`), CTA, `htmlCode` opcional (embed) |
+| `faq` | Preguntas (`faqItems[]`) |
+| `steps` | Proceso (`steps[]`) |
+| `text` | Texto editorial (`body`) |
+| `cta` | Banner de cita (`ctaText`, `ctaButtonLabel`, `ctaButtonUrl`) |
+| `quote` | Cita destacada (`quoteText`, `quoteAttribution`) |
+| `embed` | HTML libre (`htmlCode`) |
+
+**Layout lock (roles):** solo **root** puede activar/desactivar secciones de página y añadir/quitar embeds. Admin/user editan el contenido de lo ya habilitado.
 
 > **Compatibilidad:** al leer documentos antiguos con nombres en español (`nombre`, `ubicacion`, `navModo: 'perfil'`, etc.), `normalizePageData()` los convierte automáticamente al esquema en inglés.
 
@@ -431,7 +531,7 @@ Se guardan **solo identificadores** (no URLs completas). El prefijo del enlace e
 
 Objeto opcional con el fondo de cada bloque de la landing. Si no existe, se usan los colores por defecto del diseño.
 
-Claves disponibles: `page`, `nav`, `preHero`, `hero`, `about`, `services`, `catalog`, `video`, `testimonials`, `contact`, `social`, `footer`.
+Claves disponibles: `page`, `nav`, `preHero`, `hero`, `about`, `services`, `catalog`, `gallery`, `video`, `testimonials`, `blog`, `contact`, `social`, `footer`.
 
 Cada sección admite:
 
@@ -475,10 +575,14 @@ En el admin, cada sección del formulario incluye un bloque **Fondo de sección*
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `customDomain` | string | Dominio sin `www.` (ej. `dra-maria.com`). Resolución multi-dominio en producción |
-| `useExternalFirebase` | boolean | Si `true`, el contenido se lee/escribe en otro proyecto Firebase |
+| `useExternalFirebase` | boolean | Si `true`, el **contenido** se lee/escribe en otro proyecto Firebase |
 | `externalFirebase` | object | `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId` |
 
-Con proyecto externo, el **hub** guarda nombre, dominio y credenciales; el documento completo vive en la otra cuenta. Configura reglas de lectura pública en ambos proyectos.
+Con proyecto externo, el **hub** guarda nombre, `customDomain` y credenciales web; el documento completo vive en la otra cuenta. Configura reglas de **lectura pública** en `pages` / `paginas` (y Storage) en ese proyecto.
+
+**Hosting:** el admin suele estar en el **hub**. El `landing-template` puede estar en el hub o en **otro hosting** (Vercel/Netlify/…): la cuenta se crea a mano y desde el admin se dispara el Deploy Hook — ver [Publicar el template en otro hosting](#publicar-el-template-en-otro-hosting-desde-el-admin).
+
+Guía de datos externos: [Landing con contenido en otra cuenta Firebase](#landing-con-contenido-en-otra-cuenta-firebase).
 
 ### Analytics
 
@@ -601,6 +705,138 @@ firebase deploy --only storage
 
 ---
 
+## Landing con contenido en otra cuenta Firebase
+
+Usa esto cuando el **cliente** quiere que textos e imágenes vivan en **su** proyecto Firestore/Storage, pero el sitio web sigue sirviéndose desde el Hosting del hub (admin + template).
+
+### Qué es externo y qué no
+
+| | Proyecto hub (admin + template) | Proyecto Firebase del cliente |
+|--|--------------------------------|-------------------------------|
+| Hosting / URL / dominios | Sí | No (no hace falta Hosting ahí) |
+| Documento de ruta (`customDomain`, credenciales) | Sí | — |
+| Documento de contenido (`name`, hero, servicios…) | Solo si externo está apagado | Sí, si `useExternalFirebase` |
+| Storage de imágenes de esa landing | Solo si externo está apagado | Sí, si externo está activo |
+| Credenciales en el `.env` del template | Siempre del **hub** | Van en el documento (`externalFirebase`), no en el build |
+
+### Paso 1 — Proyecto del cliente
+
+1. En [Firebase Console](https://console.firebase.google.com/), crea el proyecto en la cuenta del cliente.
+2. Activa **Firestore** y **Storage**.
+3. Añade una app **Web** y copia: `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`.
+4. Reglas mínimas de lectura pública (el template solo lee):
+
+```
+match /pages/{pageId} {
+  allow read: if true;
+  allow write: if false; // o con Auth si el admin escribe autenticado ahí
+}
+match /paginas/{pageId} {
+  allow read: if true;
+  allow write: if false;
+}
+```
+
+Ajusta Storage para servir las imágenes públicas que suba el admin.
+
+### Paso 2 — Crear la landing en el admin (hub)
+
+Con un usuario **root** (crear páginas):
+
+1. Abre el admin del hub.
+2. **+ Nueva landing** → ID slug (ej. `dra-maria`), nombre y vertical.
+3. Se crea el documento de ruta en el hub (`pages/{id}`).
+
+### Paso 3 — Conectar el Firebase externo
+
+1. En el editor, sección **Hosting, analytics y pie**.
+2. (Opcional) **Dominio personalizado** → `dra-maria.com` (sin `www.`).
+3. Marca **Los datos de esta landing viven en otro proyecto Firebase**.
+4. Pega las seis credenciales web del proyecto del cliente.
+5. **Guardar y Publicar**.
+
+Al publicar con externo activo:
+
+- el **contenido** se escribe en el Firestore/Storage del cliente;
+- el **hub** queda con nombre, `customDomain`, `useExternalFirebase` y `externalFirebase`.
+
+### Paso 4 — Cómo se ve en público
+
+| Modo | Qué hacer |
+|------|-----------|
+| **Multi-dominio** (recomendado) | El mismo deploy del template; el hostname debe coincidir con `customDomain`. Añade el dominio al Hosting del **hub**. |
+| **Por sitio** | Build del template con `VITE_PAGINA_ID=dra-maria` y `VITE_FIREBASE_*` del **hub**. |
+
+Probar en local (admin/template apuntando al hub):
+
+```text
+http://localhost:5174?pageId=dra-maria
+```
+
+### Flujo de datos
+
+```
+Hub Firebase                              Firebase del cliente
+─────────────────                         ───────────────────
+Hosting: admin + template                 (sin Hosting obligatorio)
+pages/{id}:                               pages/{id}:
+  customDomain                              name, hero, services…
+  useExternalFirebase: true                 imágenes en Storage
+  externalFirebase: { …creds }
+```
+
+Mientras el checkbox esté **apagado**, demo y contenido viven en el hub. Las ediciones posteriores siguen el mismo **Guardar y Publicar** (el admin escribe en el externo).
+
+---
+
+## Publicar el template en otro hosting (desde el admin)
+
+La **creación de la cuenta** en Vercel / Netlify / Cloudflare / otro Firebase Hosting es **manual**. El admin solo guarda la config y dispara el deploy.
+
+### Campos por landing
+
+| Campo | Uso |
+|-------|-----|
+| `hostingProvider` | `hub` \| `webhook` \| `github` |
+| `hostingDeployHookUrl` | Deploy Hook (Vercel/Netlify/…) |
+| `hostingGithubOwner` / `Repo` / `Workflow` / `Ref` | Para `workflow_dispatch` |
+| `hostingPublicUrl` | URL pública de referencia |
+
+Con contenido externo, estos campos se guardan en el **hub** (junto a dominio y credenciales).
+
+### Flujo recomendado (webhook)
+
+1. Crea el proyecto/sitio a mano en el hosting.
+2. Conecta el repo o sube el build del `landing-template` (con `VITE_FIREBASE_*` del **hub**).
+3. Genera un **Deploy Hook** y pégalo en el admin → **Hosting del template**.
+4. Guarda la página.
+5. Pulsa **Publicar hosting** (root o admin).
+
+La Cloud Function `triggerHostingDeploy` hace `POST` al hook.
+
+### Alternativa GitHub Actions
+
+1. Usa el workflow [`.github/workflows/deploy-template-manual.yml`](.github/workflows/deploy-template-manual.yml) (`workflow_dispatch`).
+2. En Cloud Functions, define el env `GITHUB_DEPLOY_TOKEN` (PAT con `actions:write`).
+3. En la landing: provider `github`, owner, repo, workflow `deploy-template-manual.yml`, branch.
+4. **Publicar hosting** dispara el workflow.
+
+### Hook global del hub
+
+Si muchas landings comparten el mismo sitio multi-dominio del hub, puedes fijar en Functions:
+
+`DEFAULT_TEMPLATE_DEPLOY_HOOK_URL`
+
+Con `hostingProvider: hub` y sin hook por página, se usa ese URL.
+
+### Desplegar la función
+
+```bash
+npm run deploy:functions
+```
+
+---
+
 ## Cómo agregar una nueva web
 
 ### Paso 1 — Crear el documento en Firestore
@@ -657,7 +893,7 @@ Abre `http://localhost:5174`.
 
 ### Paso 5 — Desplegar con Firebase Hosting
 
-Todo el ecosistema (datos + hosting) vive en **un proyecto de Firebase**: Firestore, Storage, Analytics y Hosting.
+El **Hosting** del admin y del template vive en el **proyecto hub**. El contenido de cada landing puede estar en el hub o en un Firebase externo ([guía](#landing-con-contenido-en-otra-cuenta-firebase)).
 
 #### Configuración inicial (una vez)
 
@@ -761,6 +997,19 @@ Firebase Console → **Hosting** → sitio del cliente → **Agregar dominio per
 | **Local** | Iframe a `landing-template` con `?pageId=...&preview=true` y sincronización por `postMessage` |
 
 En dev, si no hay documentos en Firestore, aparece **Vista previa demo** con contenido aleatorio.
+
+### Indicadores de contenido (acordeón)
+
+Las secciones del formulario muestran, **colapsadas**, una pastilla con el estado de datos:
+
+- **Verde** — hay información (ej. nombre · especialidad, `3 ítems`, `Con video`)
+- **Gris** — vacía o incompleta (`Sin datos`, `Activo, falta URL`)
+
+Así se ve de un vistazo qué bloques ya tienen contenido capturado.
+
+### Layout del CMS
+
+El admin usa pantalla completa fija (`h-dvh`) sin scroll del documento: cada columna (lista, formulario, espejo) scrollea por su cuenta. El espejo sincroniza la sección activa **solo** dentro del panel de vista previa (no mueve el formulario).
 
 ---
 

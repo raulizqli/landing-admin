@@ -1,4 +1,4 @@
-import { extractMapsInput } from '../utils/maps';
+import { extractMapsInput, CONTACT_MAP_LAYOUTS } from '../utils/maps';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 
 export default function LocationFieldsEditor({ formData, onChange }) {
@@ -52,6 +52,29 @@ export default function LocationFieldsEditor({ formData, onChange }) {
         <p className="text-[10px] text-amber-600">
           Añade una dirección o enlace de Google Maps para mostrar el mapa.
         </p>
+      )}
+
+      {formData.showLocationMap && (
+        <fieldset className="space-y-2">
+          <legend className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+            Posición del mapa
+          </legend>
+          {CONTACT_MAP_LAYOUTS.map((layout) => (
+            <label key={layout.value} className="flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="radio"
+                name="contact-map-layout"
+                checked={(formData.contactMapLayout || 'below') === layout.value}
+                onChange={() => onChange({ ...formData, contactMapLayout: layout.value })}
+                className="border-gray-300"
+              />
+              {layout.label}
+            </label>
+          ))}
+          <p className="text-[10px] text-gray-400">
+            En móvil el mapa siempre queda debajo del contacto.
+          </p>
+        </fieldset>
       )}
 
       <SectionBackgroundEditor

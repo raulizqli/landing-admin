@@ -1,8 +1,12 @@
 import { useEffect, useRef } from 'react';
 import {
+  getVisibleServiceItems,
+  normalizePreHeroMode,
   normalizeSectionType,
   splitSectionParagraphs,
 } from '@raulizqli/landing-core/customEmbeds';
+import { normalizePreHeroImageSide, splitPreHeroParagraphs } from '@raulizqli/landing-core/preHero';
+import { ServicesItemsLayout } from './ServicesSection.jsx';
 import { trackCtaClick } from './trackInteraction.js';
 
 function activateScripts(container) {
@@ -195,9 +199,174 @@ function HtmlEmbedSection({ embed }) {
   );
 }
 
+function PreHeroEmbedSection({ embed }) {
+  const imageUrl = String(embed.imageUrl ?? '').trim();
+  const splitMode = normalizePreHeroMode(embed.preHeroMode) === 'split';
+  const imageOnRight = normalizePreHeroImageSide(embed.preHeroImageSide) === 'right';
+  const title = String(embed.title ?? '').trim();
+  const paragraphs = splitPreHeroParagraphs(embed.body);
+
+  if (!imageUrl) return null;
+
+  if (!splitMode) {
+    return (
+      <section
+        className="border-y border-[#2A342D]/10 custom-embed-section"
+        data-embed-id={embed.id}
+        data-section-type="pre_hero"
+        aria-label={embed.label || title || 'Pre-hero'}
+      >
+        <img
+          src={imageUrl}
+          alt=""
+          className="w-full h-auto max-h-[520px] object-cover object-center"
+        />
+      </section>
+    );
+  }
+
+  const imageBlock = (
+    <div className="relative h-full min-h-[280px] md:min-h-[360px]">
+      <img
+        src={imageUrl}
+        alt=""
+        className={`absolute inset-0 w-full h-full object-cover object-top rounded-xl ${
+          imageOnRight ? 'md:rounded-l-none' : 'md:rounded-r-none'
+        }`}
+      />
+    </div>
+  );
+
+  const textBlock = (
+    <div
+      className={`relative z-10 bg-white rounded-xl shadow-sm border border-[#2A342D]/10 p-6 sm:p-8 flex flex-col justify-center md:my-6 ${
+        imageOnRight
+          ? 'md:rounded-r-none md:-mr-10'
+          : 'md:rounded-l-none md:-ml-10'
+      }`}
+    >
+      {title && (
+        <h2 className="font-serif text-2xl sm:text-3xl text-[#5B7C8E] mb-5 leading-snug">
+          {title}
+        </h2>
+      )}
+      {paragraphs.length > 0 && (
+        <div className="space-y-4 text-sm sm:text-base text-[#2A342D]/75 leading-relaxed">
+          {paragraphs.map((paragraph, index) => (
+            <p key={`${embed.id}-prehero-p-${index}`}>{paragraph}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <section
+      className="border-y border-[#2A342D]/10 custom-embed-section"
+      data-embed-id={embed.id}
+      data-section-type="pre_hero"
+      aria-label={embed.label || title || 'Pre-hero'}
+    >
+      <div className="max-w-5xl mx-auto px-5 py-10 sm:py-14">
+        <div
+          className={`grid gap-6 md:gap-0 items-stretch ${
+            imageOnRight
+              ? 'md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]'
+              : 'md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]'
+          }`}
+        >
+          {imageOnRight ? (
+            <>
+              <div className="min-w-0 flex flex-col justify-center">{textBlock}</div>
+              <div className="min-w-0 h-full min-h-[280px] md:min-h-[360px]">{imageBlock}</div>
+            </>
+          ) : (
+            <>
+              <div className="min-w-0 h-full min-h-[280px] md:min-h-[360px]">{imageBlock}</div>
+              <div className="min-w-0 flex flex-col justify-center">{textBlock}</div>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ServicesEmbedSection({ embed, interactive }) {
+  const items = getVisibleServiceItems(embed.serviceItems);
+  if (items.length === 0) return null;
+
+  return (
+    <SectionShell embed={embed}>
+      <SectionTitle title={embed.title || 'Servicios'} />
+      {embed.body && (
+        <p className="text-sm text-current/60 text-center max-w-2xl mx-auto mb-8 leading-relaxed">
+          {embed.body}
+        </p>
+      )}
+      <ServicesItemsLayout
+        items={items}
+        displayMode={embed.servicesDisplayMode}
+        carouselPerView={embed.servicesCarouselPerView}
+        carouselAutoplay={embed.servicesCarouselAutoplay}
+        interactive={interactive}
+      />
+    </SectionShell>
+  );
+}
+
+function PortfolioSection({ embed, interactive }) {
+  const portfolioUrl = String(embed.portfolioUrl ?? '').trim();
+  const hasCode = Boolean(String(embed.htmlCode ?? '').trim());
+  if (!portfolioUrl && !hasCode) return null;
+
+  const paragraphs = splitSectionParagraphs(embed.body);
+  const buttonLabel = String(embed.ctaButtonLabel ?? '').trim() || 'Ver portafolio completo';
+  const external = /^https?:\/\//i.test(portfolioUrl);
+
+  return (
+    <SectionShell embed={embed}>
+      <SectionTitle title={embed.title || 'Portafolio'} />
+      {paragraphs.length > 0 && (
+        <div className="max-w-2xl mx-auto space-y-3 text-sm text-current/70 leading-relaxed text-center mb-8">
+          {paragraphs.map((paragraph, index) => (
+            <p key={`${embed.id}-portfolio-p-${index}`}>{paragraph}</p>
+          ))}
+        </div>
+      )}
+      {hasCode && (
+        <div className="mb-8">
+          <EmbedHtml embed={embed} />
+        </div>
+      )}
+      {portfolioUrl && (
+        <div className="text-center">
+          {interactive ? (
+            <a
+              href={portfolioUrl}
+              {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              onClick={() => trackCtaClick('portfolio_external')}
+              className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors"
+            >
+              {buttonLabel}
+            </a>
+          ) : (
+            <span className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
+              {buttonLabel}
+            </span>
+          )}
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
 export default function CustomEmbedBlock({ embed, interactive = true }) {
   const type = normalizeSectionType(embed?.type);
 
+  if (type === 'pre_hero') return <PreHeroEmbedSection embed={embed} />;
+  if (type === 'services') return <ServicesEmbedSection embed={embed} interactive={interactive} />;
+  if (type === 'portfolio') return <PortfolioSection embed={embed} interactive={interactive} />;
   if (type === 'faq') return <FaqSection embed={embed} />;
   if (type === 'steps') return <StepsSection embed={embed} />;
   if (type === 'text') return <TextSection embed={embed} />;

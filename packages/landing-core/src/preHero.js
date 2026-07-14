@@ -14,6 +14,10 @@ export function shouldShowPreHero(data) {
   return true;
 }
 
+export function normalizePreHeroImageSide(value) {
+  return value === 'right' ? 'right' : 'left';
+}
+
 export function splitPreHeroParagraphs(text) {
   return String(text ?? '')
     .split(/\n+/)

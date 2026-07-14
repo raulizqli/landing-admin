@@ -3,7 +3,7 @@ export { default as LandingMainContent } from './LandingMainContent.jsx';
 export { default as Navbar } from './Navbar.jsx';
 export { default as HeroCarousel } from './HeroCarousel.jsx';
 export { default as PreHeroSection } from './PreHeroSection.jsx';
-export { default as ServicesSection } from './ServicesSection.jsx';
+export { default as ServicesSection, ServiceCard, ServicesItemsLayout } from './ServicesSection.jsx';
 export { default as CatalogSection } from './CatalogSection.jsx';
 export { default as GallerySection } from './GallerySection.jsx';
 export { default as VideoSection } from './VideoSection.jsx';

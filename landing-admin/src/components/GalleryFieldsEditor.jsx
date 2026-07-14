@@ -85,6 +85,32 @@ export default function GalleryFieldsEditor({ formData, onChange, pageId, canTog
             />
           </div>
 
+          <div className="rounded-lg border border-dashed border-gray-200 bg-white/70 p-3 space-y-3">
+            <p className="text-[10px] text-gray-500 leading-snug">
+              Portafolio externo (opcional): CTA debajo de la galería curada hacia Pixieset, SmugMug, Format u otro sitio.
+            </p>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">URL del portafolio completo</label>
+              <input
+                type="url"
+                value={formData.galleryPortfolioUrl || ''}
+                onChange={(e) => onChange({ ...formData, galleryPortfolioUrl: e.target.value })}
+                placeholder="https://cliente.pixieset.com/..."
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto del botón (opcional)</label>
+              <input
+                type="text"
+                value={formData.galleryPortfolioLabel || ''}
+                onChange={(e) => onChange({ ...formData, galleryPortfolioLabel: e.target.value })}
+                placeholder="Ver portafolio completo"
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-gray-400">Sube o pega URLs. Puedes reordenar las fotos.</p>
             <button

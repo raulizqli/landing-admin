@@ -43,6 +43,7 @@
     "./pageLoadErrors": "./src/pageLoadErrors.js",
     "./pageModel": "./src/pageModel.js",
     "./legalDocuments": "./src/legalDocuments.js",
-    "./externalFirebase": "./src/externalFirebase.js"
+    "./externalFirebase": "./src/externalFirebase.js",
+    "./hostingDeploy": "./src/hostingDeploy.js"
   }
 }

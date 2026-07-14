@@ -29,6 +29,10 @@ export function shouldShowGallerySection(data) {
   return getVisibleGalleryItems(data).length > 0;
 }
 
+export function getGalleryPortfolioUrl(data) {
+  return String(data?.galleryPortfolioUrl ?? '').trim();
+}
+
 export function splitGallerySectionText(text) {
   return String(text ?? '')
     .split(/\n+/)

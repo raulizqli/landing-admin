@@ -1,5 +1,6 @@
 
 import { hasValidFirebaseConfig, normalizeFirebaseConfig } from './firebaseConfig.js';
+import { getHostingDeployRoutingFields } from './hostingDeploy.js';
 
 export const EMPTY_EXTERNAL_FIREBASE = {
   apiKey: '',
@@ -25,6 +26,7 @@ export function getHubRoutingFields(pageData = {}) {
     customDomain: pageData.customDomain || '',
     useExternalFirebase: pageData.useExternalFirebase === true,
     externalFirebase: normalizeExternalFirebase(pageData.externalFirebase),
+    ...getHostingDeployRoutingFields(pageData),
   };
 }
 

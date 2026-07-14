@@ -13,7 +13,7 @@ export const LABEL_CATALOGS = {
     'placeholders.psychologistName': 'Nombre del profesional',
     'placeholders.specialty': 'Especialidad',
     'placeholders.aboutTagline': 'Una propuesta clara, cercana y profesional.',
-    'placeholders.aboutBio': 'Biografía profesional.',
+    'placeholders.aboutBio': 'Texto descriptivo de la sección.',
     'hero.carouselAria': 'Carrusel principal',
     'hero.contact': 'Contactar',
     'hero.learnMore': 'Conocer más',
@@ -33,6 +33,10 @@ export const LABEL_CATALOGS = {
     'social.subtitle': 'Sígueme y conecta conmigo en mis canales.',
     'services.defaultTitle': 'Servicios',
     'services.defaultIntro': 'Lo que ofrecemos y cómo podemos ayudarte.',
+    'services.carouselPrevious': 'Anterior',
+    'services.carouselNext': 'Siguiente',
+    'services.viewMore': 'Ver más',
+    'services.viewLess': 'Ver menos',
     'catalog.defaultTitle': 'Catálogo',
     'catalog.defaultIntro': 'Explora opciones disponibles y encuentra la que mejor se adapte a ti.',
     'catalog.noImage': 'Sin imagen',
@@ -42,6 +46,7 @@ export const LABEL_CATALOGS = {
     'gallery.defaultIntro': 'Un vistazo al espacio y al trabajo.',
     'gallery.imageAlt': 'Imagen de la galería',
     'gallery.close': 'Cerrar imagen',
+    'gallery.viewPortfolio': 'Ver portafolio completo',
     'testimonials.defaultTitle': 'Testimonios',
     'testimonials.subtitle': 'Experiencias compartidas por clientes.',
     'blog.defaultTitle': 'Blog',
@@ -63,7 +68,7 @@ export const LABEL_CATALOGS = {
     'placeholders.psychologistName': 'Professional name',
     'placeholders.specialty': 'Specialty',
     'placeholders.aboutTagline': 'A clear, approachable, and professional offer.',
-    'placeholders.aboutBio': 'Professional biography.',
+    'placeholders.aboutBio': 'Descriptive section text.',
     'hero.carouselAria': 'Main carousel',
     'hero.contact': 'Contact',
     'hero.learnMore': 'Learn more',
@@ -83,6 +88,10 @@ export const LABEL_CATALOGS = {
     'social.subtitle': 'Follow and connect with me on my channels.',
     'services.defaultTitle': 'Services',
     'services.defaultIntro': 'What we offer and how we can help.',
+    'services.carouselPrevious': 'Previous',
+    'services.carouselNext': 'Next',
+    'services.viewMore': 'View more',
+    'services.viewLess': 'View less',
     'catalog.defaultTitle': 'Catalog',
     'catalog.defaultIntro': 'Explore available options and find what fits you best.',
     'catalog.noImage': 'No image',
@@ -92,6 +101,7 @@ export const LABEL_CATALOGS = {
     'gallery.defaultIntro': 'A glimpse of the space and the work.',
     'gallery.imageAlt': 'Gallery image',
     'gallery.close': 'Close image',
+    'gallery.viewPortfolio': 'View full portfolio',
     'testimonials.defaultTitle': 'Testimonials',
     'testimonials.subtitle': 'Experiences shared by clients.',
     'blog.defaultTitle': 'Blog',
@@ -138,7 +148,14 @@ export const LABEL_GROUPS = [
   {
     id: 'services',
     title: 'Etiquetas de servicios',
-    keys: ['services.defaultTitle', 'services.defaultIntro'],
+    keys: [
+      'services.defaultTitle',
+      'services.defaultIntro',
+      'services.carouselPrevious',
+      'services.carouselNext',
+      'services.viewMore',
+      'services.viewLess',
+    ],
   },
   {
     id: 'catalog',
@@ -159,6 +176,7 @@ export const LABEL_GROUPS = [
       'gallery.defaultIntro',
       'gallery.imageAlt',
       'gallery.close',
+      'gallery.viewPortfolio',
     ],
   },
   {
@@ -214,8 +232,8 @@ export const LABEL_ADMIN_NAMES = {
   'nav.menuVideo': 'Ítem menú video',
   'placeholders.psychologistName': 'Nombre (respaldo)',
   'placeholders.specialty': 'Especialidad (respaldo)',
-  'placeholders.aboutTagline': 'Frase sobre mí (respaldo)',
-  'placeholders.aboutBio': 'Biografía (respaldo)',
+  'placeholders.aboutTagline': 'Frase / destacado (respaldo)',
+  'placeholders.aboutBio': 'Texto descriptivo (respaldo)',
   'hero.carouselAria': 'Aria carrusel',
   'hero.contact': 'Botón contactar',
   'hero.learnMore': 'Botón conocer más',
@@ -235,6 +253,10 @@ export const LABEL_ADMIN_NAMES = {
   'social.subtitle': 'Subtítulo redes',
   'services.defaultTitle': 'Título servicios (por defecto)',
   'services.defaultIntro': 'Intro servicios (por defecto)',
+  'services.carouselPrevious': 'Botón anterior (carrusel servicios)',
+  'services.carouselNext': 'Botón siguiente (carrusel servicios)',
+  'services.viewMore': 'Ver más (descripción servicio)',
+  'services.viewLess': 'Ver menos (descripción servicio)',
   'catalog.defaultTitle': 'Título catálogo (por defecto)',
   'catalog.defaultIntro': 'Intro catálogo (por defecto)',
   'catalog.noImage': 'Sin imagen',
@@ -244,6 +266,7 @@ export const LABEL_ADMIN_NAMES = {
   'gallery.defaultIntro': 'Intro galería (por defecto)',
   'gallery.imageAlt': 'Alt imagen galería',
   'gallery.close': 'Cerrar imagen',
+  'gallery.viewPortfolio': 'Botón ver portafolio',
   'testimonials.defaultTitle': 'Título testimonios (por defecto)',
   'testimonials.subtitle': 'Subtítulo testimonios',
   'blog.defaultTitle': 'Título blog (por defecto)',
@@ -342,25 +365,35 @@ export function getDefaultLabelForPage(page = {}, key) {
 }
 
 export function getCustomLabelValue(customLabels, language, key) {
-  const normalized = normalizeCustomLabels(customLabels);
   const lang = normalizeLabelLanguage(language);
-  return normalized[lang]?.[key] ?? '';
+  if (!customLabels || typeof customLabels !== 'object') return '';
+  if (isFlatCustomLabels(customLabels)) {
+    return customLabels[key] ?? '';
+  }
+  return customLabels[lang]?.[key] ?? '';
 }
 
 export function setCustomLabelValue(customLabels, language, key, value) {
-  const normalized = normalizeCustomLabels(customLabels);
   const lang = normalizeLabelLanguage(language);
-  const trimmed = String(value ?? '').trim();
-  const nextBucket = { ...normalized[lang] };
+  const base = customLabels && typeof customLabels === 'object' && !isFlatCustomLabels(customLabels)
+    ? customLabels
+    : {
+      es: isFlatCustomLabels(customLabels) ? { ...customLabels } : {},
+      en: {},
+    };
+  const nextValue = String(value ?? '');
+  const nextBucket = { ...(base[lang] || {}) };
 
-  if (trimmed) {
-    nextBucket[key] = trimmed;
-  } else {
+  // Keep spaces while typing; only clear when the field is empty.
+  if (nextValue.length === 0) {
     delete nextBucket[key];
+  } else {
+    nextBucket[key] = nextValue;
   }
 
   return {
-    ...normalized,
+    es: { ...(base.es || {}) },
+    en: { ...(base.en || {}) },
     [lang]: nextBucket,
   };
 }

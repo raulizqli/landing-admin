@@ -43,6 +43,15 @@ function mergeLockedCustomEmbeds(draftEmbeds, baselineEmbeds) {
       ctaButtonUrl: draft.ctaButtonUrl,
       faqItems: draft.faqItems,
       steps: draft.steps,
+      imageUrl: draft.imageUrl,
+      preHeroMode: draft.preHeroMode,
+      preHeroImageSide: draft.preHeroImageSide,
+      serviceItems: draft.serviceItems,
+      servicesDisplayMode: draft.servicesDisplayMode,
+      servicesCarouselPerView: draft.servicesCarouselPerView,
+      servicesCarouselAutoplay: draft.servicesCarouselAutoplay,
+      portfolioUrl: draft.portfolioUrl,
+      portfolioProvider: draft.portfolioProvider,
     };
   });
 }

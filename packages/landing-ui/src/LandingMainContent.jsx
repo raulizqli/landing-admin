@@ -23,6 +23,7 @@ import {
 export default function LandingMainContent({ data, specialty, interactive = true }) {
   const labels = resolvePageLabels(data);
   const aboutTagline = data.aboutTagline || getLabel(labels, 'placeholders.aboutTagline');
+  const showAboutBio = data.aboutBioEnabled !== false;
   const aboutBio = data.aboutBio || getLabel(labels, 'placeholders.aboutBio');
   const aboutStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'about'), { sectionKey: 'about' });
   const showHero = isHeroSectionEnabled(data);
@@ -49,13 +50,21 @@ export default function LandingMainContent({ data, specialty, interactive = true
               <h2 className="font-serif text-2xl sm:text-3xl text-current mb-8 sm:mb-10 text-center md:text-left">
                 {getLabel(labels, 'about.title')}
               </h2>
-              <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-start">
+              <div
+                className={
+                  showAboutBio
+                    ? 'grid md:grid-cols-2 gap-10 md:gap-16 items-start'
+                    : 'max-w-2xl'
+                }
+              >
                 <blockquote className="border-l-2 border-[#4A5D4E] pl-5 italic text-current/80 text-base sm:text-lg leading-relaxed">
                   &ldquo;{aboutTagline}&rdquo;
                 </blockquote>
-                <div className="text-sm sm:text-base text-current/70 leading-relaxed">
-                  <p>{aboutBio}</p>
-                </div>
+                {showAboutBio && (
+                  <div className="text-sm sm:text-base text-current/70 leading-relaxed whitespace-pre-wrap">
+                    <p>{aboutBio}</p>
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -63,7 +72,7 @@ export default function LandingMainContent({ data, specialty, interactive = true
         </>
       )}
 
-      <ServicesSection data={data} />
+      <ServicesSection data={data} interactive={interactive} />
       <CustomEmbedSlot data={data} placement="after_services" interactive={interactive} />
 
       <CatalogSection data={data} interactive={interactive} />

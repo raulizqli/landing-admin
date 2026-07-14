@@ -65,6 +65,30 @@ export default function PreHeroFieldsEditor({ formData, onChange, pageId, canTog
 
           {splitMode && (
             <>
+              <fieldset className="space-y-2">
+                <legend className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Posición de la imagen</legend>
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <input
+                    type="radio"
+                    name="pre-hero-image-side"
+                    checked={(formData.preHeroImageSide || 'left') !== 'right'}
+                    onChange={() => onChange({ ...formData, preHeroImageSide: 'left' })}
+                    className="border-gray-300"
+                  />
+                  Imagen a la izquierda
+                </label>
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <input
+                    type="radio"
+                    name="pre-hero-image-side"
+                    checked={formData.preHeroImageSide === 'right'}
+                    onChange={() => onChange({ ...formData, preHeroImageSide: 'right' })}
+                    className="border-gray-300"
+                  />
+                  Imagen a la derecha
+                </label>
+              </fieldset>
+
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold text-gray-400 uppercase">Título</label>
                 <input

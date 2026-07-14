@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import {
+  getGalleryPortfolioUrl,
   getVisibleGalleryItems,
   shouldShowGallerySection,
   splitGallerySectionText,
@@ -8,6 +9,7 @@ import {
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
+import { trackCtaClick } from './trackInteraction.js';
 
 export default function GallerySection({ data, interactive = true }) {
   if (!shouldShowGallerySection(data)) return null;
@@ -16,6 +18,9 @@ export default function GallerySection({ data, interactive = true }) {
   const items = getVisibleGalleryItems(data);
   const sectionTitle = String(data.gallerySectionTitle ?? '').trim() || getLabel(labels, 'gallery.defaultTitle');
   const introParagraphs = splitGallerySectionText(data.gallerySectionText);
+  const portfolioUrl = getGalleryPortfolioUrl(data);
+  const portfolioLabel = String(data.galleryPortfolioLabel ?? '').trim()
+    || getLabel(labels, 'gallery.viewPortfolio');
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'gallery'), { sectionKey: 'gallery' });
   const [activeIndex, setActiveIndex] = useState(null);
 
@@ -35,6 +40,7 @@ export default function GallerySection({ data, interactive = true }) {
   }, [activeIndex, interactive, items.length]);
 
   const activeItem = activeIndex !== null ? items[activeIndex] : null;
+  const portfolioExternal = /^https?:\/\//i.test(portfolioUrl);
 
   return (
     <section id={SECTION_IDS.gallery} className="border-y border-[#2A342D]/10" style={sectionStyle}>
@@ -84,6 +90,25 @@ export default function GallerySection({ data, interactive = true }) {
             );
           })}
         </div>
+
+        {portfolioUrl && (
+          <div className="mt-10 sm:mt-12 text-center">
+            {interactive ? (
+              <a
+                href={portfolioUrl}
+                {...(portfolioExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                onClick={() => trackCtaClick('gallery_portfolio')}
+                className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors"
+              >
+                {portfolioLabel}
+              </a>
+            ) : (
+              <span className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
+                {portfolioLabel}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {interactive && activeItem && (
