@@ -66,6 +66,11 @@ export function canAccessHostingSettings(profile) {
   return role === ROLES.ROOT || role === ROLES.ADMIN;
 }
 
+/** Only root can enable/disable sections or add/remove custom blocks. */
+export function canManagePageLayout(profile) {
+  return normalizeRole(profile?.role) === ROLES.ROOT;
+}
+
 export function getRoleLabel(role) {
   switch (normalizeRole(role)) {
     case ROLES.ROOT:

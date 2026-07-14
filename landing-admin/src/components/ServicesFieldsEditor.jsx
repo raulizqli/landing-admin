@@ -2,7 +2,7 @@ import { createEmptyService } from '../utils/services';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 
-export default function ServicesFieldsEditor({ formData, onChange, pageId }) {
+export default function ServicesFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
   const enabled = Boolean(formData.servicesSectionEnabled);
   const items = Array.isArray(formData.services) && formData.services.length > 0
     ? formData.services
@@ -34,15 +34,17 @@ export default function ServicesFieldsEditor({ formData, onChange, pageId }) {
         <label className="block text-[11px] font-bold text-gray-400 uppercase">
           Servicios y temas
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => onChange({ ...formData, servicesSectionEnabled: e.target.checked })}
-            className="rounded border-gray-300"
-          />
-          Mostrar sección
-        </label>
+        {canToggleSection && (
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => onChange({ ...formData, servicesSectionEnabled: e.target.checked })}
+              className="rounded border-gray-300"
+            />
+            Mostrar sección
+          </label>
+        )}
       </div>
 
       {enabled && (

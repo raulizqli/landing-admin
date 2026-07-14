@@ -1,14 +1,24 @@
+
 import {
-  getCatalogLabel,
   getCustomLabelValue,
+  getDefaultLabelForPage,
   LABEL_GROUPS,
   LABEL_ADMIN_NAMES,
   LABEL_LANGUAGES,
   setCustomLabelValue,
 } from '../utils/labels';
 
-export default function LabelsFieldsEditor({ formData, onChange }) {
+export default function LabelsFieldsEditor({
+  formData,
+  onChange,
+  groupIds = null,
+  showLanguagePicker = true,
+  compact = false,
+}) {
   const language = formData.labelLanguage === 'en' ? 'en' : 'es';
+  const groups = Array.isArray(groupIds)
+    ? LABEL_GROUPS.filter((group) => groupIds.includes(group.id))
+    : LABEL_GROUPS;
 
   const handleLanguageChange = (nextLanguage) => {
     onChange({
@@ -28,40 +38,54 @@ export default function LabelsFieldsEditor({ formData, onChange }) {
     handleLabelChange(key, '');
   };
 
-  return (
-    <div className="space-y-4 pt-2 border-t">
-      <div>
-        <label className="block text-[11px] font-bold text-gray-400 uppercase">
-          Idioma de etiquetas (landing pública)
-        </label>
-        <p className="text-[10px] text-gray-400 mt-1 mb-2">
-          Define el idioma base de botones, títulos fijos y mensajes. Puedes personalizar cada etiqueta por idioma.
-        </p>
-        <div className="flex gap-2">
-          {LABEL_LANGUAGES.map((lang) => (
-            <button
-              key={lang}
-              type="button"
-              onClick={() => handleLanguageChange(lang)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                language === lang
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {lang === 'es' ? 'Español' : 'English'}
-            </button>
-          ))}
-        </div>
-      </div>
+  if (groups.length === 0 && !showLanguagePicker) return null;
 
-      {LABEL_GROUPS.map((group) => (
-        <div key={group.id} className="space-y-3 rounded-xl border border-gray-200 p-4 bg-gray-50/70">
-          <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">{group.title}</h3>
+  return (
+    <div className={compact ? 'space-y-3' : 'space-y-4'}>
+      {showLanguagePicker && (
+        <div>
+          <label className="block text-[11px] font-bold text-gray-400 uppercase">
+            Idioma de etiquetas (landing pública)
+          </label>
+          <p className="text-[10px] text-gray-400 mt-1 mb-2">
+            Define el idioma base de botones, títulos fijos y mensajes. Puedes personalizar cada etiqueta por idioma.
+          </p>
+          <div className="flex gap-2">
+            {LABEL_LANGUAGES.map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => handleLanguageChange(lang)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                  language === lang
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {lang === 'es' ? 'Español' : 'English'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {groups.map((group) => (
+        <div
+          key={group.id}
+          className={compact
+            ? 'space-y-3'
+            : 'space-y-3 rounded-xl border border-gray-200 p-4 bg-gray-50/70'}
+        >
+          {!compact && (
+            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">{group.title}</h3>
+          )}
+          {compact && (
+            <p className="text-[10px] font-bold text-gray-400 uppercase">{group.title}</p>
+          )}
           <div className="space-y-3">
             {group.keys.map((key) => {
               const customValue = getCustomLabelValue(formData.customLabels, language, key);
-              const defaultValue = getCatalogLabel(language, key);
+              const defaultValue = getDefaultLabelForPage(formData, key);
 
               return (
                 <div key={key} className="space-y-1">

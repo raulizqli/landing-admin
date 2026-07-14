@@ -32,11 +32,15 @@
     "./PreHeroSection": "./src/PreHeroSection.jsx",
     "./ServicesSection": "./src/ServicesSection.jsx",
     "./CatalogSection": "./src/CatalogSection.jsx",
+    "./GallerySection": "./src/GallerySection.jsx",
     "./VideoSection": "./src/VideoSection.jsx",
     "./TestimonialsSection": "./src/TestimonialsSection.jsx",
+    "./BlogSection": "./src/BlogSection.jsx",
     "./ContactSection": "./src/ContactSection.jsx",
     "./SocialSection": "./src/SocialSection.jsx",
     "./CustomEmbedSlot": "./src/CustomEmbedSlot.jsx",
-    "./CustomEmbedBlock": "./src/CustomEmbedBlock.jsx"
+    "./CustomEmbedBlock": "./src/CustomEmbedBlock.jsx",
+    "./FooterLegalLinks": "./src/FooterLegalLinks.jsx",
+    "./LegalDocumentDialog": "./src/LegalDocumentDialog.jsx"
   }
 }

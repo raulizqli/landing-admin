@@ -68,12 +68,32 @@ export default function App() {
   useEffect(() => {
     if (!previewMode) return undefined;
 
+    const scrollToPreviewSection = (sectionId) => {
+      if (!sectionId) return;
+      const escaped = typeof CSS !== 'undefined' && CSS.escape
+        ? CSS.escape(sectionId)
+        : String(sectionId).replace(/"/g, '\\"');
+      const el = document.getElementById(sectionId)
+        || document.querySelector(`[data-preview-section="${escaped}"]`)
+        || (sectionId === 'custom-embeds' ? document.querySelector('.custom-embed-section') : null);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     const handleMessage = (event) => {
       if (!isAllowedPreviewSender(event.origin)) return;
+
+      if (event.data?.type === 'LANDING_PREVIEW_SCROLL') {
+        scrollToPreviewSection(event.data.sectionId);
+        return;
+      }
+
       if (event.data?.type !== 'LANDING_PREVIEW_UPDATE') return;
       setLivePreviewData(event.data.data ?? null);
       setLivePreviewPageId(event.data.pageId ?? null);
       setUsingDemoFallback(false);
+      if (event.data.scrollSectionId) {
+        window.setTimeout(() => scrollToPreviewSection(event.data.scrollSectionId), 100);
+      }
     };
 
     window.addEventListener('message', handleMessage);

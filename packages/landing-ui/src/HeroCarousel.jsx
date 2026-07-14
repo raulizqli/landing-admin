@@ -1,6 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { normalizeHeroSlides } from '@raulizqli/landing-core/heroSlides';
+import {
+  getHeroButtonsOverlayClass,
+  normalizeHeroSlides,
+} from '@raulizqli/landing-core/heroSlides';
 import { resolveHeroVideo } from '@raulizqli/landing-core/heroVideo';
 import { trackCtaClick } from './trackInteraction.js';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
@@ -61,11 +63,48 @@ function HeroSlideBackground({ slide, isActive, fallbackStyle }) {
   );
 }
 
+function HeroButtons({ labels, interactive, className = '' }) {
+  const groupClass = `flex flex-col sm:flex-row items-center justify-center gap-3 ${className}`.trim();
+
+  if (interactive) {
+    return (
+      <div className={groupClass}>
+        <a
+          href={`#${SECTION_IDS.contact}`}
+          onClick={() => trackCtaClick('contact')}
+          className="bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
+        >
+          {getLabel(labels, 'hero.contact')}
+        </a>
+        <a
+          href={`#${SECTION_IDS.about}`}
+          onClick={() => trackCtaClick('learn_more')}
+          className="text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
+        >
+          {getLabel(labels, 'hero.learnMore')}
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className={groupClass}>
+      <span className="bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
+        {getLabel(labels, 'hero.contact')}
+      </span>
+      <span className="text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40">
+        {getLabel(labels, 'hero.learnMore')}
+      </span>
+    </div>
+  );
+}
+
 export default function HeroCarousel({ data, specialty, interactive = true }) {
   const labels = resolvePageLabels(data);
   const slides = normalizeHeroSlides(data);
   const fallbackStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'hero'), { sectionKey: 'hero' });
   const [activeIndex, setActiveIndex] = useState(0);
+  const clearCarouselDots = slides.length > 1;
 
   const goTo = useCallback((index) => {
     setActiveIndex((index + slides.length) % slides.length);
@@ -89,10 +128,17 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
   }, [slides.length, goNext]);
 
   return (
-    <section className="relative overflow-hidden" aria-label={getLabel(labels, 'hero.carouselAria')}>
+    <section
+      id={SECTION_IDS.hero}
+      data-preview-section={SECTION_IDS.hero}
+      className="relative overflow-hidden"
+      aria-label={getLabel(labels, 'hero.carouselAria')}
+    >
       <div className="relative h-[420px] sm:h-[520px]">
         {slides.map((slide, index) => {
           const isActive = index === safeIndex;
+          const overlayClass = getHeroButtonsOverlayClass(slide.buttonsPosition, { clearCarouselDots });
+          const showButtons = isActive && slide.showButtons !== false;
 
           return (
             <div
@@ -101,10 +147,12 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
               aria-hidden={!isActive}
             >
               <HeroSlideBackground slide={slide} isActive={isActive} fallbackStyle={fallbackStyle} />
-              <div className="absolute inset-0 bg-gradient-to-b from-[#2A342D]/50 via-[#2A342D]/35 to-[#2A342D]/55" />
+              {slide.showGradient !== false && (
+                <div className="absolute inset-0 bg-gradient-to-b from-[#2A342D]/50 via-[#2A342D]/35 to-[#2A342D]/55" />
+              )}
 
               <div className="relative z-10 h-full flex flex-col items-center justify-center px-5 text-center">
-                {specialty && (
+                {specialty && data?.showHeroSpecialty === true && (
                   <span className="inline-block text-[11px] sm:text-xs uppercase font-semibold tracking-[0.2em] text-white/90 mb-4">
                     {specialty}
                   </span>
@@ -122,36 +170,14 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
                   </p>
                 )}
 
-                {isActive && slide.showButtons !== false && (
-                  interactive ? (
-                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                      <a
-                        href={`#${SECTION_IDS.contact}`}
-                        onClick={() => trackCtaClick('contact')}
-                        className="bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
-                      >
-                        {getLabel(labels, 'hero.contact')}
-                      </a>
-                      <a
-                        href={`#${SECTION_IDS.about}`}
-                        onClick={() => trackCtaClick('learn_more')}
-                        className="text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
-                      >
-                        {getLabel(labels, 'hero.learnMore')}
-                      </a>
-                    </div>
-                  ) : (
-                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                      <span className="bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
-                        {getLabel(labels, 'hero.contact')}
-                      </span>
-                      <span className="text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40">
-                        {getLabel(labels, 'hero.learnMore')}
-                      </span>
-                    </div>
-                  )
+                {showButtons && !overlayClass && (
+                  <HeroButtons labels={labels} interactive={interactive} className="mt-8" />
                 )}
               </div>
+
+              {showButtons && overlayClass && (
+                <HeroButtons labels={labels} interactive={interactive} className={overlayClass} />
+              )}
             </div>
           );
         })}

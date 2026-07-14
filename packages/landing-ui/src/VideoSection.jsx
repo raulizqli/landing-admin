@@ -43,12 +43,12 @@ export default function VideoSection({ data }) {
         {(title || paragraphs.length > 0) && (
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
             {title && (
-              <h2 className="font-serif text-2xl sm:text-3xl text-[#2A342D] mb-3">
+              <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
                 {title}
               </h2>
             )}
             {paragraphs.length > 0 && (
-              <div className="space-y-3 text-sm sm:text-base text-[#2A342D]/70 leading-relaxed">
+              <div className="space-y-3 text-sm sm:text-base text-current/70 leading-relaxed">
                 {paragraphs.map((paragraph, index) => (
                   <p key={`video-section-p-${index}`}>{paragraph}</p>
                 ))}

@@ -35,6 +35,88 @@ Paginas/{id} en hub (ruta)   + contenido en proyecto Firebase externo (otra cuen
 
 ---
 
+## Cómo funciona `landing-template`
+
+`landing-template` es la **aplicación pública de solo lectura**. No edita datos: al cargar resuelve *qué* landing mostrar, lee **un documento** de Firestore y lo pinta con los componentes compartidos. El contenido viviente está en Firestore; el código del template es el mismo para todas las profesionales.
+
+### Rol en el ecosistema
+
+```
+Admin (5173)                    Template (5174 / Hosting)
+─────────────                   ─────────────────────────
+Edita formData en local    →    (opcional) Espejo / iframe Local
+       │                              │  postMessage en preview
+       ▼                              ▼
+«Guardar y Publicar»           Visitante abre la URL
+       │                              │
+       ▼                              ▼
+Firestore pages/{id}              resolvePageContext → getDoc
+                              normalizePageData → LandingPage
+```
+
+| | Admin | Template |
+|---|---|---|
+| Escritura | Sí | No |
+| Lectura | Lista + documento al editar | Un solo documento al cargar |
+| Qué define el contenido | Formulario → Firestore | Firestore (no el `.env`) |
+| Re-deploy al guardar | No | No: basta con publicar en el admin |
+
+### 1. Resolver el `pageId`
+
+Al arrancar (`landing-template/src/App.jsx` → `resolvePageContext`), elige el documento en este orden:
+
+1. **Query** — `?pageId=maria-garcia` (alias legado `?paginaId=`). Útil en local y en la vista **Local** del admin.
+2. **Dominio** — en producción (no en `localhost`), busca en el hub un documento cuyo `customDomain` coincida con el hostname.
+3. **Variable de build** — `VITE_PAGINA_ID` embebida al hacer `vite build` / `npm run dev`.
+
+Si no hay `pageId`: en **producción** muestra error; en **desarrollo** o con `?preview=true` muestra contenido demo para diseñarlo sin Firestore.
+
+### 2. Leer y normalizar el documento
+
+Con el `pageId` resuelto:
+
+1. Si la ruta indica **Firebase externo** (`useExternalFirebase` + credenciales), lee en ese proyecto; si no, en el **hub**.
+2. Intenta `getDoc` en la colección canónica **`pages`**, y si no existe, en la legado **`paginas`**.
+3. Pasa el resultado por `normalizePageData()` (`@raulizqli/landing-core`) para migrar campos antiguos en español (`nombre` → `name`, etc.).
+
+No hay listados ni listeners: **una lectura** al montar la página.
+
+### 3. Renderizar la landing
+
+El UI sale de `@raulizqli/landing-ui` (`LandingPage`, navbar, hero, secciones…). La lógica de modelo (slides, labels, temas, embeds…) está en `@raulizqli/landing-core`. En el template, muchos archivos de `src/components/` y `src/utils/` son **re-exports** hacia esos paquetes.
+
+### 4. Vista previa desde el admin
+
+| Modo | Qué pasa |
+|------|----------|
+| **Espejo** | El admin renderiza un espejo interno con `formData` (sin tocar el template ni Firestore por tecla). |
+| **Local** | Iframe a `VITE_TEMPLATE_PREVIEW_URL` (dev: `http://localhost:5174`) con `?pageId=…&preview=true`. El admin envía `LANDING_PREVIEW_UPDATE` / `LANDING_PREVIEW_SCROLL` por `postMessage`. |
+
+En preview, el template solo acepta mensajes del origen admin (`localhost` en DEV; `VITE_ADMIN_ORIGIN` en producción). Analytics no se dispara en DEV ni con `?preview=true`.
+
+### 5. Dos formas de desplegarlo
+
+| Modo | Cómo sabe qué landing es | Cuándo usarlo |
+|------|--------------------------|---------------|
+| **Multi-dominio** (recomendado) | Hostname → `customDomain` en Firestore | Un solo Hosting; muchos dominios al mismo sitio |
+| **Por sitio** | `VITE_PAGINA_ID` fijo en cada build | Un sitio Hosting por cliente (`scripts/deploy-client-template.sh`) |
+
+En ambos casos, textos e imágenes siguen en Firestore (o en el Firebase externo del cliente). Cambiar el contenido **no** exige redeploy del template.
+
+### Variables que importan
+
+| Variable | Rol |
+|----------|-----|
+| `VITE_FIREBASE_*` | Conexión al hub (siempre; también para resolver dominios) |
+| `VITE_PAGINA_ID` | Fallback / modo por sitio; en multi-dominio es opcional |
+| `VITE_ENABLE_APP_CHECK` | Opt-in; por defecto **apagado** en el template público |
+| `VITE_ADMIN_ORIGIN` | Origen del admin para aceptar `postMessage` en preview remoto |
+| `VITE_FIREBASE_MEASUREMENT_ID` | GA4 por defecto si el documento no trae `analyticsMeasurementId` |
+
+Detalle de `.env.local` y deploys: [Para qué sirve `landing-template/.env.local`](#para-qué-sirve-landing-templateenvlocal) y [`landing-template/README.md`](landing-template/README.md).
+
+---
+
 ## Desarrollo local
 
 ```bash
@@ -155,7 +237,7 @@ Para `user`, solo `pageId` (una página). Las reglas de Firestore y Storage vali
 | Variable | Obligatoria | Descripción |
 |----------|-------------|-------------|
 | `VITE_FIREBASE_*` | Sí | Mismas credenciales que el admin |
-| `VITE_PAGINA_ID` | Sí | ID del documento en `paginas` (ej. `maria-garcia`) |
+| `VITE_PAGINA_ID` | No* | Fallback del documento a leer (ej. `maria-garcia`). *Obligatorio en modo por-sitio; en multi-dominio suele bastar `customDomain` |
 | `VITE_FIREBASE_MEASUREMENT_ID` | No | ID de medición GA4 (`G-XXXXXXXX`) |
 | `VITE_ADMIN_ORIGIN` | Prod | Origen del admin para `postMessage` en vista previa remota |
 
@@ -168,7 +250,7 @@ El archivo **`.env.local`** es la configuración de **tu máquina** al ejecutar 
 1. Copia la plantilla sin secretos: `cp .env.example .env.local`
 2. Rellena las variables con los mismos valores Firebase que usa `landing-admin`
 3. Pon en `VITE_PAGINA_ID` el slug del documento que quieres ver (ej. `maria-garcia`)
-4. Arranca `npm run dev` → la app hace un `getDoc` a `paginas/{VITE_PAGINA_ID}`
+4. Arranca `npm run dev` → la app resuelve el `pageId` (`?pageId=`, `VITE_PAGINA_ID` o dominio) y hace `getDoc` a `pages/{id}` (o `paginas/{id}` legado)
 
 **Qué hace cada variable en el template:**
 
@@ -188,7 +270,9 @@ El archivo **`.env.local`** es la configuración de **tu máquina** al ejecutar 
 
 El código del template es **el mismo** para todas las webs. La diferencia entre la landing de una oftalmóloga y la de una psicóloga no está en `.env.local` salvo por `VITE_PAGINA_ID`: textos, imágenes, catálogo y secciones viven en **Firestore** y se editan desde el admin.
 
-**Alternativa en dev sin cambiar `.env.local`:** puedes pasar el ID por query string: `http://localhost:5174?pageId=maria-garcia` (útil para la vista previa Local del admin). Si falta `VITE_PAGINA_ID` y no hay `?pageId=`, la app muestra un error de configuración.
+**Alternativa en dev sin cambiar `.env.local`:** pasa el ID por query: `http://localhost:5174?pageId=maria-garcia` (así lo abre la vista previa Local del admin). Si no hay `pageId` ni `VITE_PAGINA_ID`, en desarrollo/`?preview=true` verás contenido demo; en producción sin preview, un error de configuración.
+
+Explicación completa del runtime: [Cómo funciona `landing-template`](#cómo-funciona-landing-template).
 
 **No confundir con:**
 
@@ -208,6 +292,7 @@ Cada documento en la colección **`pages`** representa una landing. La colecció
 |-------|------|-------------|
 | `name` | string | Nombre profesional |
 | `specialty` | string | Especialidad o enfoque |
+| `vertical` | string | Preset de industria (`generic`, `psychology`, `dental`, `veterinary`, `legal`, `medical`, `beauty`, `fitness`, `education`, `ecommerce`). Default `generic`. Ajusta textos por defecto; `customLabels` tiene prioridad. |
 | `aboutTagline` | string | Frase destacada en «Sobre mí» |
 | `aboutBio` | string | Biografía |
 | `location` | string | Ubicación del consultorio |
@@ -251,6 +336,8 @@ Array de diapositivas. Cada elemento:
 | `showTitle` | boolean | Mostrar título en la diapositiva |
 | `showText` | boolean | Mostrar texto en la diapositiva |
 | `showButtons` | boolean | Mostrar CTAs «Contactar» / «Conocer más» |
+| `buttonsPosition` | string | `center` · `top` · `bottom` · `top-left` · `top-right` · `bottom-left` · `bottom-right` |
+| `showGradient` | boolean | Mostrar velo/degradado oscuro sobre la imagen (por defecto `true`) |
 
 Al guardar, el admin sincroniza `heroTitle` y `heroSubtitle` desde la primera diapositiva (compatibilidad con datos antiguos).
 

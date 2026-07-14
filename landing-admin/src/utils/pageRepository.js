@@ -56,7 +56,7 @@ export async function savePageFromEditor(pageId, formData) {
   return { migratedToExternal: false };
 }
 
-export async function createPageInHub({ pageId, name = '', specialty = '' }) {
+export async function createPageInHub({ pageId, name = '', specialty = '', vertical = 'generic' }) {
   const id = String(pageId ?? '').trim();
   if (!id) {
     throw new Error('Falta el ID de la página.');
@@ -71,6 +71,7 @@ export async function createPageInHub({ pageId, name = '', specialty = '' }) {
   const initial = hydratePageForm({
     name: String(name ?? '').trim(),
     specialty: String(specialty ?? '').trim(),
+    vertical,
     useExternalFirebase: false,
   });
   delete initial.id;

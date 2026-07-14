@@ -77,10 +77,10 @@ export default function SocialSection({ data, interactive = true }) {
   return (
     <section id={SECTION_IDS.social} className="border-t border-[#2A342D]/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-16 text-center">
-        <h2 className="font-serif text-2xl sm:text-3xl text-[#2A342D] mb-3">
+        <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
           {getLabel(labels, 'social.title')}
         </h2>
-        <p className="text-sm text-[#2A342D]/60 max-w-md mx-auto mb-8">
+        <p className="text-sm text-current/60 max-w-md mx-auto mb-8">
           {getLabel(labels, 'social.subtitle')}
         </p>
 

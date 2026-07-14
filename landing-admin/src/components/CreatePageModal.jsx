@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import { isValidPageId, slugifyPageId } from '../utils/pageId';
+import {
+  DEFAULT_VERTICAL,
+  VERTICALS,
+  getVerticalDefaultSpecialty,
+  normalizeVertical,
+} from '@raulizqli/landing-core/verticals';
 
 export default function CreatePageModal({ open, onClose, onCreate, creating = false }) {
   const [name, setName] = useState('');
   const [pageId, setPageId] = useState('');
   const [specialty, setSpecialty] = useState('');
+  const [vertical, setVertical] = useState(DEFAULT_VERTICAL);
   const [idTouched, setIdTouched] = useState(false);
+  const [specialtyTouched, setSpecialtyTouched] = useState(false);
   const [error, setError] = useState('');
 
   if (!open) return null;
@@ -14,7 +22,9 @@ export default function CreatePageModal({ open, onClose, onCreate, creating = fa
     setName('');
     setPageId('');
     setSpecialty('');
+    setVertical(DEFAULT_VERTICAL);
     setIdTouched(false);
+    setSpecialtyTouched(false);
     setError('');
   };
 
@@ -28,6 +38,14 @@ export default function CreatePageModal({ open, onClose, onCreate, creating = fa
     setName(value);
     if (!idTouched) {
       setPageId(slugifyPageId(value));
+    }
+  };
+
+  const handleVerticalChange = (nextVertical) => {
+    const id = normalizeVertical(nextVertical);
+    setVertical(id);
+    if (!specialtyTouched) {
+      setSpecialty(getVerticalDefaultSpecialty(id, 'es'));
     }
   };
 
@@ -46,7 +64,12 @@ export default function CreatePageModal({ open, onClose, onCreate, creating = fa
     }
 
     try {
-      await onCreate({ pageId: id, name: name.trim(), specialty: specialty.trim() });
+      await onCreate({
+        pageId: id,
+        name: name.trim(),
+        specialty: specialty.trim(),
+        vertical: normalizeVertical(vertical),
+      });
       reset();
     } catch (err) {
       setError(err?.message || 'No se pudo crear la landing.');
@@ -55,12 +78,12 @@ export default function CreatePageModal({ open, onClose, onCreate, creating = fa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200">
-        <div className="flex items-center justify-between border-b px-5 py-4">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-gray-200">
+        <div className="flex items-center justify-between border-b px-5 py-4 sticky top-0 bg-white z-10">
           <div>
             <h2 className="text-sm font-bold text-gray-900">Nueva landing</h2>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              Se guarda en el proyecto hub. Más adelante puedes migrarla a la cuenta Firebase del cliente.
+              Elige el tipo de negocio para aplicar textos por defecto. Luego puedes personalizarlos.
             </p>
           </div>
           <button
@@ -75,6 +98,32 @@ export default function CreatePageModal({ open, onClose, onCreate, creating = fa
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <fieldset className="space-y-2">
+            <legend className="block text-[10px] font-bold text-gray-400 uppercase">Tipo de negocio</legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {VERTICALS.map((item) => {
+                const selected = vertical === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleVerticalChange(item.id)}
+                    className={`text-left rounded-xl border px-3 py-2.5 transition ${
+                      selected
+                        ? 'border-[#4A5D4E] bg-[#4A5D4E]/8 ring-1 ring-[#4A5D4E]/30'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <p className={`text-xs font-semibold ${selected ? 'text-[#2A342D]' : 'text-gray-800'}`}>
+                      {item.label.es}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">{item.description.es}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
           <div className="space-y-1.5">
             <label className="block text-[10px] font-bold text-gray-400 uppercase">Nombre profesional</label>
             <input
@@ -113,8 +162,11 @@ export default function CreatePageModal({ open, onClose, onCreate, creating = fa
             <input
               type="text"
               value={specialty}
-              onChange={(e) => setSpecialty(e.target.value)}
-              placeholder="Psicología clínica"
+              onChange={(e) => {
+                setSpecialtyTouched(true);
+                setSpecialty(e.target.value);
+              }}
+              placeholder={getVerticalDefaultSpecialty(vertical, 'es') || 'Ej. consultoría, clínica, despacho'}
               className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>
@@ -128,16 +180,16 @@ export default function CreatePageModal({ open, onClose, onCreate, creating = fa
               type="button"
               onClick={handleClose}
               disabled={creating}
-              className="px-3 py-2 text-xs rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              className="px-4 py-2 text-xs rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-60"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={creating}
-              className="px-3 py-2 text-xs rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50"
+              className="px-4 py-2 text-xs rounded-lg bg-[#4A5D4E] text-white font-semibold hover:bg-[#3d4d41] disabled:opacity-60"
             >
-              {creating ? 'Creando...' : 'Crear y abrir'}
+              {creating ? 'Creando...' : 'Crear landing'}
             </button>
           </div>
         </form>

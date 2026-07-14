@@ -2,6 +2,7 @@
 import { shouldShowPreHero, splitPreHeroParagraphs } from '@raulizqli/landing-core/preHero';
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
+import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 
 export default function PreHeroSection({ data }) {
   if (!shouldShowPreHero(data)) return null;
@@ -16,7 +17,13 @@ export default function PreHeroSection({ data }) {
 
   if (!splitMode) {
     return (
-      <section className="border-b border-[#2A342D]/10" style={sectionStyle} aria-label={getLabel(labels, 'preHero.ariaLabel')}>
+      <section
+        id={SECTION_IDS.preHero}
+        data-preview-section={SECTION_IDS.preHero}
+        className="border-b border-[#2A342D]/10"
+        style={sectionStyle}
+        aria-label={getLabel(labels, 'preHero.ariaLabel')}
+      >
         <img
           src={imageUrl}
           alt=""
@@ -27,7 +34,13 @@ export default function PreHeroSection({ data }) {
   }
 
   return (
-    <section className="border-b border-[#2A342D]/10" style={sectionStyle} aria-label={getLabel(labels, 'preHero.ariaLabel')}>
+    <section
+      id={SECTION_IDS.preHero}
+      data-preview-section={SECTION_IDS.preHero}
+      className="border-b border-[#2A342D]/10"
+      style={sectionStyle}
+      aria-label={getLabel(labels, 'preHero.ariaLabel')}
+    >
       <div className="max-w-5xl mx-auto px-5 py-10 sm:py-14">
         <div className="grid md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-6 md:gap-0 items-stretch">
           <div className="relative min-h-[280px] md:min-h-[360px]">

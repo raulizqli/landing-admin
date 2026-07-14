@@ -1,20 +1,38 @@
+
 import {
   BRAND_COLOR_PRESETS,
   GRADIENT_DIRECTIONS,
+  TEXT_COLOR_PRESETS,
   getSectionTheme,
+  parseColorToHex,
   updateSectionThemeInForm,
 } from '../utils/sectionBackground';
 
-function ColorField({ label, value, onChange }) {
-  const safeValue = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#F4F1EA';
+export function ColorField({ label, value, onChange, presets = BRAND_COLOR_PRESETS }) {
+  const hexValue = parseColorToHex(value, '#F4F1EA');
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <label className="block text-[10px] font-bold text-gray-400 uppercase">{label}</label>
+      <div className="flex flex-wrap gap-1.5">
+        {presets.map((preset) => (
+          <button
+            key={`${label}-${preset.value}`}
+            type="button"
+            title={preset.label}
+            onClick={() => onChange(preset.value)}
+            className={`h-6 w-6 rounded-full border-2 transition ${
+              hexValue === preset.value ? 'border-indigo-500 scale-110' : 'border-white shadow-sm'
+            }`}
+            style={{ backgroundColor: preset.value }}
+            aria-label={preset.label}
+          />
+        ))}
+      </div>
       <div className="flex items-center gap-2">
         <input
           type="color"
-          value={safeValue}
+          value={hexValue}
           onChange={(e) => onChange(e.target.value.toUpperCase())}
           className="h-8 w-10 rounded border border-gray-200 cursor-pointer shrink-0"
         />
@@ -22,17 +40,26 @@ function ColorField({ label, value, onChange }) {
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="#F4F1EA"
-          className="flex-1 border p-2 text-xs rounded-lg font-mono uppercase"
+          onBlur={() => onChange(parseColorToHex(value, hexValue))}
+          onPaste={(e) => {
+            const pasted = e.clipboardData?.getData('text');
+            if (!pasted) return;
+            e.preventDefault();
+            onChange(parseColorToHex(pasted, hexValue));
+          }}
+          placeholder="#F4F1EA o rgb(244, 241, 234)"
+          className="flex-1 border p-2 text-xs rounded-lg font-mono"
+          spellCheck={false}
         />
       </div>
+      <p className="text-[10px] text-gray-400">Pega un hex (#RGB / #RRGGBB) o rgb()/rgba().</p>
     </div>
   );
 }
 
 export default function SectionBackgroundEditor({
   sectionKey,
-  label = 'Fondo de sección',
+  label = 'Apariencia de sección',
   formData,
   onChange,
   showOpacity = false,
@@ -47,26 +74,18 @@ export default function SectionBackgroundEditor({
     <fieldset className="space-y-3 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
       <legend className="px-1 text-[10px] font-bold text-gray-400 uppercase">{label}</legend>
 
-      <div className="flex flex-wrap gap-1.5">
-        {BRAND_COLOR_PRESETS.map((preset) => (
-          <button
-            key={`${sectionKey}-${preset.value}`}
-            type="button"
-            title={preset.label}
-            onClick={() => updateTheme({ backgroundColor: preset.value })}
-            className={`h-6 w-6 rounded-full border-2 transition ${
-              theme.backgroundColor === preset.value ? 'border-indigo-500 scale-110' : 'border-white shadow-sm'
-            }`}
-            style={{ backgroundColor: preset.value }}
-            aria-label={preset.label}
-          />
-        ))}
-      </div>
-
       <ColorField
         label="Color de fondo"
         value={theme.backgroundColor}
         onChange={(backgroundColor) => updateTheme({ backgroundColor })}
+        presets={BRAND_COLOR_PRESETS}
+      />
+
+      <ColorField
+        label="Color de texto"
+        value={theme.textColor}
+        onChange={(textColor) => updateTheme({ textColor })}
+        presets={TEXT_COLOR_PRESETS}
       />
 
       <label className="flex items-center gap-2 text-xs text-gray-600">
@@ -85,6 +104,7 @@ export default function SectionBackgroundEditor({
             label="Segundo color"
             value={theme.gradientColor}
             onChange={(gradientColor) => updateTheme({ gradientColor })}
+            presets={BRAND_COLOR_PRESETS}
           />
 
           <div className="space-y-1">
@@ -118,7 +138,7 @@ export default function SectionBackgroundEditor({
             onChange={(e) => updateTheme({ backgroundOpacity: Number(e.target.value) })}
             className="w-full"
           />
-          <p className="text-[10px] text-gray-500">
+          <p className="text-[10px] text-gray-400">
             0% = totalmente transparente (solo blur). 100% = opaco.
           </p>
         </div>

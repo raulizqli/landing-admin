@@ -20,15 +20,20 @@
     "./firebaseConfig": "./src/firebaseConfig.js",
     "./hostname": "./src/hostname.js",
     "./labels": "./src/labels.js",
+    "./verticals": "./src/verticals.js",
     "./phone": "./src/phone.js",
     "./bookingCta": "./src/bookingCta.js",
     "./customEmbeds": "./src/customEmbeds.js",
     "./sectionAnchors": "./src/sectionAnchors.js",
+    "./sectionVisibility": "./src/sectionVisibility.js",
+    "./navDisplay": "./src/navDisplay.js",
     "./sectionBackground": "./src/sectionBackground.js",
     "./previewContent": "./src/previewContent.js",
     "./catalog": "./src/catalog.js",
+    "./gallery": "./src/gallery.js",
     "./services": "./src/services.js",
     "./testimonials": "./src/testimonials.js",
+    "./blog": "./src/blog.js",
     "./videoSection": "./src/videoSection.js",
     "./heroVideo": "./src/heroVideo.js",
     "./heroSlides": "./src/heroSlides.js",
@@ -37,6 +42,7 @@
     "./socialLinks": "./src/socialLinks.js",
     "./pageLoadErrors": "./src/pageLoadErrors.js",
     "./pageModel": "./src/pageModel.js",
+    "./legalDocuments": "./src/legalDocuments.js",
     "./externalFirebase": "./src/externalFirebase.js"
   }
 }

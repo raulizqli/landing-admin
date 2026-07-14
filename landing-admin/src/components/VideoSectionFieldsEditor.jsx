@@ -1,6 +1,6 @@
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 
-export default function VideoSectionFieldsEditor({ formData, onChange }) {
+export default function VideoSectionFieldsEditor({ formData, onChange, canToggleSection = true }) {
   const enabled = Boolean(formData.videoSectionEnabled);
 
   return (
@@ -9,15 +9,17 @@ export default function VideoSectionFieldsEditor({ formData, onChange }) {
         <label className="block text-[11px] font-bold text-gray-400 uppercase">
           Sección de video
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => onChange({ ...formData, videoSectionEnabled: e.target.checked })}
-            className="rounded border-gray-300"
-          />
-          Mostrar sección
-        </label>
+        {canToggleSection && (
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => onChange({ ...formData, videoSectionEnabled: e.target.checked })}
+              className="rounded border-gray-300"
+            />
+            Mostrar sección
+          </label>
+        )}
       </div>
 
       {enabled && (

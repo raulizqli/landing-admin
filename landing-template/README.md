@@ -1,8 +1,11 @@
 # landing-template
 
-Plantilla React + Vite desplegable por cliente. Lee los datos de Firestore (`paginas/{pageId}`) y renderiza la landing.
+Plantilla React + Vite desplegable por cliente. Lee un documento de Firestore (`pages/{pageId}` o legado `paginas/{pageId}`) y renderiza la landing pública.
 
 Puede vivir **dentro del monorepo** `ecosistema-landings` o como **repositorio independiente** (ver [Repositorio standalone](#repositorio-standalone)).
+
+> Cómo resuelve el `pageId`, lee Firestore y se relaciona con el admin:  
+> [**Cómo funciona `landing-template`**](../README.md#cómo-funciona-landing-template) en el README del ecosistema.
 
 ## Desarrollo local (monorepo)
 

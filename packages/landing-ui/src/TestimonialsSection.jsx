@@ -4,10 +4,28 @@ import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 
+/** Initials from the name part of a testimonial title (before · | —). */
+function getTitleInitials(title) {
+  const namePart = String(title ?? '')
+    .split(/\s*[·|—–]\s*/)[0]
+    .trim();
+  const words = namePart
+    .split(/\s+/)
+    .map((word) => word.replace(/[^\p{L}\p{N}]+/gu, ''))
+    .filter(Boolean);
+
+  if (words.length === 0) return '';
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toLocaleUpperCase('es');
+  }
+  return `${words[0].slice(0, 1)}${words[1].slice(0, 1)}`.toLocaleUpperCase('es');
+}
+
 function TestimonialCard({ item }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
   const quote = String(item.quote ?? '').trim();
+  const initials = getTitleInitials(title);
 
   return (
     <article className="bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm p-6 sm:p-8 flex flex-col items-center text-center h-full">
@@ -22,7 +40,13 @@ function TestimonialCard({ item }) {
           className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#4A5D4E]/10 flex items-center justify-center mb-5"
           aria-hidden="true"
         >
-          <span className="font-serif text-2xl text-[#4A5D4E]/60">“</span>
+          {initials ? (
+            <span className="font-sans text-base sm:text-lg font-semibold tracking-wide text-[#4A5D4E]/80">
+              {initials}
+            </span>
+          ) : (
+            <span className="font-serif text-2xl text-[#4A5D4E]/60">“</span>
+          )}
         </div>
       )}
 
@@ -51,10 +75,10 @@ export default function TestimonialsSection({ data }) {
     <section id={SECTION_IDS.testimonials} className="border-y border-[#2A342D]/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         <div className="text-center mb-10 sm:mb-12">
-          <h2 className="font-serif text-2xl sm:text-3xl text-[#2A342D] mb-3">
+          <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
             {sectionTitle}
           </h2>
-          <p className="text-sm text-[#2A342D]/60 max-w-md mx-auto">
+          <p className="text-sm text-current/60 max-w-md mx-auto">
             {getLabel(labels, 'testimonials.subtitle')}
           </p>
         </div>

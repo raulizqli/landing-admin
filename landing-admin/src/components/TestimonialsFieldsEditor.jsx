@@ -2,7 +2,7 @@ import { createEmptyTestimonial } from '../utils/testimonials';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 
-export default function TestimonialsFieldsEditor({ formData, onChange, pageId }) {
+export default function TestimonialsFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
   const enabled = Boolean(formData.testimonialsEnabled);
   const items = Array.isArray(formData.testimonials) && formData.testimonials.length > 0
     ? formData.testimonials
@@ -34,15 +34,17 @@ export default function TestimonialsFieldsEditor({ formData, onChange, pageId })
         <label className="block text-[11px] font-bold text-gray-400 uppercase">
           Testimonios
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => onChange({ ...formData, testimonialsEnabled: e.target.checked })}
-            className="rounded border-gray-300"
-          />
-          Mostrar sección
-        </label>
+        {canToggleSection && (
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => onChange({ ...formData, testimonialsEnabled: e.target.checked })}
+              className="rounded border-gray-300"
+            />
+            Mostrar sección
+          </label>
+        )}
       </div>
 
       {enabled && (
@@ -114,7 +116,7 @@ export default function TestimonialsFieldsEditor({ formData, onChange, pageId })
                 placeholder="https://ejemplo.com/foto.jpg"
                 previewClassName="h-12 w-12 rounded-full object-cover border bg-white"
                 previewAlt={`Vista previa testimonio ${index + 1}`}
-                helperText="Pega una URL o sube una foto. Si no hay imagen, se muestra un icono decorativo."
+                helperText="Pega una URL o sube una foto. Si no hay imagen, se muestran las iniciales del título."
               />
             </div>
           ))}

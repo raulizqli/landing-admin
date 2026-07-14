@@ -1,31 +1,50 @@
 
-import { createEmptySlide } from './heroSlides';
+import { createEmptySlide, normalizeHeroSlide } from './heroSlides';
 import { normalizeTestimonials } from './testimonials';
 import { normalizeServices } from './services';
 import { normalizeCatalogItems } from './catalog';
-import { normalizeSectionThemes } from './sectionBackground';
+import { normalizeGalleryItems } from './gallery';
+import { normalizeBlogPosts } from './blog';
+import { normalizeSectionThemes, parseColorToHex } from './sectionBackground';
 import { normalizeExternalFirebase } from './externalFirebase';
 import { normalizeHostname } from './hostname';
 import { normalizeCustomLabels, normalizeLabelLanguage } from './labels';
-import { normalizeCustomEmbeds } from './customEmbeds';
+import { normalizeCustomEmbeds, isCustomSectionVisible } from './customEmbeds';
+import { DEFAULT_VERTICAL, normalizeVertical } from './verticals';
+import { normalizeNavAlign } from './sectionVisibility';
+import { normalizeNavSpecialtyCase } from './navDisplay';
+import { normalizeLegalDocuments } from './legalDocuments';
+
+export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
+export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
 
 export const EMPTY_PAGE = {
   name: '',
   specialty: '',
+  vertical: DEFAULT_VERTICAL,
   navMode: 'profile',
   navIconUrl: '',
   navLogoUrl: '',
   navIconOnly: false,
+  navSpecialty: '',
+  navSpecialtyCase: 'uppercase',
+  navShowCta: true,
+  navShowMenu: false,
+  navAlign: 'spread',
   navCtaTarget: 'email',
   navCtaLink: '',
+  navCtaBgColor: DEFAULT_NAV_CTA_BG_COLOR,
+  navCtaTextColor: DEFAULT_NAV_CTA_TEXT_COLOR,
   preHeroEnabled: false,
   preHeroMode: 'banner',
   preHeroImageUrl: '',
   preHeroTitle: '',
   preHeroText: '',
   heroSlides: [createEmptySlide()],
+  heroSectionEnabled: true,
   aboutTagline: '',
   aboutBio: '',
+  aboutSectionEnabled: true,
   servicesSectionEnabled: false,
   servicesSectionTitle: '',
   servicesSectionText: '',
@@ -34,6 +53,10 @@ export const EMPTY_PAGE = {
   catalogSectionTitle: '',
   catalogSectionText: '',
   catalogItems: [],
+  gallerySectionEnabled: false,
+  gallerySectionTitle: '',
+  gallerySectionText: '',
+  galleryItems: [],
   videoSectionEnabled: false,
   videoSectionTitle: '',
   videoSectionText: '',
@@ -41,12 +64,18 @@ export const EMPTY_PAGE = {
   testimonialsEnabled: false,
   testimonialsSectionTitle: '',
   testimonials: [],
+  blogSectionEnabled: false,
+  blogSectionTitle: '',
+  blogSectionText: '',
+  blogPosts: [],
+  contactSectionEnabled: true,
   location: '',
   locationMapsUrl: '',
   showLocationMap: false,
   email: '',
   phone: '',
   phoneIsWhatsapp: false,
+  socialSectionEnabled: true,
   instagram: '',
   whatsapp: '',
   facebook: '',
@@ -55,6 +84,13 @@ export const EMPTY_PAGE = {
   tiktok: '',
   youtube: '',
   socialIconOnly: false,
+  footerSectionEnabled: true,
+  termsOfUseEnabled: true,
+  termsOfUseTitle: '',
+  termsOfUseBody: '',
+  privacyPolicyEnabled: true,
+  privacyPolicyTitle: '',
+  privacyPolicyBody: '',
   analyticsMeasurementId: '',
   customDomain: '',
   useExternalFirebase: false,
@@ -67,6 +103,7 @@ export const EMPTY_PAGE = {
     appId: '',
   },
   sectionThemes: {},
+  showHeroSpecialty: false,
   labelLanguage: 'es',
   customLabels: { es: {}, en: {} },
   customEmbeds: [],
@@ -111,17 +148,7 @@ function normalizeNavCtaTarget(value) {
   return 'email';
 }
 
-export function normalizeHeroSlide(slide = {}) {
-  return {
-    imageUrl: slide.imageUrl || slide.imagenUrl || '',
-    videoUrl: slide.videoUrl || slide.videoLink || '',
-    title: slide.title || '',
-    text: slide.text || slide.texto || '',
-    showTitle: slide.showTitle ?? Boolean(slide.mostrarTitulo),
-    showText: slide.showText ?? Boolean(slide.mostrarTexto),
-    showButtons: slide.showButtons ?? slide.mostrarBotones !== false,
-  };
-}
+export { normalizeHeroSlide } from './heroSlides';
 
 function normalizeHeroSlidesFromLegacy(data) {
   const title = String(data?.heroTitle ?? '').trim();
@@ -139,6 +166,8 @@ function normalizeHeroSlidesFromLegacy(data) {
     showTitle: Boolean(title),
     showText: Boolean(text),
     showButtons,
+    showGradient: true,
+    buttonsPosition: 'center',
   }];
 }
 
@@ -173,27 +202,56 @@ export function normalizePageData(data = {}) {
   next.testimonials = normalizeTestimonials(next.testimonials);
   next.services = normalizeServices(next.services);
   next.catalogItems = normalizeCatalogItems(next.catalogItems);
+  next.galleryItems = normalizeGalleryItems(next.galleryItems);
+  next.blogPosts = normalizeBlogPosts(next.blogPosts);
 
   next.navIconOnly = next.navIconOnly === true;
+  next.navShowCta = next.navShowCta !== false;
+  next.navShowMenu = next.navShowMenu === true;
+  next.navAlign = normalizeNavAlign(next.navAlign);
+  next.navSpecialtyCase = normalizeNavSpecialtyCase(next.navSpecialtyCase);
+  next.navCtaBgColor = parseColorToHex(next.navCtaBgColor, DEFAULT_NAV_CTA_BG_COLOR);
+  next.navCtaTextColor = parseColorToHex(next.navCtaTextColor, DEFAULT_NAV_CTA_TEXT_COLOR);
   next.preHeroEnabled = next.preHeroEnabled === true;
+  next.heroSectionEnabled = next.heroSectionEnabled !== false;
+  next.aboutSectionEnabled = next.aboutSectionEnabled !== false;
   next.servicesSectionEnabled = next.servicesSectionEnabled === true;
   next.catalogSectionEnabled = next.catalogSectionEnabled === true;
+  next.gallerySectionEnabled = next.gallerySectionEnabled === true;
   next.videoSectionEnabled = next.videoSectionEnabled === true;
   next.testimonialsEnabled = next.testimonialsEnabled === true;
+  next.blogSectionEnabled = next.blogSectionEnabled === true;
+  next.contactSectionEnabled = next.contactSectionEnabled !== false;
+  next.socialSectionEnabled = next.socialSectionEnabled !== false;
+  next.footerSectionEnabled = next.footerSectionEnabled !== false;
   next.showLocationMap = next.showLocationMap === true;
   next.phoneIsWhatsapp = next.phoneIsWhatsapp === true;
   next.socialIconOnly = next.socialIconOnly === true;
+  next.showHeroSpecialty = next.showHeroSpecialty === true;
 
   next.sectionThemes = normalizeSectionThemes(next.sectionThemes);
 
+  next.vertical = normalizeVertical(next.vertical);
   next.labelLanguage = normalizeLabelLanguage(next.labelLanguage);
   next.customLabels = normalizeCustomLabels(next.customLabels);
-  next.customEmbeds = normalizeCustomEmbeds(next.customEmbeds)
-    .filter((embed) => embed.htmlCode);
+  next.customEmbeds = normalizeCustomEmbeds(next.customEmbeds).filter((embed) => (
+    isCustomSectionVisible({ ...embed, enabled: true })
+    || embed.title
+    || embed.htmlCode
+    || embed.body
+    || embed.quoteText
+    || embed.ctaText
+    || embed.ctaButtonUrl
+    || embed.faqItems.some((item) => item.question || item.answer)
+    || embed.steps.some((item) => item.title || item.description)
+  ));
+
 
   next.customDomain = normalizeHostname(next.customDomain);
   next.useExternalFirebase = next.useExternalFirebase === true;
   next.externalFirebase = normalizeExternalFirebase(next.externalFirebase);
+
+  Object.assign(next, normalizeLegalDocuments(next));
 
   return next;
 }

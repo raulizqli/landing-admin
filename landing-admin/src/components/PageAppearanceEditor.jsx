@@ -1,32 +1,40 @@
+
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 
-export default function PageAppearanceEditor({ formData, onChange }) {
-  return (
-    <div className="space-y-4 pt-2 border-t">
-      <label className="block text-[11px] font-bold text-gray-400 uppercase">
-        Apariencia general
-      </label>
-
+export default function PageAppearanceEditor({ formData, onChange, sections = ['page'] }) {
+  const editors = {
+    page: (
       <SectionBackgroundEditor
+        key="page"
         sectionKey="page"
         label="Fondo de página"
         formData={formData}
         onChange={onChange}
       />
-
+    ),
+    footer: (
       <SectionBackgroundEditor
-        sectionKey="hero"
-        label="Fondo del hero (sin imagen/video)"
-        formData={formData}
-        onChange={onChange}
-      />
-
-      <SectionBackgroundEditor
+        key="footer"
         sectionKey="footer"
         label="Fondo del pie de página"
         formData={formData}
         onChange={onChange}
       />
+    ),
+    hero: (
+      <SectionBackgroundEditor
+        key="hero"
+        sectionKey="hero"
+        label="Fondo del hero (sin imagen/video)"
+        formData={formData}
+        onChange={onChange}
+      />
+    ),
+  };
+
+  return (
+    <div className="space-y-4">
+      {sections.map((key) => editors[key]).filter(Boolean)}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 
-export default function PreHeroFieldsEditor({ formData, onChange, pageId }) {
+export default function PreHeroFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
   const enabled = Boolean(formData.preHeroEnabled);
   const splitMode = formData.preHeroMode === 'split';
 
@@ -11,15 +11,17 @@ export default function PreHeroFieldsEditor({ formData, onChange, pageId }) {
         <label className="block text-[11px] font-bold text-gray-400 uppercase">
           Sección antes del hero
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => onChange({ ...formData, preHeroEnabled: e.target.checked })}
-            className="rounded border-gray-300"
-          />
-          Mostrar sección
-        </label>
+        {canToggleSection && (
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => onChange({ ...formData, preHeroEnabled: e.target.checked })}
+              className="rounded border-gray-300"
+            />
+            Mostrar sección
+          </label>
+        )}
       </div>
 
       {enabled && (

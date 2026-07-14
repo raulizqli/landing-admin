@@ -1,12 +1,18 @@
 
+import { getVerticalLabelOverrides } from './verticals.js';
+
 export const LABEL_LANGUAGES = ['es', 'en'];
 
+/** Neutral base catalog. Industry tone comes from `vertical` overrides (+ customLabels). */
 export const LABEL_CATALOGS = {
   es: {
     'nav.bookAppointment': 'Reservar cita',
-    'placeholders.psychologistName': 'Nombre de la psicóloga',
+    'nav.menuOpen': 'Abrir menú',
+    'nav.menuClose': 'Cerrar menú',
+    'nav.menuVideo': 'Video',
+    'placeholders.psychologistName': 'Nombre del profesional',
     'placeholders.specialty': 'Especialidad',
-    'placeholders.aboutTagline': 'Cada proceso es único, y mereces ser escuchada con atención y cuidado.',
+    'placeholders.aboutTagline': 'Una propuesta clara, cercana y profesional.',
     'placeholders.aboutBio': 'Biografía profesional.',
     'hero.carouselAria': 'Carrusel principal',
     'hero.contact': 'Contactar',
@@ -14,9 +20,9 @@ export const LABEL_CATALOGS = {
     'hero.slidePrevious': 'Diapositiva anterior',
     'hero.slideNext': 'Diapositiva siguiente',
     'hero.slideGoTo': 'Ir a diapositiva {n}',
-    'about.title': 'Sobre mí',
+    'about.title': 'Acerca de',
     'contact.title': 'Contacto',
-    'contact.subtitle': 'Estoy aquí para acompañarte. Escríbeme o llámame para agendar una primera consulta.',
+    'contact.subtitle': 'Escríbeme o llámame para agendar una primera conversación.',
     'contact.location': 'Ubicación',
     'contact.email': 'Email',
     'contact.phone': 'Teléfono',
@@ -25,26 +31,38 @@ export const LABEL_CATALOGS = {
     'contact.mapTitle': 'Mapa de ubicación',
     'social.title': 'Redes sociales',
     'social.subtitle': 'Sígueme y conecta conmigo en mis canales.',
-    'services.defaultTitle': 'Servicios y áreas de atención',
-    'services.defaultIntro': 'Temas y acompañamientos que podemos trabajar juntas.',
+    'services.defaultTitle': 'Servicios',
+    'services.defaultIntro': 'Lo que ofrecemos y cómo podemos ayudarte.',
     'catalog.defaultTitle': 'Catálogo',
     'catalog.defaultIntro': 'Explora opciones disponibles y encuentra la que mejor se adapte a ti.',
     'catalog.noImage': 'Sin imagen',
     'catalog.viewMore': 'Ver más',
     'catalog.productAlt': 'Producto del catálogo',
+    'gallery.defaultTitle': 'Galería',
+    'gallery.defaultIntro': 'Un vistazo al espacio y al trabajo.',
+    'gallery.imageAlt': 'Imagen de la galería',
+    'gallery.close': 'Cerrar imagen',
     'testimonials.defaultTitle': 'Testimonios',
-    'testimonials.subtitle': 'Experiencias compartidas con respeto y confidencialidad.',
+    'testimonials.subtitle': 'Experiencias compartidas por clientes.',
+    'blog.defaultTitle': 'Blog',
+    'blog.defaultIntro': 'Noticias, artículos y novedades.',
+    'blog.imageAlt': 'Imagen del artículo',
     'preHero.ariaLabel': 'Presentación',
     'footer.rightsReserved': 'Todos los derechos reservados.',
+    'footer.legalClose': 'Cerrar',
+    'footer.poweredBy': 'Powered by',
     'booking.whatsappMessage': 'Hola, me gustaría agendar una cita.',
     'booking.mailtoSubject': 'Consulta de cita',
     'phone.whatsappMessage': 'Hola, me gustaría contactarte.',
   },
   en: {
     'nav.bookAppointment': 'Book appointment',
+    'nav.menuOpen': 'Open menu',
+    'nav.menuClose': 'Close menu',
+    'nav.menuVideo': 'Video',
     'placeholders.psychologistName': 'Professional name',
     'placeholders.specialty': 'Specialty',
-    'placeholders.aboutTagline': 'Every process is unique, and you deserve to be heard with care and attention.',
+    'placeholders.aboutTagline': 'A clear, approachable, and professional offer.',
     'placeholders.aboutBio': 'Professional biography.',
     'hero.carouselAria': 'Main carousel',
     'hero.contact': 'Contact',
@@ -52,9 +70,9 @@ export const LABEL_CATALOGS = {
     'hero.slidePrevious': 'Previous slide',
     'hero.slideNext': 'Next slide',
     'hero.slideGoTo': 'Go to slide {n}',
-    'about.title': 'About me',
+    'about.title': 'About',
     'contact.title': 'Contact',
-    'contact.subtitle': 'I am here to support you. Write or call me to schedule a first consultation.',
+    'contact.subtitle': 'Write or call me to schedule a first conversation.',
     'contact.location': 'Location',
     'contact.email': 'Email',
     'contact.phone': 'Phone',
@@ -63,17 +81,26 @@ export const LABEL_CATALOGS = {
     'contact.mapTitle': 'Location map',
     'social.title': 'Social media',
     'social.subtitle': 'Follow and connect with me on my channels.',
-    'services.defaultTitle': 'Services and areas of care',
-    'services.defaultIntro': 'Topics and support we can work on together.',
+    'services.defaultTitle': 'Services',
+    'services.defaultIntro': 'What we offer and how we can help.',
     'catalog.defaultTitle': 'Catalog',
     'catalog.defaultIntro': 'Explore available options and find what fits you best.',
     'catalog.noImage': 'No image',
     'catalog.viewMore': 'View more',
     'catalog.productAlt': 'Catalog product',
+    'gallery.defaultTitle': 'Gallery',
+    'gallery.defaultIntro': 'A glimpse of the space and the work.',
+    'gallery.imageAlt': 'Gallery image',
+    'gallery.close': 'Close image',
     'testimonials.defaultTitle': 'Testimonials',
-    'testimonials.subtitle': 'Experiences shared with respect and confidentiality.',
+    'testimonials.subtitle': 'Experiences shared by clients.',
+    'blog.defaultTitle': 'Blog',
+    'blog.defaultIntro': 'News, articles, and updates.',
+    'blog.imageAlt': 'Article image',
     'preHero.ariaLabel': 'Introduction',
     'footer.rightsReserved': 'All rights reserved.',
+    'footer.legalClose': 'Close',
+    'footer.poweredBy': 'Powered by',
     'booking.whatsappMessage': 'Hello, I would like to book an appointment.',
     'booking.mailtoSubject': 'Appointment inquiry',
     'phone.whatsappMessage': 'Hello, I would like to get in touch.',
@@ -83,12 +110,12 @@ export const LABEL_CATALOGS = {
 export const LABEL_GROUPS = [
   {
     id: 'navigation',
-    title: 'Navegación',
-    keys: ['nav.bookAppointment'],
+    title: 'Etiquetas de navegación',
+    keys: ['nav.bookAppointment', 'nav.menuOpen', 'nav.menuClose', 'nav.menuVideo'],
   },
   {
     id: 'hero',
-    title: 'Hero',
+    title: 'Etiquetas del hero',
     keys: [
       'hero.carouselAria',
       'hero.contact',
@@ -100,33 +127,56 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'about',
-    title: 'Sobre mí',
-    keys: ['about.title', 'placeholders.aboutTagline', 'placeholders.aboutBio'],
+    title: 'Etiquetas de acerca de',
+    keys: ['about.title'],
   },
   {
-    id: 'sections',
-    title: 'Secciones',
+    id: 'preHero',
+    title: 'Etiquetas pre-hero',
+    keys: ['preHero.ariaLabel'],
+  },
+  {
+    id: 'services',
+    title: 'Etiquetas de servicios',
+    keys: ['services.defaultTitle', 'services.defaultIntro'],
+  },
+  {
+    id: 'catalog',
+    title: 'Etiquetas de catálogo',
     keys: [
-      'services.defaultTitle',
-      'services.defaultIntro',
       'catalog.defaultTitle',
       'catalog.defaultIntro',
       'catalog.viewMore',
       'catalog.noImage',
       'catalog.productAlt',
-      'testimonials.defaultTitle',
-      'testimonials.subtitle',
-      'contact.title',
-      'contact.subtitle',
-      'social.title',
-      'social.subtitle',
-      'preHero.ariaLabel',
     ],
   },
   {
-    id: 'contact',
-    title: 'Contacto',
+    id: 'gallery',
+    title: 'Etiquetas de galería',
     keys: [
+      'gallery.defaultTitle',
+      'gallery.defaultIntro',
+      'gallery.imageAlt',
+      'gallery.close',
+    ],
+  },
+  {
+    id: 'testimonials',
+    title: 'Etiquetas de testimonios',
+    keys: ['testimonials.defaultTitle', 'testimonials.subtitle'],
+  },
+  {
+    id: 'blog',
+    title: 'Etiquetas de blog',
+    keys: ['blog.defaultTitle', 'blog.defaultIntro', 'blog.imageAlt'],
+  },
+  {
+    id: 'contact',
+    title: 'Etiquetas de contacto',
+    keys: [
+      'contact.title',
+      'contact.subtitle',
       'contact.location',
       'contact.email',
       'contact.phone',
@@ -134,6 +184,11 @@ export const LABEL_GROUPS = [
       'contact.sendMessage',
       'contact.mapTitle',
     ],
+  },
+  {
+    id: 'social',
+    title: 'Etiquetas de redes',
+    keys: ['social.title', 'social.subtitle'],
   },
   {
     id: 'placeholders',
@@ -147,13 +202,16 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'footer',
-    title: 'Pie de página',
-    keys: ['footer.rightsReserved'],
+    title: 'Etiquetas del pie',
+    keys: ['footer.rightsReserved', 'footer.legalClose', 'footer.poweredBy'],
   },
 ];
 
 export const LABEL_ADMIN_NAMES = {
   'nav.bookAppointment': 'Botón reservar cita',
+  'nav.menuOpen': 'Abrir menú',
+  'nav.menuClose': 'Cerrar menú',
+  'nav.menuVideo': 'Ítem menú video',
   'placeholders.psychologistName': 'Nombre (respaldo)',
   'placeholders.specialty': 'Especialidad (respaldo)',
   'placeholders.aboutTagline': 'Frase sobre mí (respaldo)',
@@ -164,7 +222,7 @@ export const LABEL_ADMIN_NAMES = {
   'hero.slidePrevious': 'Anterior diapositiva',
   'hero.slideNext': 'Siguiente diapositiva',
   'hero.slideGoTo': 'Ir a diapositiva ({n})',
-  'about.title': 'Título sobre mí',
+  'about.title': 'Título de la sección (Acerca de)',
   'contact.title': 'Título contacto',
   'contact.subtitle': 'Subtítulo contacto',
   'contact.location': 'Etiqueta ubicación',
@@ -182,10 +240,19 @@ export const LABEL_ADMIN_NAMES = {
   'catalog.noImage': 'Sin imagen',
   'catalog.viewMore': 'Ver más',
   'catalog.productAlt': 'Alt producto',
+  'gallery.defaultTitle': 'Título galería (por defecto)',
+  'gallery.defaultIntro': 'Intro galería (por defecto)',
+  'gallery.imageAlt': 'Alt imagen galería',
+  'gallery.close': 'Cerrar imagen',
   'testimonials.defaultTitle': 'Título testimonios (por defecto)',
   'testimonials.subtitle': 'Subtítulo testimonios',
+  'blog.defaultTitle': 'Título blog (por defecto)',
+  'blog.defaultIntro': 'Intro blog (por defecto)',
+  'blog.imageAlt': 'Alt imagen blog',
   'preHero.ariaLabel': 'Aria pre-hero',
   'footer.rightsReserved': 'Derechos reservados',
+  'footer.legalClose': 'Cerrar diálogo legal',
+  'footer.poweredBy': 'Powered by',
   'booking.whatsappMessage': 'Mensaje WhatsApp (cita)',
   'booking.mailtoSubject': 'Asunto email',
   'phone.whatsappMessage': 'Mensaje WhatsApp (teléfono)',
@@ -241,12 +308,14 @@ export function sanitizeCustomLabelsForSave(customLabels, language) {
 export function resolvePageLabels(page = {}) {
   const lang = normalizeLabelLanguage(page.labelLanguage);
   const base = LABEL_CATALOGS[lang] ?? LABEL_CATALOGS.es;
+  const verticalOverrides = getVerticalLabelOverrides(page.vertical, lang);
   const customByLang = normalizeCustomLabels(page.customLabels);
-  const overrides = customByLang[lang] ?? {};
+  const customOverrides = customByLang[lang] ?? {};
 
   return {
     ...base,
-    ...overrides,
+    ...verticalOverrides,
+    ...customOverrides,
   };
 }
 
@@ -262,6 +331,14 @@ export function getLabel(labels, key, vars = {}) {
 export function getCatalogLabel(language, key) {
   const lang = normalizeLabelLanguage(language);
   return LABEL_CATALOGS[lang]?.[key] ?? LABEL_CATALOGS.es[key] ?? key;
+}
+
+/** Default label for a page before customLabels (base + vertical). */
+export function getDefaultLabelForPage(page = {}, key) {
+  return resolvePageLabels({
+    ...page,
+    customLabels: { es: {}, en: {} },
+  })[key] ?? getCatalogLabel(page.labelLanguage, key);
 }
 
 export function getCustomLabelValue(customLabels, language, key) {

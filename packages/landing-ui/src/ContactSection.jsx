@@ -21,10 +21,10 @@ export default function ContactSection({ data, interactive = true }) {
     <section id={SECTION_IDS.contact} className="border-y border-[#2A342D]/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
       <div className="text-center mb-10">
-        <h2 className="font-serif text-2xl sm:text-3xl text-[#2A342D] mb-3">
+        <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
           {getLabel(labels, 'contact.title')}
         </h2>
-        <p className="text-sm text-[#2A342D]/60 max-w-md mx-auto">
+        <p className="text-sm text-current/60 max-w-md mx-auto">
           {getLabel(labels, 'contact.subtitle')}
         </p>
       </div>
