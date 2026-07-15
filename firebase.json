@@ -30,8 +30,22 @@
       "public": "landing-admin/dist",
       "ignore": [
         "firebase.json",
-        "**/.*",
         "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "/.well-known/acme-challenge/**",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "text/plain"
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        }
       ],
       "rewrites": [
         {

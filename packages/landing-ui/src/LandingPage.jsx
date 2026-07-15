@@ -49,7 +49,7 @@ export default function LandingPage({ data, interactive = true, className = '' }
             {getLabel(labels, 'footer.poweredBy')}{' '}
             {interactive ? (
               <a
-                href="https://www.leftsidedev.site"
+                href="https://leftsidedev.site"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline-offset-2 hover:underline hover:opacity-100 transition-opacity"

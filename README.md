@@ -134,16 +134,35 @@ Detalle de `.env.local` y deploys: [Para qué sirve `landing-template/.env.local
 cd landing-admin
 cp .env.example .env.local   # completa VITE_FIREBASE_* y VITE_TEMPLATE_PREVIEW_URL
 npm install
-npm run dev                  # http://localhost:5173
+npm run dev                  # http://localhost:5173 → redirige a la landing LeftSideDev
+                             # Login: http://localhost:5173/login
+                             # CMS:   http://localhost:5173/app
 
 # Terminal 2 — Template
 cd landing-template
 cp .env.example .env.local   # completa Firebase + VITE_PAGINA_ID
 npm install
 npm run dev                  # http://localhost:5174
+                             # Landing comercial: http://localhost:5174?pageId=leftsidedev
 ```
 
 Ambos proyectos liberan su puerto automáticamente antes de arrancar (`5173` admin, `5174` template).
+
+**Rutas del admin**
+
+| Ruta | Sin sesión | Con sesión |
+|------|------------|------------|
+| `/` | Redirect a la landing LeftSideDev (`VITE_MARKETING_URL`) | Redirect a `/app` |
+| `/login` | Pantalla de acceso | Redirect a `/app` |
+| `/app` | Redirect a `/login` | Editor CMS |
+
+**Landing comercial LeftSideDev:** documento Firestore `pages/leftsidedev` (`customDomain: leftsidedev.site`). Seed:
+
+```bash
+cd functions && node scripts/seed-leftsidedev-page.mjs
+```
+
+Vista previa local: `http://localhost:5174?pageId=leftsidedev`. En producción, cuando DNS apunte el template a `leftsidedev.site`, la misma página se resuelve por hostname.
 
 ### Variables de entorno
 
@@ -158,6 +177,7 @@ Ambos proyectos liberan su puerto automáticamente antes de arrancar (`5173` adm
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Sí | |
 | `VITE_FIREBASE_APP_ID` | Sí | |
 | `VITE_TEMPLATE_PREVIEW_URL` | Dev | `http://localhost:5174` para vista previa Local |
+| `VITE_MARKETING_URL` | No | Destino de `/` sin sesión. Dev tip: `http://localhost:5174?pageId=leftsidedev`. Prod default: `https://leftsidedev.site` |
 | `VITE_FIREBASE_MEASUREMENT_ID` | No | GA4 por defecto si la landing no define ID propio |
 | `VITE_BOOTSTRAP_ROOT_EMAIL` | No | Email del primer root; al iniciar sesión crea `users/{uid}` con rol `root` si no existe |
 | `VITE_RECAPTCHA_SITE_KEY` | Sí (prod) | Clave **reCAPTCHA v3** para App Check (no uses v2) |

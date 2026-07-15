@@ -26,6 +26,7 @@ export default {
     openDocs: 'Ver documentación',
   },
   login: {
+    backToSite: 'Volver al sitio',
     eyebrow: 'Multi-Landing CMS',
     title: 'Acceso al panel',
     subtitle: 'Inicia sesión para editar tus landings asignadas.',
@@ -46,6 +47,7 @@ export default {
     collapseSidebar: 'Minimizar menú de páginas',
     expandSidebar: 'Expandir menú de páginas',
     pagesMenu: 'Páginas',
+    redirectingMarketing: 'Redirigiendo a LeftSideDev…',
   },
   billing: {
     title: 'Planes y facturación',

@@ -25,7 +25,6 @@ import EditorSection from './components/EditorSection';
 import LandingMirror from './components/LandingMirror';
 import { resolvePreviewSectionId } from './utils/sectionAnchors';
 import SiteHostingFieldsEditor from './components/SiteHostingFieldsEditor';
-import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
 import CreatePageModal from './components/CreatePageModal';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
@@ -320,10 +319,6 @@ export default function App() {
 
   if (authLoading) {
     return <div className="h-screen flex items-center justify-center bg-gray-900 text-white font-sans text-sm tracking-widest uppercase animate-pulse">{t('common.verifyingAccess')}</div>;
-  }
-
-  if (!user) {
-    return <LoginScreen />;
   }
 
   if (!hasAccess) {
