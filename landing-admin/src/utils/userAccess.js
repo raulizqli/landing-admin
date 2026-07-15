@@ -19,6 +19,7 @@ export function normalizeUserProfile(uid, data = {}) {
     email: String(data.email ?? '').trim().toLowerCase(),
     displayName: String(data.displayName ?? '').trim(),
     role,
+    accountId: String(data.accountId ?? '').trim(),
     assignedPageIds: normalizePageIdList(data.assignedPageIds),
     pageId: String(data.pageId ?? '').trim(),
     updatedAt: data.updatedAt ?? null,

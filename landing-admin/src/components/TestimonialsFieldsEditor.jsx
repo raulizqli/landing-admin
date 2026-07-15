@@ -1,12 +1,14 @@
 import { createEmptyTestimonial } from '../utils/testimonials';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function TestimonialsFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
   const enabled = Boolean(formData.testimonialsEnabled);
   const items = Array.isArray(formData.testimonials) && formData.testimonials.length > 0
     ? formData.testimonials
     : [createEmptyTestimonial()];
+  const titlePlaceholder = getDefaultLabelForPage(formData, 'testimonials.defaultTitle');
 
   const updateItems = (nextItems) => {
     onChange({ ...formData, testimonials: nextItems });
@@ -55,7 +57,7 @@ export default function TestimonialsFieldsEditor({ formData, onChange, pageId, c
               type="text"
               value={formData.testimonialsSectionTitle || ''}
               onChange={(e) => onChange({ ...formData, testimonialsSectionTitle: e.target.value })}
-              placeholder="Testimonios"
+              placeholder={titlePlaceholder}
               className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>

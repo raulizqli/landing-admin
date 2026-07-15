@@ -5,12 +5,15 @@ import {
 } from '../utils/blog';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function BlogFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
   const enabled = Boolean(formData.blogSectionEnabled);
   const items = Array.isArray(formData.blogPosts) && formData.blogPosts.length > 0
     ? formData.blogPosts
     : [createEmptyBlogPost()];
+  const titlePlaceholder = getDefaultLabelForPage(formData, 'blog.defaultTitle');
+  const introPlaceholder = getDefaultLabelForPage(formData, 'blog.defaultIntro');
 
   const updateItems = (nextItems) => {
     onChange({ ...formData, blogPosts: nextItems });
@@ -72,7 +75,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
               type="text"
               value={formData.blogSectionTitle || ''}
               onChange={(e) => onChange({ ...formData, blogSectionTitle: e.target.value })}
-              placeholder="Blog"
+              placeholder={titlePlaceholder}
               className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>
@@ -83,8 +86,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
               rows="3"
               value={formData.blogSectionText || ''}
               onChange={(e) => onChange({ ...formData, blogSectionText: e.target.value })}
-              placeholder="Noticias, artículos y novedades."
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              placeholder={introPlaceholder}              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
             />
           </div>
 

@@ -1,7 +1,13 @@
 import { extractMapsInput, CONTACT_MAP_LAYOUTS } from '../utils/maps';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 
-export default function LocationFieldsEditor({ formData, onChange }) {
+export default function LocationFieldsEditor({
+  formData,
+  onChange,
+  canUseMapBeside = true,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const handleMapsBlur = (rawValue) => {
     const cleaned = extractMapsInput(rawValue);
     if (cleaned !== (formData.locationMapsUrl || '')) {
@@ -65,10 +71,16 @@ export default function LocationFieldsEditor({ formData, onChange }) {
                 type="radio"
                 name="contact-map-layout"
                 checked={(formData.contactMapLayout || 'below') === layout.value}
+                disabled={layout.value === 'beside' && !canUseMapBeside}
                 onChange={() => onChange({ ...formData, contactMapLayout: layout.value })}
                 className="border-gray-300"
               />
               {layout.label}
+              {layout.value === 'beside' && !canUseMapBeside && (
+                <button type="button" onClick={onUpgradePlan} className="text-[10px] font-semibold text-indigo-600">
+                  {upgradeLabel}
+                </button>
+              )}
             </label>
           ))}
           <p className="text-[10px] text-gray-400">

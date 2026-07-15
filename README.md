@@ -212,6 +212,77 @@ El panel admin requiere **Firebase Authentication** (email/contraseña). Los per
 |---------|----------------------|----------|
 | `createCmsUser` | root autenticado | Crea usuario Auth (email/contraseña) + perfil Firestore |
 | `deleteCmsUser` | root autenticado | Elimina perfil Firestore y cuenta Auth |
+| `ensureBillingAccount` | usuario autenticado | Crea / enlaza `billingAccounts/{accountId}` al perfil |
+| `createBillingCheckout` | usuario autenticado | Inicia checkout **Stripe** o **Mercado Pago** (Starter / Pro / Agency) |
+| `setBillingPlanManual` | root | Activa un plan (p. ej. Enterprise) sin pago |
+| `stripeBillingWebhook` | Stripe (HTTP) | Actualiza plan/estado tras pago o cambio de suscripción |
+| `mercadoPagoBillingWebhook` | Mercado Pago (HTTP) | Actualiza plan/estado de preapproval |
+
+### Planes SaaS (4 tiers)
+
+| Plan | Páginas | Highlights | Precio orientativo |
+|------|---------|------------|--------------------|
+| **Starter** | 1 | Secciones básicas | US$19 / MX$349 mes |
+| **Pro** | 1 | Blog, embeds, galería portfolio, mapa lateral, autoplay | US$49 / MX$899 mes |
+| **Agency** | hasta 5 | Firebase externo + deploy hosting + soporte prioritario | US$129 / MX$2499 mes |
+| **Enterprise** | ilimitadas | Todo ilimitado + soporte **24/7** (ventas / activación manual root) | A medida |
+
+- Colección: `billingAccounts` (campos en inglés: `plan`, `status`, `provider`, `stripeCustomerId`, `mercadoPagoPreapprovalId`, `pageIds`, …).
+- `users/{uid}.accountId` enlaza el perfil al account. **Root** bypasea entitlements (ops).
+- UI: botón **Facturación / Billing** en el admin; locale **es / en** (`LocaleProvider`).
+- Código de planes: `packages/landing-core/src/billingPlans.js`.
+
+Variables de entorno en **Cloud Functions** (archivo `functions/.env`, plantilla en `functions/.env.example`):
+
+```bash
+ADMIN_PUBLIC_URL=https://landing-admin-9452e.web.app
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_STARTER=price_...
+STRIPE_PRICE_PRO=price_...
+STRIPE_PRICE_AGENCY=price_...
+# opcional:
+STRIPE_PRICE_ENTERPRISE=price_...
+MERCADOPAGO_ACCESS_TOKEN=TEST-...
+```
+
+En el admin: `VITE_BILLING_SALES_EMAIL` (mailto del plan Enterprise).
+
+### Checklist de activación billing
+
+1. **Desplegar reglas + functions** (desde la raíz):
+
+```bash
+firebase deploy --only firestore:rules,functions
+# o por separado:
+# firebase deploy --only firestore:rules
+# npm run deploy:functions
+```
+
+2. **Stripe (test primero)**  
+   - Crear 3 productos/precios mensuales (Starter / Pro / Agency).  
+   - Copiar `price_...` a `STRIPE_PRICE_*` y la secret key a `STRIPE_SECRET_KEY`.  
+   - Webhook → URL:  
+     `https://us-central1-landing-admin-9452e.cloudfunctions.net/stripeBillingWebhook`  
+     Eventos: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.  
+   - Copiar el signing secret a `STRIPE_WEBHOOK_SECRET`.  
+   - Volver a desplegar functions: `npm run deploy:functions`.
+
+3. **Mercado Pago**  
+   - Access Token (test o prod) → `MERCADOPAGO_ACCESS_TOKEN`.  
+   - Webhooks / notificaciones → URL:  
+     `https://us-central1-landing-admin-9452e.cloudfunctions.net/mercadoPagoBillingWebhook`  
+   - Redeploy functions.
+
+4. **Probar en el admin**  
+   - Login → botón **Facturación / Billing**.  
+   - Checkout Stripe o Mercado Pago en modo test.  
+   - Enterprise: mailto / activación manual root (`setBillingPlanManual`).
+
+Webhooks (proyecto actual `landing-admin-9452e`):
+
+- Stripe → `https://us-central1-landing-admin-9452e.cloudfunctions.net/stripeBillingWebhook`
+- Mercado Pago → `https://us-central1-landing-admin-9452e.cloudfunctions.net/mercadoPagoBillingWebhook`
 
 Despliegue:
 
@@ -235,6 +306,7 @@ Esquema de perfil:
 {
   "email": "ana@ejemplo.com",
   "role": "admin",
+  "accountId": "uid-or-billing-account-id",
   "assignedPageIds": ["maria-garcia", "lucia-ruiz"],
   "pageId": ""
 }

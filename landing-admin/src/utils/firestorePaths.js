@@ -6,6 +6,7 @@ export const LEGACY_PAGES_COLLECTION = 'paginas';
 export const STORAGE_PAGES_ROOT = 'pages';
 export const LEGACY_STORAGE_PAGES_ROOT = 'paginas';
 export const USERS_COLLECTION = 'users';
+export const BILLING_ACCOUNTS_COLLECTION = 'billingAccounts';
 
 export const PAGE_COLLECTIONS = [PAGES_COLLECTION, LEGACY_PAGES_COLLECTION];
 

@@ -120,12 +120,12 @@ export const LABEL_CATALOGS = {
 export const LABEL_GROUPS = [
   {
     id: 'navigation',
-    title: 'Etiquetas de navegación',
+    title: { es: 'Etiquetas de navegación', en: 'Navigation labels' },
     keys: ['nav.bookAppointment', 'nav.menuOpen', 'nav.menuClose', 'nav.menuVideo'],
   },
   {
     id: 'hero',
-    title: 'Etiquetas del hero',
+    title: { es: 'Etiquetas del hero', en: 'Hero labels' },
     keys: [
       'hero.carouselAria',
       'hero.contact',
@@ -137,17 +137,17 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'about',
-    title: 'Etiquetas de acerca de',
+    title: { es: 'Etiquetas de acerca de', en: 'About labels' },
     keys: ['about.title'],
   },
   {
     id: 'preHero',
-    title: 'Etiquetas pre-hero',
+    title: { es: 'Etiquetas pre-hero', en: 'Pre-hero labels' },
     keys: ['preHero.ariaLabel'],
   },
   {
     id: 'services',
-    title: 'Etiquetas de servicios',
+    title: { es: 'Etiquetas de servicios', en: 'Services labels' },
     keys: [
       'services.defaultTitle',
       'services.defaultIntro',
@@ -159,7 +159,7 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'catalog',
-    title: 'Etiquetas de catálogo',
+    title: { es: 'Etiquetas de catálogo', en: 'Catalog labels' },
     keys: [
       'catalog.defaultTitle',
       'catalog.defaultIntro',
@@ -170,7 +170,7 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'gallery',
-    title: 'Etiquetas de galería',
+    title: { es: 'Etiquetas de galería', en: 'Gallery labels' },
     keys: [
       'gallery.defaultTitle',
       'gallery.defaultIntro',
@@ -181,17 +181,17 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'testimonials',
-    title: 'Etiquetas de testimonios',
+    title: { es: 'Etiquetas de testimonios', en: 'Testimonials labels' },
     keys: ['testimonials.defaultTitle', 'testimonials.subtitle'],
   },
   {
     id: 'blog',
-    title: 'Etiquetas de blog',
+    title: { es: 'Etiquetas de blog', en: 'Blog labels' },
     keys: ['blog.defaultTitle', 'blog.defaultIntro', 'blog.imageAlt'],
   },
   {
     id: 'contact',
-    title: 'Etiquetas de contacto',
+    title: { es: 'Etiquetas de contacto', en: 'Contact labels' },
     keys: [
       'contact.title',
       'contact.subtitle',
@@ -205,84 +205,157 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'social',
-    title: 'Etiquetas de redes',
+    title: { es: 'Etiquetas de redes', en: 'Social labels' },
     keys: ['social.title', 'social.subtitle'],
   },
   {
     id: 'placeholders',
-    title: 'Textos de respaldo',
+    title: { es: 'Textos de respaldo', en: 'Fallback texts' },
     keys: ['placeholders.psychologistName', 'placeholders.specialty'],
   },
   {
     id: 'messages',
-    title: 'Mensajes automáticos',
+    title: { es: 'Mensajes automáticos', en: 'Automatic messages' },
     keys: ['booking.whatsappMessage', 'booking.mailtoSubject', 'phone.whatsappMessage'],
   },
   {
     id: 'footer',
-    title: 'Etiquetas del pie',
+    title: { es: 'Etiquetas del pie', en: 'Footer labels' },
     keys: ['footer.rightsReserved', 'footer.legalClose', 'footer.poweredBy'],
   },
 ];
 
+/** Admin field captions (not shown on the public landing). */
 export const LABEL_ADMIN_NAMES = {
-  'nav.bookAppointment': 'Botón reservar cita',
-  'nav.menuOpen': 'Abrir menú',
-  'nav.menuClose': 'Cerrar menú',
-  'nav.menuVideo': 'Ítem menú video',
-  'placeholders.psychologistName': 'Nombre (respaldo)',
-  'placeholders.specialty': 'Especialidad (respaldo)',
-  'placeholders.aboutTagline': 'Frase / destacado (respaldo)',
-  'placeholders.aboutBio': 'Texto descriptivo (respaldo)',
-  'hero.carouselAria': 'Aria carrusel',
-  'hero.contact': 'Botón contactar',
-  'hero.learnMore': 'Botón conocer más',
-  'hero.slidePrevious': 'Anterior diapositiva',
-  'hero.slideNext': 'Siguiente diapositiva',
-  'hero.slideGoTo': 'Ir a diapositiva ({n})',
-  'about.title': 'Título de la sección (Acerca de)',
-  'contact.title': 'Título contacto',
-  'contact.subtitle': 'Subtítulo contacto',
-  'contact.location': 'Etiqueta ubicación',
-  'contact.email': 'Etiqueta email',
-  'contact.phone': 'Etiqueta teléfono',
-  'contact.whatsapp': 'Etiqueta WhatsApp',
-  'contact.sendMessage': 'Botón enviar mensaje',
-  'contact.mapTitle': 'Título mapa',
-  'social.title': 'Título redes',
-  'social.subtitle': 'Subtítulo redes',
-  'services.defaultTitle': 'Título servicios (por defecto)',
-  'services.defaultIntro': 'Intro servicios (por defecto)',
-  'services.carouselPrevious': 'Botón anterior (carrusel servicios)',
-  'services.carouselNext': 'Botón siguiente (carrusel servicios)',
-  'services.viewMore': 'Ver más (descripción servicio)',
-  'services.viewLess': 'Ver menos (descripción servicio)',
-  'catalog.defaultTitle': 'Título catálogo (por defecto)',
-  'catalog.defaultIntro': 'Intro catálogo (por defecto)',
-  'catalog.noImage': 'Sin imagen',
-  'catalog.viewMore': 'Ver más',
-  'catalog.productAlt': 'Alt producto',
-  'gallery.defaultTitle': 'Título galería (por defecto)',
-  'gallery.defaultIntro': 'Intro galería (por defecto)',
-  'gallery.imageAlt': 'Alt imagen galería',
-  'gallery.close': 'Cerrar imagen',
-  'gallery.viewPortfolio': 'Botón ver portafolio',
-  'testimonials.defaultTitle': 'Título testimonios (por defecto)',
-  'testimonials.subtitle': 'Subtítulo testimonios',
-  'blog.defaultTitle': 'Título blog (por defecto)',
-  'blog.defaultIntro': 'Intro blog (por defecto)',
-  'blog.imageAlt': 'Alt imagen blog',
-  'preHero.ariaLabel': 'Aria pre-hero',
-  'footer.rightsReserved': 'Derechos reservados',
-  'footer.legalClose': 'Cerrar diálogo legal',
-  'footer.poweredBy': 'Powered by',
-  'booking.whatsappMessage': 'Mensaje WhatsApp (cita)',
-  'booking.mailtoSubject': 'Asunto email',
-  'phone.whatsappMessage': 'Mensaje WhatsApp (teléfono)',
+  es: {
+    'nav.bookAppointment': 'Botón reservar cita',
+    'nav.menuOpen': 'Abrir menú',
+    'nav.menuClose': 'Cerrar menú',
+    'nav.menuVideo': 'Ítem menú video',
+    'placeholders.psychologistName': 'Nombre (respaldo)',
+    'placeholders.specialty': 'Especialidad (respaldo)',
+    'placeholders.aboutTagline': 'Frase / destacado (respaldo)',
+    'placeholders.aboutBio': 'Texto descriptivo (respaldo)',
+    'hero.carouselAria': 'Aria carrusel',
+    'hero.contact': 'Botón contactar',
+    'hero.learnMore': 'Botón conocer más',
+    'hero.slidePrevious': 'Anterior diapositiva',
+    'hero.slideNext': 'Siguiente diapositiva',
+    'hero.slideGoTo': 'Ir a diapositiva ({n})',
+    'about.title': 'Título de la sección (Acerca de)',
+    'contact.title': 'Título contacto',
+    'contact.subtitle': 'Subtítulo contacto',
+    'contact.location': 'Etiqueta ubicación',
+    'contact.email': 'Etiqueta email',
+    'contact.phone': 'Etiqueta teléfono',
+    'contact.whatsapp': 'Etiqueta WhatsApp',
+    'contact.sendMessage': 'Botón enviar mensaje',
+    'contact.mapTitle': 'Título mapa',
+    'social.title': 'Título redes',
+    'social.subtitle': 'Subtítulo redes',
+    'services.defaultTitle': 'Título servicios (por defecto)',
+    'services.defaultIntro': 'Intro servicios (por defecto)',
+    'services.carouselPrevious': 'Botón anterior (carrusel servicios)',
+    'services.carouselNext': 'Botón siguiente (carrusel servicios)',
+    'services.viewMore': 'Ver más (descripción servicio)',
+    'services.viewLess': 'Ver menos (descripción servicio)',
+    'catalog.defaultTitle': 'Título catálogo (por defecto)',
+    'catalog.defaultIntro': 'Intro catálogo (por defecto)',
+    'catalog.noImage': 'Sin imagen',
+    'catalog.viewMore': 'Ver más',
+    'catalog.productAlt': 'Alt producto',
+    'gallery.defaultTitle': 'Título galería (por defecto)',
+    'gallery.defaultIntro': 'Intro galería (por defecto)',
+    'gallery.imageAlt': 'Alt imagen galería',
+    'gallery.close': 'Cerrar imagen',
+    'gallery.viewPortfolio': 'Botón ver portafolio',
+    'testimonials.defaultTitle': 'Título testimonios (por defecto)',
+    'testimonials.subtitle': 'Subtítulo testimonios',
+    'blog.defaultTitle': 'Título blog (por defecto)',
+    'blog.defaultIntro': 'Intro blog (por defecto)',
+    'blog.imageAlt': 'Alt imagen blog',
+    'preHero.ariaLabel': 'Aria pre-hero',
+    'footer.rightsReserved': 'Derechos reservados',
+    'footer.legalClose': 'Cerrar diálogo legal',
+    'footer.poweredBy': 'Powered by',
+    'booking.whatsappMessage': 'Mensaje WhatsApp (cita)',
+    'booking.mailtoSubject': 'Asunto email',
+    'phone.whatsappMessage': 'Mensaje WhatsApp (teléfono)',
+  },
+  en: {
+    'nav.bookAppointment': 'Book appointment button',
+    'nav.menuOpen': 'Open menu',
+    'nav.menuClose': 'Close menu',
+    'nav.menuVideo': 'Video menu item',
+    'placeholders.psychologistName': 'Name (fallback)',
+    'placeholders.specialty': 'Specialty (fallback)',
+    'placeholders.aboutTagline': 'Tagline (fallback)',
+    'placeholders.aboutBio': 'Description text (fallback)',
+    'hero.carouselAria': 'Carousel aria',
+    'hero.contact': 'Contact button',
+    'hero.learnMore': 'Learn more button',
+    'hero.slidePrevious': 'Previous slide',
+    'hero.slideNext': 'Next slide',
+    'hero.slideGoTo': 'Go to slide ({n})',
+    'about.title': 'Section title (About)',
+    'contact.title': 'Contact title',
+    'contact.subtitle': 'Contact subtitle',
+    'contact.location': 'Location label',
+    'contact.email': 'Email label',
+    'contact.phone': 'Phone label',
+    'contact.whatsapp': 'WhatsApp label',
+    'contact.sendMessage': 'Send message button',
+    'contact.mapTitle': 'Map title',
+    'social.title': 'Social title',
+    'social.subtitle': 'Social subtitle',
+    'services.defaultTitle': 'Services title (default)',
+    'services.defaultIntro': 'Services intro (default)',
+    'services.carouselPrevious': 'Previous (services carousel)',
+    'services.carouselNext': 'Next (services carousel)',
+    'services.viewMore': 'View more (service description)',
+    'services.viewLess': 'View less (service description)',
+    'catalog.defaultTitle': 'Catalog title (default)',
+    'catalog.defaultIntro': 'Catalog intro (default)',
+    'catalog.noImage': 'No image',
+    'catalog.viewMore': 'View more',
+    'catalog.productAlt': 'Product alt',
+    'gallery.defaultTitle': 'Gallery title (default)',
+    'gallery.defaultIntro': 'Gallery intro (default)',
+    'gallery.imageAlt': 'Gallery image alt',
+    'gallery.close': 'Close image',
+    'gallery.viewPortfolio': 'View portfolio button',
+    'testimonials.defaultTitle': 'Testimonials title (default)',
+    'testimonials.subtitle': 'Testimonials subtitle',
+    'blog.defaultTitle': 'Blog title (default)',
+    'blog.defaultIntro': 'Blog intro (default)',
+    'blog.imageAlt': 'Blog image alt',
+    'preHero.ariaLabel': 'Pre-hero aria',
+    'footer.rightsReserved': 'Rights reserved',
+    'footer.legalClose': 'Close legal dialog',
+    'footer.poweredBy': 'Powered by',
+    'booking.whatsappMessage': 'WhatsApp message (booking)',
+    'booking.mailtoSubject': 'Email subject',
+    'phone.whatsappMessage': 'WhatsApp message (phone)',
+  },
 };
 
 export function normalizeLabelLanguage(value) {
   return value === 'en' ? 'en' : 'es';
+}
+
+export function getLabelGroupTitle(group, language = 'es') {
+  const lang = normalizeLabelLanguage(language);
+  const title = group?.title;
+  if (!title) return '';
+  if (typeof title === 'string') return title;
+  return title[lang] || title.es || title.en || '';
+}
+
+export function getLabelAdminName(key, language = 'es') {
+  const lang = normalizeLabelLanguage(language);
+  return LABEL_ADMIN_NAMES[lang]?.[key]
+    || LABEL_ADMIN_NAMES.es?.[key]
+    || key;
 }
 
 function isFlatCustomLabels(value) {
@@ -366,21 +439,13 @@ export function getDefaultLabelForPage(page = {}, key) {
 
 export function getCustomLabelValue(customLabels, language, key) {
   const lang = normalizeLabelLanguage(language);
-  if (!customLabels || typeof customLabels !== 'object') return '';
-  if (isFlatCustomLabels(customLabels)) {
-    return customLabels[key] ?? '';
-  }
-  return customLabels[lang]?.[key] ?? '';
+  const normalized = normalizeCustomLabels(customLabels);
+  return normalized[lang]?.[key] ?? '';
 }
 
 export function setCustomLabelValue(customLabels, language, key, value) {
   const lang = normalizeLabelLanguage(language);
-  const base = customLabels && typeof customLabels === 'object' && !isFlatCustomLabels(customLabels)
-    ? customLabels
-    : {
-      es: isFlatCustomLabels(customLabels) ? { ...customLabels } : {},
-      en: {},
-    };
+  const base = normalizeCustomLabels(customLabels);
   const nextValue = String(value ?? '');
   const nextBucket = { ...(base[lang] || {}) };
 

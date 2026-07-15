@@ -7,6 +7,7 @@ import { resolvePageContext } from './utils/domainRouting';
 import { fetchPageContent } from './utils/pageContent';
 import { getPageLoadErrorMessage } from './utils/pageLoadErrors';
 import { PAGE_ID } from './firebase';
+import { resolvePageFaviconUrl, setDocumentFavicon } from './utils/documentFavicon';
 
 function getSearchParams() {
   return new URLSearchParams(window.location.search);
@@ -199,6 +200,14 @@ export default function App() {
     if (!previewMode || !pageId) return normalized;
     return withPreviewContent(normalized, { seed: pageId, enabled: !usingDemoFallback });
   }, [livePreviewPageId, livePreviewData, pageData, previewMode, pageId, resolvedPageId, usingDemoFallback]);
+
+  useEffect(() => {
+    if (!displayData) return;
+    document.title = displayData.name
+      ? `${displayData.name} — Psicología`
+      : 'Psicología profesional';
+    setDocumentFavicon(resolvePageFaviconUrl(displayData));
+  }, [displayData]);
 
   useEffect(() => {
     if (!displayData || previewMode || loading || error || !pageId || usingDemoFallback) return;

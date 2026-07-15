@@ -68,5 +68,18 @@ service cloud.firestore {
       allow update: if canEditPage(pageId);
       allow delete: if isRoot();
     }
+    match /billingAccounts/{accountId} {
+      allow read: if isSignedIn()
+        && (isRoot()
+          || resource.data.ownerUid == request.auth.uid
+          || (userExists()
+            && userData().keys().hasAll(['accountId'])
+            && userData().accountId == accountId));
+      allow create: if isSignedIn()
+        && (isRoot()
+          || (request.resource.data.ownerUid == request.auth.uid
+            && request.auth.uid == accountId));
+      allow update, delete: if isRoot();
+    }
   }
 }

@@ -1,12 +1,15 @@
 import { createEmptyCatalogItem } from '../utils/catalog';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function CatalogFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
   const enabled = Boolean(formData.catalogSectionEnabled);
   const items = Array.isArray(formData.catalogItems) && formData.catalogItems.length > 0
     ? formData.catalogItems
     : [createEmptyCatalogItem()];
+  const titlePlaceholder = getDefaultLabelForPage(formData, 'catalog.defaultTitle');
+  const introPlaceholder = getDefaultLabelForPage(formData, 'catalog.defaultIntro');
 
   const updateItems = (nextItems) => {
     onChange({ ...formData, catalogItems: nextItems });
@@ -59,7 +62,7 @@ export default function CatalogFieldsEditor({ formData, onChange, pageId, canTog
               type="text"
               value={formData.catalogSectionTitle || ''}
               onChange={(e) => onChange({ ...formData, catalogSectionTitle: e.target.value })}
-              placeholder="Catálogo de lentes"
+              placeholder={titlePlaceholder}
               className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>
@@ -70,8 +73,7 @@ export default function CatalogFieldsEditor({ formData, onChange, pageId, canTog
               rows="3"
               value={formData.catalogSectionText || ''}
               onChange={(e) => onChange({ ...formData, catalogSectionText: e.target.value })}
-              placeholder="Descubre nuestras opciones de lentes y armazones."
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              placeholder={introPlaceholder}              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
             />
           </div>
 

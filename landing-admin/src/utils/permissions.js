@@ -71,6 +71,11 @@ export function canManagePageLayout(profile) {
   return normalizeRole(profile?.role) === ROLES.ROOT;
 }
 
+/** Root bypasses SaaS plan entitlements (ops / hub owner). */
+export function isBillingBypass(profile) {
+  return normalizeRole(profile?.role) === ROLES.ROOT;
+}
+
 export function getRoleLabel(role) {
   switch (normalizeRole(role)) {
     case ROLES.ROOT:

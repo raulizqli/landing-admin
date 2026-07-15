@@ -4,6 +4,7 @@ import { initializeRecaptchaConfig } from 'firebase/auth'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
+import { LocaleProvider } from './i18n/LocaleContext.jsx'
 import { auth } from './firebase.js'
 import { initHubAppCheck } from './utils/appCheck.js'
 
@@ -18,8 +19,10 @@ initializeRecaptchaConfig(auth).catch((error) => {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <LocaleProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </LocaleProvider>
   </StrictMode>,
 )

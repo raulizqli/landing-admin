@@ -16,7 +16,15 @@ const EXTERNAL_FIELDS = [
   { key: 'appId', label: 'App ID' },
 ];
 
-export default function SiteHostingFieldsEditor({ formData, onChange, pageId }) {
+export default function SiteHostingFieldsEditor({
+  formData,
+  onChange,
+  pageId,
+  canUseExternalFirebase = true,
+  canUseHostingDeploy = true,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const useExternal = Boolean(formData.useExternalFirebase);
   const externalFirebase = formData.externalFirebase || EMPTY_EXTERNAL_FIREBASE;
   const provider = formData.hostingProvider || 'hub';
@@ -101,11 +109,17 @@ export default function SiteHostingFieldsEditor({ formData, onChange, pageId }) 
         <input
           type="checkbox"
           checked={useExternal}
+          disabled={!canUseExternalFirebase}
           onChange={(e) => onChange({ ...formData, useExternalFirebase: e.target.checked })}
           className="rounded border-gray-300"
         />
         Los datos de esta landing viven en otro proyecto Firebase (otra cuenta)
       </label>
+      {!canUseExternalFirebase && (
+        <button type="button" onClick={onUpgradePlan} className="text-[11px] font-semibold text-indigo-600">
+          {upgradeLabel}
+        </button>
+      )}
 
       {useExternal && (
         <fieldset className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/60 p-3">
@@ -244,11 +258,16 @@ export default function SiteHostingFieldsEditor({ formData, onChange, pageId }) 
           <button
             type="button"
             onClick={handleDeploy}
-            disabled={deploying || !pageId}
+            disabled={deploying || !pageId || !canUseHostingDeploy}
             className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50"
           >
             {deploying ? 'Disparando…' : 'Publicar hosting'}
           </button>
+          {!canUseHostingDeploy && (
+            <button type="button" onClick={onUpgradePlan} className="text-[11px] font-semibold text-indigo-600">
+              {upgradeLabel}
+            </button>
+          )}
           <span className="text-[10px] text-gray-500">
             Guarda la página para persistir estos campos; el botón también envía la config actual.
           </span>

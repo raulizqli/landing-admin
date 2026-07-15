@@ -10,13 +10,24 @@ import {
 } from '../utils/services';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import { getDefaultLabelForPage } from '../utils/labels';
 
-export default function ServicesFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
+export default function ServicesFieldsEditor({
+  formData,
+  onChange,
+  pageId,
+  canToggleSection = true,
+  canUseCarouselAutoplay = true,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const enabled = Boolean(formData.servicesSectionEnabled);
   const items = Array.isArray(formData.services) && formData.services.length > 0
     ? formData.services
     : [createEmptyService()];
   const displayMode = formData.servicesDisplayMode === 'carousel' ? 'carousel' : 'stack';
+  const titlePlaceholder = getDefaultLabelForPage(formData, 'services.defaultTitle');
+  const introPlaceholder = getDefaultLabelForPage(formData, 'services.defaultIntro');
 
   const updateItems = (nextItems) => {
     onChange({ ...formData, services: nextItems });
@@ -65,7 +76,7 @@ export default function ServicesFieldsEditor({ formData, onChange, pageId, canTo
               type="text"
               value={formData.servicesSectionTitle || ''}
               onChange={(e) => onChange({ ...formData, servicesSectionTitle: e.target.value })}
-              placeholder="Servicios y áreas de atención"
+              placeholder={titlePlaceholder}
               className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>
@@ -76,8 +87,7 @@ export default function ServicesFieldsEditor({ formData, onChange, pageId, canTo
               rows="3"
               value={formData.servicesSectionText || ''}
               onChange={(e) => onChange({ ...formData, servicesSectionText: e.target.value })}
-              placeholder="Breve descripción de cómo acompañas a tus pacientes."
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              placeholder={introPlaceholder}              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
             />
           </div>
 
@@ -123,12 +133,22 @@ export default function ServicesFieldsEditor({ formData, onChange, pageId, canTo
                 <legend className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                   Movimiento del carrusel
                 </legend>
+                {!canUseCarouselAutoplay && (
+                  <button
+                    type="button"
+                    onClick={onUpgradePlan}
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 mb-1"
+                  >
+                    {upgradeLabel}
+                  </button>
+                )}
                 {SERVICES_CAROUSEL_MOTION_MODES.map((motion) => (
                   <label key={motion.value} className="flex items-center gap-2 text-xs text-gray-600">
                     <input
                       type="radio"
                       name="services-carousel-motion"
                       checked={(formData.servicesCarouselAutoplay === true) === (motion.value === 'auto')}
+                      disabled={motion.value === 'auto' && !canUseCarouselAutoplay}
                       onChange={() => onChange({
                         ...formData,
                         servicesCarouselAutoplay: motion.value === 'auto',

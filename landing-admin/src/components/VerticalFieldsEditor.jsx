@@ -3,6 +3,7 @@ import {
   getVerticalMeta,
   normalizeVertical,
 } from '@raulizqli/landing-core/verticals';
+import { normalizeLabelLanguage } from '../utils/labels';
 
 function hasCustomLabelOverrides(customLabels = {}) {
   const buckets = [customLabels.es, customLabels.en].filter(Boolean);
@@ -12,15 +13,19 @@ function hasCustomLabelOverrides(customLabels = {}) {
 export default function VerticalFieldsEditor({ formData, onChange }) {
   const selected = normalizeVertical(formData?.vertical);
   const meta = getVerticalMeta(selected);
+  const language = normalizeLabelLanguage(formData?.labelLanguage);
   const warnCustom = hasCustomLabelOverrides(formData?.customLabels);
 
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-[11px] font-bold text-gray-400 uppercase">Tipo de negocio</label>
+        <label className="block text-[11px] font-bold text-gray-400 uppercase">
+          {language === 'en' ? 'Business type' : 'Tipo de negocio'}
+        </label>
         <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
-          Define los textos por defecto de la landing (botones, secciones, mensajes). Las etiquetas
-          personalizadas tienen prioridad y no se borran al cambiar el preset.
+          {language === 'en'
+            ? 'Sets the default landing copy (buttons, sections, messages). Custom labels take priority and are not cleared when you change the preset.'
+            : 'Define los textos por defecto de la landing (botones, secciones, mensajes). Las etiquetas personalizadas tienen prioridad y no se borran al cambiar el preset.'}
         </p>
       </div>
 
@@ -39,24 +44,29 @@ export default function VerticalFieldsEditor({ formData, onChange }) {
               }`}
             >
               <p className={`text-xs font-semibold ${isSelected ? 'text-[#2A342D]' : 'text-gray-800'}`}>
-                {item.label.es}
+                {item.label[language] || item.label.es}
               </p>
-              <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">{item.description.es}</p>
+              <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
+                {item.description[language] || item.description.es}
+              </p>
             </button>
           );
         })}
       </div>
 
       <p className="text-[10px] text-gray-500">
-        Activo:
+        {language === 'en' ? 'Active:' : 'Activo:'}
         {' '}
-        <span className="font-semibold text-gray-700">{meta.label.es}</span>
+        <span className="font-semibold text-gray-700">
+          {meta.label[language] || meta.label.es}
+        </span>
       </p>
 
       {warnCustom && (
         <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed">
-          Esta página tiene etiquetas personalizadas. Esas seguirán mostrándose por encima del preset
-          hasta que las quites en «Etiquetas».
+          {language === 'en'
+            ? 'This page has custom labels. They keep overriding the preset until you clear them in Labels.'
+            : 'Esta página tiene etiquetas personalizadas. Esas seguirán mostrándose por encima del preset hasta que las quites en «Etiquetas».'}
         </p>
       )}
     </div>

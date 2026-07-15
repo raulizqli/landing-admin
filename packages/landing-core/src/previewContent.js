@@ -311,5 +311,57 @@ export function generateRandomPreviewContent(seed = 'preview') {
 export function withPreviewContent(data, { seed, enabled = true } = {}) {
   if (!enabled) return data ?? {};
   if (!isPageEmpty(data)) return data;
-  return generateRandomPreviewContent(seed);
+
+  const generated = generateRandomPreviewContent(seed);
+  // Keep editor settings (language, vertical, labels, theme) so switching
+  // labelLanguage still shows English/Spanish defaults in the admin mirror.
+  return {
+    ...generated,
+    ...(data || {}),
+    name: String(data?.name ?? '').trim() || generated.name,
+    specialty: String(data?.specialty ?? '').trim() || generated.specialty,
+    aboutTagline: String(data?.aboutTagline ?? '').trim() || generated.aboutTagline,
+    aboutBio: String(data?.aboutBio ?? '').trim() || generated.aboutBio,
+    location: String(data?.location ?? '').trim() || generated.location,
+    email: String(data?.email ?? '').trim() || generated.email,
+    phone: String(data?.phone ?? '').trim() || generated.phone,
+    heroSlides: hasHeroContent(data) ? data.heroSlides : generated.heroSlides,
+    services: Array.isArray(data?.services) && data.services.some((item) => (
+      String(item?.title ?? '').trim() || String(item?.description ?? '').trim()
+    ))
+      ? data.services
+      : generated.services,
+    servicesSectionEnabled: data?.servicesSectionEnabled ?? generated.servicesSectionEnabled,
+    servicesSectionTitle: String(data?.servicesSectionTitle ?? '').trim() || generated.servicesSectionTitle,
+    servicesSectionText: String(data?.servicesSectionText ?? '').trim() || generated.servicesSectionText,
+    catalogSectionEnabled: data?.catalogSectionEnabled ?? generated.catalogSectionEnabled,
+    catalogItems: Array.isArray(data?.catalogItems) && data.catalogItems.length > 0
+      ? data.catalogItems
+      : generated.catalogItems,
+    catalogSectionTitle: String(data?.catalogSectionTitle ?? '').trim() || generated.catalogSectionTitle,
+    catalogSectionText: String(data?.catalogSectionText ?? '').trim() || generated.catalogSectionText,
+    testimonialsEnabled: data?.testimonialsEnabled ?? generated.testimonialsEnabled,
+    testimonials: Array.isArray(data?.testimonials) && data.testimonials.length > 0
+      ? data.testimonials
+      : generated.testimonials,
+    testimonialsSectionTitle: String(data?.testimonialsSectionTitle ?? '').trim()
+      || generated.testimonialsSectionTitle,
+    preHeroEnabled: data?.preHeroEnabled ?? generated.preHeroEnabled,
+    preHeroImageUrl: String(data?.preHeroImageUrl ?? '').trim() || generated.preHeroImageUrl,
+    preHeroTitle: String(data?.preHeroTitle ?? '').trim() || generated.preHeroTitle,
+    preHeroText: String(data?.preHeroText ?? '').trim() || generated.preHeroText,
+    navIconUrl: String(data?.navIconUrl ?? '').trim() || generated.navIconUrl,
+    navLogoUrl: String(data?.navLogoUrl ?? '').trim() || generated.navLogoUrl,
+    instagram: String(data?.instagram ?? '').trim() || generated.instagram,
+    whatsapp: String(data?.whatsapp ?? '').trim() || generated.whatsapp,
+    facebook: String(data?.facebook ?? '').trim() || generated.facebook,
+    linkedin: String(data?.linkedin ?? '').trim() || generated.linkedin,
+    doctoralia: String(data?.doctoralia ?? '').trim() || generated.doctoralia,
+    tiktok: String(data?.tiktok ?? '').trim() || generated.tiktok,
+    youtube: String(data?.youtube ?? '').trim() || generated.youtube,
+    labelLanguage: data?.labelLanguage ?? 'es',
+    vertical: data?.vertical,
+    customLabels: data?.customLabels,
+    sectionThemes: data?.sectionThemes,
+  };
 }

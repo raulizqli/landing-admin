@@ -2,12 +2,23 @@
 import { createEmptyGalleryItem } from '../utils/gallery';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import { getDefaultLabelForPage } from '../utils/labels';
 
-export default function GalleryFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
+export default function GalleryFieldsEditor({
+  formData,
+  onChange,
+  pageId,
+  canToggleSection = true,
+  canUsePortfolioCta = true,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const enabled = Boolean(formData.gallerySectionEnabled);
   const items = Array.isArray(formData.galleryItems) && formData.galleryItems.length > 0
     ? formData.galleryItems
     : [createEmptyGalleryItem()];
+  const titlePlaceholder = getDefaultLabelForPage(formData, 'gallery.defaultTitle');
+  const introPlaceholder = getDefaultLabelForPage(formData, 'gallery.defaultIntro');
 
   const updateItems = (nextItems) => {
     onChange({ ...formData, galleryItems: nextItems });
@@ -69,7 +80,7 @@ export default function GalleryFieldsEditor({ formData, onChange, pageId, canTog
               type="text"
               value={formData.gallerySectionTitle || ''}
               onChange={(e) => onChange({ ...formData, gallerySectionTitle: e.target.value })}
-              placeholder="Galería"
+              placeholder={titlePlaceholder}
               className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>
@@ -80,8 +91,7 @@ export default function GalleryFieldsEditor({ formData, onChange, pageId, canTog
               rows="3"
               value={formData.gallerySectionText || ''}
               onChange={(e) => onChange({ ...formData, gallerySectionText: e.target.value })}
-              placeholder="Un vistazo al espacio de trabajo."
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              placeholder={introPlaceholder}              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
             />
           </div>
 
@@ -89,6 +99,16 @@ export default function GalleryFieldsEditor({ formData, onChange, pageId, canTog
             <p className="text-[10px] text-gray-500 leading-snug">
               Portafolio externo (opcional): CTA debajo de la galería curada hacia Pixieset, SmugMug, Format u otro sitio.
             </p>
+            {!canUsePortfolioCta ? (
+              <button
+                type="button"
+                onClick={onUpgradePlan}
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                {upgradeLabel}
+              </button>
+            ) : (
+              <>
             <div className="space-y-2">
               <label className="block text-[10px] font-bold text-gray-400 uppercase">URL del portafolio completo</label>
               <input
@@ -109,6 +129,8 @@ export default function GalleryFieldsEditor({ formData, onChange, pageId, canTog
                 className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
               />
             </div>
+              </>
+            )}
           </div>
 
           <div className="flex items-center justify-between">

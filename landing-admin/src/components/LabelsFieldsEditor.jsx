@@ -2,9 +2,12 @@
 import {
   getCustomLabelValue,
   getDefaultLabelForPage,
+  getLabelAdminName,
+  getLabelGroupTitle,
   LABEL_GROUPS,
-  LABEL_ADMIN_NAMES,
   LABEL_LANGUAGES,
+  normalizeCustomLabels,
+  normalizeLabelLanguage,
   setCustomLabelValue,
 } from '../utils/labels';
 
@@ -15,15 +18,17 @@ export default function LabelsFieldsEditor({
   showLanguagePicker = true,
   compact = false,
 }) {
-  const language = formData.labelLanguage === 'en' ? 'en' : 'es';
+  const language = normalizeLabelLanguage(formData.labelLanguage);
   const groups = Array.isArray(groupIds)
     ? LABEL_GROUPS.filter((group) => groupIds.includes(group.id))
     : LABEL_GROUPS;
 
   const handleLanguageChange = (nextLanguage) => {
+    const next = normalizeLabelLanguage(nextLanguage);
     onChange({
       ...formData,
-      labelLanguage: nextLanguage,
+      labelLanguage: next,
+      customLabels: normalizeCustomLabels(formData.customLabels),
     });
   };
 
@@ -45,10 +50,12 @@ export default function LabelsFieldsEditor({
       {showLanguagePicker && (
         <div>
           <label className="block text-[11px] font-bold text-gray-400 uppercase">
-            Idioma de etiquetas (landing pública)
+            {language === 'en' ? 'Label language (public landing)' : 'Idioma de etiquetas (landing pública)'}
           </label>
           <p className="text-[10px] text-gray-400 mt-1 mb-2">
-            Define el idioma base de botones, títulos fijos y mensajes. Puedes personalizar cada etiqueta por idioma.
+            {language === 'en'
+              ? 'Sets the base language for buttons, fixed titles, and messages. You can customize each label per language.'
+              : 'Define el idioma base de botones, títulos fijos y mensajes. Puedes personalizar cada etiqueta por idioma.'}
           </p>
           <div className="flex gap-2">
             {LABEL_LANGUAGES.map((lang) => (
@@ -71,16 +78,20 @@ export default function LabelsFieldsEditor({
 
       {groups.map((group) => (
         <div
-          key={group.id}
+          key={`${group.id}-${language}`}
           className={compact
             ? 'space-y-3'
             : 'space-y-3 rounded-xl border border-gray-200 p-4 bg-gray-50/70'}
         >
           {!compact && (
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">{group.title}</h3>
+            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              {getLabelGroupTitle(group, language)}
+            </h3>
           )}
           {compact && (
-            <p className="text-[10px] font-bold text-gray-400 uppercase">{group.title}</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase">
+              {getLabelGroupTitle(group, language)}
+            </p>
           )}
           <div className="space-y-3">
             {group.keys.map((key) => {
@@ -88,10 +99,10 @@ export default function LabelsFieldsEditor({
               const defaultValue = getDefaultLabelForPage(formData, key);
 
               return (
-                <div key={key} className="space-y-1">
+                <div key={`${language}-${key}`} className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase">
-                      {LABEL_ADMIN_NAMES[key] || key}
+                      {getLabelAdminName(key, language)}
                     </label>
                     {customValue && (
                       <button
@@ -99,7 +110,7 @@ export default function LabelsFieldsEditor({
                         onClick={() => handleResetLabel(key)}
                         className="text-[10px] text-indigo-600 hover:underline"
                       >
-                        Restaurar
+                        {language === 'en' ? 'Reset' : 'Restaurar'}
                       </button>
                     )}
                   </div>
@@ -111,7 +122,7 @@ export default function LabelsFieldsEditor({
                     className="w-full border rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                   <p className="text-[10px] text-gray-400">
-                    Por defecto ({language}): {defaultValue}
+                    {language === 'en' ? 'Default' : 'Por defecto'} ({language}): {defaultValue}
                   </p>
                 </div>
               );

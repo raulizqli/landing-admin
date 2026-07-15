@@ -29,9 +29,13 @@ import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
 import CreatePageModal from './components/CreatePageModal';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
+import BillingPlansPanel from './components/BillingPlansPanel';
+import PlanGate from './components/PlanGate';
 import { hydrateFormSocial } from './utils/socialLinks';
 import { createPageInHub, loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
 import { useAuth } from './contexts/AuthContext';
+import { useLocale, LanguageSwitcher } from './i18n/LocaleContext';
+import { useEntitlements } from './hooks/useEntitlements';
 import {
   canAccessHostingSettings,
   canCreatePages,
@@ -53,6 +57,19 @@ const TEMPLATE_PREVIEW_URL = (
 );
 
 const DEMO_PREVIEW_ID = 'preview-demo';
+const SIDEBAR_COLLAPSED_KEY = 'landing-admin:pages-sidebar-collapsed';
+
+function readSidebarCollapsedDefault() {
+  try {
+    const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (stored === '0' || stored === 'false') return false;
+    if (stored === '1' || stored === 'true') return true;
+  } catch {
+    // ignore
+  }
+  // Start minimized so editor/preview get more room (especially single-page users).
+  return true;
+}
 
 function hydrateForm(landing) {
   return hydrateFormSocial(hydratePageForm(landing));
@@ -60,6 +77,8 @@ function hydrateForm(landing) {
 
 export default function App() {
   const { user, profile, loading: authLoading, signOut, hasAccess } = useAuth();
+  const { t } = useLocale();
+  const entitlements = useEntitlements();
   const [landings, setLandings] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [formData, setFormData] = useState(null);
@@ -71,17 +90,34 @@ export default function App() {
   const [previewSectionKey, setPreviewSectionKey] = useState('identity');
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showCreatePage, setShowCreatePage] = useState(false);
+  const [showBilling, setShowBilling] = useState(false);
   const [creatingPage, setCreatingPage] = useState(false);
   const [accessError, setAccessError] = useState('');
+  const [pagesSidebarCollapsed, setPagesSidebarCollapsed] = useState(readSidebarCollapsedDefault);
   const previewIframeRef = useRef(null);
 
   const accessibleLandings = profile ? filterAccessiblePages(landings, profile) : [];
   const showPageList = !isSinglePageUser(profile);
+  const selectedLanding = accessibleLandings.find((landing) => landing.id === selectedId)
+    || (selectedId === DEMO_PREVIEW_ID ? { id: DEMO_PREVIEW_ID, name: t('shell.demoPreview') } : null);
+  const selectedPageLabel = selectedLanding?.name || selectedLanding?.id || selectedId || '·';
+  const selectedPageInitial = String(selectedPageLabel).trim().charAt(0).toUpperCase() || '·';
+
+  const setSidebarCollapsed = (collapsed) => {
+    setPagesSidebarCollapsed(collapsed);
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  };
   const canEditSelectedPage = canEditPage(profile, selectedId);
   const canManageHosting = canAccessHostingSettings(profile);
   const canCreateNewPages = canCreatePages(profile);
   const canManageLayout = canManagePageLayout(profile);
   const previewScrollSectionId = resolvePreviewSectionId(previewSectionKey);
+  const upgradeLabel = t('common.upgrade');
+  const openBilling = () => setShowBilling(true);
 
   const hasActiveCustomEmbeds = normalizeCustomEmbeds(formData?.customEmbeds)
     .some((embed) => embed.enabled !== false);
@@ -283,7 +319,7 @@ export default function App() {
   };
 
   if (authLoading) {
-    return <div className="h-screen flex items-center justify-center bg-gray-900 text-white font-sans text-sm tracking-widest uppercase animate-pulse">Verificando acceso...</div>;
+    return <div className="h-screen flex items-center justify-center bg-gray-900 text-white font-sans text-sm tracking-widest uppercase animate-pulse">{t('common.verifyingAccess')}</div>;
   }
 
   if (!user) {
@@ -294,38 +330,54 @@ export default function App() {
     return (
       <div className="h-screen flex items-center justify-center bg-[#F4F1EA] p-6 font-sans">
         <div className="max-w-md bg-white border border-[#2A342D]/10 rounded-2xl shadow-xl p-8 text-center">
-          <h1 className="font-serif text-2xl text-[#2A342D] mb-2">Acceso no autorizado</h1>
+          <div className="flex justify-end mb-2">
+            <LanguageSwitcher className="text-[#2A342D]" />
+          </div>
+          <h1 className="font-serif text-2xl text-[#2A342D] mb-2">{t('common.unauthorizedTitle')}</h1>
           <p className="text-sm text-[#2A342D]/70 mb-6">
-            Tu cuenta no tiene un perfil de acceso configurado. Pide a un administrador root que te asigne rol y páginas.
+            {t('common.unauthorizedBody')}
           </p>
           <button
             type="button"
             onClick={signOut}
             className="bg-[#4A5D4E] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#3d4d41]"
           >
-            Cerrar sesión
+            {t('common.signOut')}
           </button>
         </div>
       </div>
     );
   }
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-900 text-white font-sans text-sm tracking-widest uppercase animate-pulse">Cargando Sistema...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-900 text-white font-sans text-sm tracking-widest uppercase animate-pulse">{t('common.loadingSystem')}</div>;
 
   if (accessError && !formData && !canCreateNewPages) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#F4F1EA] p-6 font-sans">
         <div className="max-w-md bg-white border border-[#2A342D]/10 rounded-2xl shadow-xl p-8 text-center">
-          <h1 className="font-serif text-2xl text-[#2A342D] mb-2">Sin páginas asignadas</h1>
+          <div className="flex justify-end mb-2">
+            <LanguageSwitcher className="text-[#2A342D]" />
+          </div>
+          <h1 className="font-serif text-2xl text-[#2A342D] mb-2">{t('common.noPagesTitle')}</h1>
           <p className="text-sm text-[#2A342D]/70 mb-6">{accessError}</p>
-          <button
-            type="button"
-            onClick={signOut}
-            className="bg-[#4A5D4E] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#3d4d41]"
-          >
-            Cerrar sesión
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button
+              type="button"
+              onClick={openBilling}
+              className="bg-[#4A5D4E] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#3d4d41]"
+            >
+              {t('common.billing')}
+            </button>
+            <button
+              type="button"
+              onClick={signOut}
+              className="border border-[#2A342D]/20 text-[#2A342D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-white"
+            >
+              {t('common.signOut')}
+            </button>
+          </div>
         </div>
+        <BillingPlansPanel open={showBilling} onClose={() => setShowBilling(false)} />
       </div>
     );
   }
@@ -333,83 +385,159 @@ export default function App() {
   return (
     <div className="flex h-dvh w-full max-w-full bg-gray-100 text-gray-800 overflow-hidden font-sans">
       {/* 1. BARRA LATERAL */}
-      <div className="w-64 bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0 min-h-0">
-        <div className="p-4 border-b border-gray-800">
-          <h1 className="text-base font-bold tracking-tight text-indigo-400">Multi-Landing CMS</h1>
-          <p className="text-[11px] text-gray-500">Vista Previa Integrada</p>
-          <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
-            <p className="text-[10px] text-gray-400 truncate" title={user.email}>{user.email}</p>
-            <p className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wide">{getRoleLabel(profile.role)}</p>
-            <div className="flex gap-2">
-              {canCreateNewPages && (
-                <button
-                  type="button"
-                  onClick={() => setShowCreatePage(true)}
-                  className="flex-1 text-[10px] px-2 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-500 font-semibold"
-                >
-                  + Landing
-                </button>
-              )}
-              {canManageUsers(profile) && (
-                <button
-                  type="button"
-                  onClick={() => setShowUserManagement(true)}
-                  className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700"
-                >
-                  Usuarios
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700"
-              >
-                Salir
-              </button>
+      <div
+        className={`bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0 min-h-0 transition-[width] duration-200 ease-out ${
+          pagesSidebarCollapsed ? 'w-14' : 'w-64'
+        }`}
+      >
+        {pagesSidebarCollapsed ? (
+          <div className="flex flex-col items-center gap-3 py-3 px-1.5 min-h-0 h-full">
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+              className="w-10 h-10 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-600/40 transition flex items-center justify-center"
+              title={t('shell.expandSidebar')}
+              aria-label={t('shell.expandSidebar')}
+              aria-expanded={false}
+            >
+              <span className="text-sm font-bold" aria-hidden>»</span>
+            </button>
+            <div
+              className="w-10 h-10 rounded-full bg-indigo-600 text-white text-sm font-semibold flex items-center justify-center shrink-0"
+              title={selectedPageLabel}
+            >
+              {selectedPageInitial}
             </div>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={openBilling}
+              className="w-10 h-10 rounded-lg bg-emerald-700/40 text-emerald-100 hover:bg-emerald-600/60 text-[10px] font-bold"
+              title={t('common.billing')}
+              aria-label={t('common.billing')}
+            >
+              $
+            </button>
+            <button
+              type="button"
+              onClick={signOut}
+              className="w-10 h-10 rounded-lg bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700 text-[10px] font-semibold"
+              title={t('common.exit')}
+              aria-label={t('common.exit')}
+            >
+              ⎋
+            </button>
           </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          {canCreateNewPages && accessibleLandings.length === 0 && (
-            <div className="mb-3 rounded-lg border border-indigo-500/30 bg-indigo-600/10 px-3 py-3">
-              <p className="text-[11px] text-indigo-100 mb-2">Aún no hay landings. Crea la primera para la demo.</p>
-              <button
-                type="button"
-                onClick={() => setShowCreatePage(true)}
-                className="w-full text-[11px] font-semibold px-2 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-500"
-              >
-                + Nueva landing
-              </button>
+        ) : (
+          <>
+            <div className="p-4 border-b border-gray-800">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h1 className="text-base font-bold tracking-tight text-indigo-400">{t('shell.title')}</h1>
+                  <p className="text-[11px] text-gray-500">{t('shell.subtitle')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="shrink-0 w-8 h-8 rounded-lg border border-gray-700 text-gray-400 hover:bg-gray-900 hover:text-white transition flex items-center justify-center"
+                  title={t('shell.collapseSidebar')}
+                  aria-label={t('shell.collapseSidebar')}
+                  aria-expanded={true}
+                >
+                  <span className="text-sm font-bold" aria-hidden>«</span>
+                </button>
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
+                <p className="text-[10px] text-gray-400 truncate" title={user.email}>{user.email}</p>
+                <p className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wide">{getRoleLabel(profile.role)}</p>
+                {!entitlements.bypass && (
+                  <p className="text-[10px] text-emerald-300/90 truncate">
+                    {t('common.plan')}: {t(`billing.plans.${entitlements.planId}.name`)}
+                  </p>
+                )}
+                <LanguageSwitcher className="text-gray-300" />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={openBilling}
+                    className="flex-1 text-[10px] px-2 py-1.5 rounded bg-emerald-700/80 text-white hover:bg-emerald-600 border border-emerald-600 font-semibold"
+                  >
+                    {t('common.billing')}
+                  </button>
+                  {canCreateNewPages && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCreatePage(true)}
+                      className="flex-1 text-[10px] px-2 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-500 font-semibold"
+                    >
+                      {t('common.newLanding')}
+                    </button>
+                  )}
+                  {canManageUsers(profile) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUserManagement(true)}
+                      className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700"
+                    >
+                      {t('common.users')}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700"
+                  >
+                    {t('common.exit')}
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
-          {accessibleLandings.length === 0 && import.meta.env.DEV && canManageUsers(profile) && (
-            <button
-              type="button"
-              onClick={selectDemoPreview}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${selectedId === DEMO_PREVIEW_ID ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
-            >
-              <span>✨ Vista previa demo</span>
-              <span className="text-[9px] bg-black/40 px-1 rounded font-mono">{DEMO_PREVIEW_ID}</span>
-            </button>
-          )}
-          {showPageList ? accessibleLandings.map(landing => (
-            <button
-              key={landing.id}
-              type="button"
-              onClick={() => handleSelectLanding(landing)}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${selectedId === landing.id ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
-            >
-              <span>👤 {landing.name || landing.id}</span>
-              <span className="text-[9px] bg-black/40 px-1 rounded font-mono">{landing.id}</span>
-            </button>
-          )) : accessibleLandings[0] && (
-            <div className="px-3 py-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30">
-              <p className="text-[10px] text-indigo-200 uppercase tracking-wide mb-1">Tu página</p>
-              <p className="text-xs font-medium text-white">{accessibleLandings[0].name || accessibleLandings[0].id}</p>
-              <p className="text-[9px] text-indigo-200/80 font-mono mt-1">{accessibleLandings[0].id}</p>
+            <div className="flex-1 overflow-y-auto p-3 space-y-1">
+              <p className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wide text-gray-500">
+                {t('shell.pagesMenu')}
+              </p>
+              {canCreateNewPages && accessibleLandings.length === 0 && (
+                <div className="mb-3 rounded-lg border border-indigo-500/30 bg-indigo-600/10 px-3 py-3">
+                  <p className="text-[11px] text-indigo-100 mb-2">{t('shell.emptyLandings')}</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreatePage(true)}
+                    className="w-full text-[11px] font-semibold px-2 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-500"
+                  >
+                    {t('common.createLanding')}
+                  </button>
+                </div>
+              )}
+              {accessibleLandings.length === 0 && import.meta.env.DEV && canManageUsers(profile) && (
+                <button
+                  type="button"
+                  onClick={selectDemoPreview}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${selectedId === DEMO_PREVIEW_ID ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
+                >
+                  <span>✨ {t('shell.demoPreview')}</span>
+                  <span className="text-[9px] bg-black/40 px-1 rounded font-mono">{DEMO_PREVIEW_ID}</span>
+                </button>
+              )}
+              {showPageList ? accessibleLandings.map(landing => (
+                <button
+                  key={landing.id}
+                  type="button"
+                  onClick={() => handleSelectLanding(landing)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${selectedId === landing.id ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
+                >
+                  <span>👤 {landing.name || landing.id}</span>
+                  <span className="text-[9px] bg-black/40 px-1 rounded font-mono">{landing.id}</span>
+                </button>
+              )) : accessibleLandings[0] && (
+                <div className="px-3 py-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30">
+                  <p className="text-[10px] text-indigo-200 uppercase tracking-wide mb-1">{t('shell.yourPage')}</p>
+                  <p className="text-xs font-medium text-white">{accessibleLandings[0].name || accessibleLandings[0].id}</p>
+                  <p className="text-[9px] text-indigo-200/80 font-mono mt-1">{accessibleLandings[0].id}</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* 2. FORMULARIO */}
@@ -425,7 +553,7 @@ export default function App() {
                 </p>
               </div>
               <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                {saving ? 'Guardando...' : isDemoPreview ? 'Demo (sin guardar)' : !canEditSelectedPage ? 'Sin permiso' : 'Guardar y Publicar'}
+                {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}
               </button>
             </div>
 
@@ -538,6 +666,9 @@ export default function App() {
                   onChange={setFormData}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
+                  canUseCarouselAutoplay={entitlements.canUseServicesCarouselAutoplay}
+                  onUpgradePlan={openBilling}
+                  upgradeLabel={upgradeLabel}
                 />
                 <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['services']} showLanguagePicker={false} compact />
               </EditorSection>
@@ -574,6 +705,9 @@ export default function App() {
                   onChange={setFormData}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
+                  canUsePortfolioCta={entitlements.canUseGalleryPortfolio}
+                  onUpgradePlan={openBilling}
+                  upgradeLabel={upgradeLabel}
                 />
                 <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['gallery']} showLanguagePicker={false} compact />
               </EditorSection>
@@ -614,21 +748,27 @@ export default function App() {
             )}
 
             {showEditorSection('blogSectionEnabled', false) && (
-              <EditorSection
-                sectionKey="blog"
-                fillStatus={getEditorSectionFill('blog', formData)}
-                title="Blog / noticias"
-                description="Entradas con layouts, colores y etiquetas"
-                onActivate={activatePreviewSection}
+              <PlanGate
+                allowed={entitlements.canUseBlog}
+                label={upgradeLabel}
+                onUpgrade={openBilling}
               >
-                <BlogFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
-                  pageId={selectedId}
-                  canToggleSection={canManageLayout}
-                />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['blog']} showLanguagePicker={false} compact />
-              </EditorSection>
+                <EditorSection
+                  sectionKey="blog"
+                  fillStatus={getEditorSectionFill('blog', formData)}
+                  title="Blog / noticias"
+                  description="Entradas con layouts, colores y etiquetas"
+                  onActivate={activatePreviewSection}
+                >
+                  <BlogFieldsEditor
+                    formData={formData}
+                    onChange={setFormData}
+                    pageId={selectedId}
+                    canToggleSection={canManageLayout}
+                  />
+                  <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['blog']} showLanguagePicker={false} compact />
+                </EditorSection>
+              </PlanGate>
             )}
 
             {showEditorSection('contactSectionEnabled', true) && (
@@ -639,7 +779,13 @@ export default function App() {
                 description="Ubicación, email, teléfono y etiquetas"
                 onActivate={activatePreviewSection}
               >
-                <LocationFieldsEditor formData={formData} onChange={setFormData} />
+                <LocationFieldsEditor
+                  formData={formData}
+                  onChange={setFormData}
+                  canUseMapBeside={entitlements.canUseContactMapBeside}
+                  onUpgradePlan={openBilling}
+                  upgradeLabel={upgradeLabel}
+                />
                 <div className="space-y-2">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase">Email Público</label>
                   <input type="email" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
@@ -663,20 +809,26 @@ export default function App() {
             )}
 
             {(canManageLayout || hasActiveCustomEmbeds) && (
-              <EditorSection
-                sectionKey="embeds"
-                fillStatus={getEditorSectionFill('embeds', formData)}
-                title="Secciones personalizadas"
-                description="FAQ, proceso, CTA, texto, cita o código HTML"
-                onActivate={activatePreviewSection}
+              <PlanGate
+                allowed={entitlements.canUseCustomEmbeds}
+                label={upgradeLabel}
+                onUpgrade={openBilling}
               >
-                <CustomEmbedsFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
-                  canManageLayout={canManageLayout}
-                  pageId={selectedId}
-                />
-              </EditorSection>
+                <EditorSection
+                  sectionKey="embeds"
+                  fillStatus={getEditorSectionFill('embeds', formData)}
+                  title="Secciones personalizadas"
+                  description="FAQ, formulario, CTA, texto, cita o código HTML"
+                  onActivate={activatePreviewSection}
+                >
+                  <CustomEmbedsFieldsEditor
+                    formData={formData}
+                    onChange={setFormData}
+                    canManageLayout={canManageLayout}
+                    pageId={selectedId}
+                  />
+                </EditorSection>
+              </PlanGate>
             )}
 
             <EditorSection
@@ -691,6 +843,10 @@ export default function App() {
                   formData={formData}
                   onChange={setFormData}
                   pageId={selectedId}
+                  canUseExternalFirebase={entitlements.canUseExternalFirebase}
+                  canUseHostingDeploy={entitlements.canUseHostingDeploy}
+                  onUpgradePlan={openBilling}
+                  upgradeLabel={upgradeLabel}
                 />
               )}
               <div className="space-y-2">
@@ -794,6 +950,8 @@ export default function App() {
         onClose={() => setShowCreatePage(false)}
         onCreate={handleCreatePage}
       />
+
+      <BillingPlansPanel open={showBilling} onClose={() => setShowBilling(false)} />
     </div>
   );
 }
