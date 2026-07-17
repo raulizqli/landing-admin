@@ -4,7 +4,7 @@ import App from './App.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import { useAuth } from './contexts/AuthContext.jsx';
 import { useLocale } from './i18n/LocaleContext.jsx';
-import { getMarketingUrl } from './utils/marketingUrl.js';
+import { getMarketingUrl, isExternalMarketingUrl } from './utils/marketingUrl.js';
 
 function AuthLoadingScreen() {
   const { t } = useLocale();
@@ -20,8 +20,14 @@ function GuestMarketingRedirect() {
   const marketingUrl = getMarketingUrl();
 
   useEffect(() => {
+    // Defense in depth: never replace() onto the current origin.
+    if (!isExternalMarketingUrl(marketingUrl)) return;
     window.location.replace(marketingUrl);
   }, [marketingUrl]);
+
+  if (!isExternalMarketingUrl(marketingUrl)) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="h-screen flex flex-col items-center justify-center gap-3 bg-[#081810] text-white font-sans p-6 text-center">
@@ -39,6 +45,10 @@ function RootRoute() {
   const { user, loading } = useAuth();
   if (loading) return <AuthLoadingScreen />;
   if (user) return <Navigate to="/app" replace />;
+  // Admin hosted on the marketing domain → show login instead of looping.
+  if (!isExternalMarketingUrl()) {
+    return <Navigate to="/login" replace />;
+  }
   return <GuestMarketingRedirect />;
 }
 
