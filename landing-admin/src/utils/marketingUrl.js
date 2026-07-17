@@ -1,5 +1,8 @@
 /**
- * Public LeftSideDev marketing URL for guest redirects from admin `/`.
+ * Public LeftSideDev marketing URL (login «back to site» link).
+ *
+ * Prefer the template hosting URL while leftsidedev.site still points at the
+ * admin CMS — otherwise same-origin links just bounce back to /login.
  */
 export function getMarketingUrl() {
   const fromEnv = String(import.meta.env.VITE_MARKETING_URL ?? '').trim();
@@ -9,13 +12,12 @@ export function getMarketingUrl() {
     return 'http://localhost:5174?pageId=leftsidedev';
   }
 
-  return 'https://leftsidedev.site';
+  return 'https://landing-template-9452e.web.app?pageId=leftsidedev';
 }
 
 /**
- * Whether hard-redirecting to the marketing URL is safe.
- * Same-origin targets must not use location.replace — that loops forever when
- * the admin CMS is served on the marketing hostname (e.g. leftsidedev.site).
+ * Whether the marketing URL is on a different origin than the admin.
+ * Used to hide «back to site» when it would only reload the CMS.
  */
 export function isExternalMarketingUrl(
   marketingUrl = getMarketingUrl(),
