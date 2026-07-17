@@ -5,7 +5,7 @@ Plantilla React + Vite desplegable por cliente. Lee un documento de Firestore (`
 Puede vivir **dentro del monorepo** `ecosistema-landings` o como **repositorio independiente** (ver [Repositorio standalone](#repositorio-standalone)).
 
 > Cómo resuelve el `pageId`, lee Firestore y se relaciona con el admin:  
-> [**Cómo funciona `landing-template`**](../README.md#cómo-funciona-landing-template) en el README del ecosistema.
+> [**Arquitectura del ecosistema**](../docs/architecture.md#landing-template).
 
 ## Desarrollo local (monorepo)
 
@@ -22,7 +22,7 @@ Dependencias compartidas: `packages/landing-core` y `packages/landing-ui`.
 
 Variables requeridas en `.env.local`: todas las `VITE_FIREBASE_*` y opcionalmente `VITE_PAGINA_ID`.
 
-Ver en el README del ecosistema la sección [**Para qué sirve `landing-template/.env.local`**](../README.md#para-qué-sirve-landing-templateenvlocal).
+Consulta [**Variables del template**](../docs/local-development.md#variables-del-template).
 
 En desarrollo, si Firestore no está disponible o el documento no existe, se muestra contenido de ejemplo para previsualizar el diseño.
 
@@ -65,7 +65,7 @@ El workflow `.github/workflows/deploy.yml` despliega en push a `main`/`master`. 
 
 ### Resumen rápido
 
-1. **Firestore** — Crea un documento en la colección `paginas` con ID slug (ej. `maria-garcia`).
+1. **CMS** — Crea una landing con ID slug (ej. `maria-garcia`). Se guarda en `pages/{pageId}`.
 
 2. **Admin** — Edita el contenido en `landing-admin`, previsualiza y pulsa **Guardar y Publicar**.
 
@@ -79,7 +79,7 @@ El workflow `.github/workflows/deploy.yml` despliega en push a `main`/`master`. 
 ./scripts/deploy-client-template.sh maria-garcia landing-maria-garcia
 ```
 
-6. **Proyecto Firebase externo** — En el admin, activa «otro proyecto Firebase» y pega credenciales de la cuenta del cliente.
+6. **Proyecto Firebase externo** — En el admin, activa «otro proyecto Firebase» y pega la configuración web de la cuenta del cliente.
 
 ### Variables de entorno por deploy
 
@@ -96,3 +96,9 @@ VITE_PAGINA_ID=maria-garcia   # ← cambia por cada cliente/sitio
 ```
 
 El mismo código sirve para todas las webs; Firebase Hosting aloja el `dist/` compilado con el `VITE_PAGINA_ID` de ese build.
+
+## Documentación
+
+- [Desarrollo local](../docs/local-development.md)
+- [Despliegues y dominios](../docs/deployment.md)
+- [Modelo de datos](../docs/page-model.md)

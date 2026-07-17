@@ -1,1301 +1,143 @@
 # Ecosistema Landings
 
-Plataforma multi-tenant para administrar y desplegar landing pages de psicólogas profesionales.
+Plataforma multi-tenant para crear, administrar y publicar landing pages dinámicas. El contenido se edita en un CMS, se guarda en Firebase y se renderiza con una plantilla pública compartida.
 
-| Proyecto | Puerto dev | Descripción |
-|----------|------------|-------------|
-| [`landing-admin/`](landing-admin/) | `5173` | Panel CMS con editor y vista previa en vivo |
-| [`landing-template/`](landing-template/) | `5174` | Plantilla pública (un deploy multi-dominio o uno por cliente) |
+## Componentes
 
----
+| Componente | Puerto | Responsabilidad |
+|---|---:|---|
+| [`landing-admin/`](landing-admin/) | `5173` | CMS, usuarios, facturación y vista previa en vivo |
+| [`landing-template/`](landing-template/) | `5174` | Aplicación pública de solo lectura |
+| [`packages/landing-core/`](packages/landing-core/) | — | Modelo de página, normalización y utilidades compartidas |
+| [`packages/landing-ui/`](packages/landing-ui/) | — | Componentes React compartidos |
+| [`functions/`](functions/) | — | Usuarios, billing y despliegues mediante Cloud Functions |
 
-## Arquitectura
+## Inicio rápido
 
-```
-Proyecto Firebase (hub) — Firestore, Storage, Hosting, Analytics
-        │
-        ├── landing-admin (Hosting)  ←── edición + guardar
-        │
-        └── landing-template (Hosting)
-                 │
-                 ├── Modo A: un deploy, muchos dominios → resuelve pageId por customDomain
-                 └── Modo B: un sitio/build por cliente → VITE_PAGINA_ID en el build
-
-Paginas/{id} en hub          Contenido en el mismo proyecto
-        o
-Paginas/{id} en hub (ruta)   + contenido en proyecto Firebase externo (otra cuenta)
-```
-
-- **Un documento** en Firestore = una landing.
-- **Modo multi-dominio:** un solo build en Hosting; cada dominio apunta al mismo sitio y la app busca `customDomain` en el hub.
-- **Modo por sitio:** varios sitios de Hosting con `VITE_PAGINA_ID` distinto en cada build (alternativa legacy).
-- **Proyecto externo (solo datos):** el hub guarda dominio + credenciales web; el **contenido** vive en otra cuenta Firebase. El admin suele quedar en Hosting del hub; el **template** puede desplegarse en el hub o en otro hosting (cuenta manual + Deploy Hook desde el admin).
-
-**Stack en producción (hub):** Firestore (rutas), Hosting (admin + template), reglas, Auth/usuarios CMS y Analytics del deploy. No se requiere Vercel ni otro hosting externo.
-
-| Pieza | ¿Dónde vive? |
-|-------|----------------|
-| Hosting del admin | Proyecto **hub** (mismo que el CMS) |
-| Hosting del `landing-template` | Proyecto **hub** por defecto; también puede desplegarse en **otro hosting** (cuenta manual + Deploy Hook desde el admin) |
-| Dominios de clientes (`customDomain`) | Apuntan al Hosting donde sirvas el template (hub u otro) |
-| Contenido de la landing (textos, slides…) | Hub **o** proyecto Firebase externo del cliente |
-| Imágenes subidas | Storage del hub **o** del proyecto externo (según `useExternalFirebase`) |
-
-Cuando activas “datos en otro proyecto Firebase”, **no** mueves el hosting: solo el documento de contenido y el Storage asociados a esa página.
-
----
-
-## Cómo funciona `landing-template`
-
-`landing-template` es la **aplicación pública de solo lectura**. No edita datos: al cargar resuelve *qué* landing mostrar, lee **un documento** de Firestore y lo pinta con los componentes compartidos. El contenido viviente está en Firestore; el código del template es el mismo para todas las profesionales.
-
-### Rol en el ecosistema
-
-```
-Admin (5173)                    Template (5174 / Hosting)
-─────────────                   ─────────────────────────
-Edita formData en local    →    (opcional) Espejo / iframe Local
-       │                              │  postMessage en preview
-       ▼                              ▼
-«Guardar y Publicar»           Visitante abre la URL
-       │                              │
-       ▼                              ▼
-Firestore pages/{id}              resolvePageContext → getDoc
-                              normalizePageData → LandingPage
-```
-
-| | Admin | Template |
-|---|---|---|
-| Escritura | Sí | No |
-| Lectura | Lista + documento al editar | Un solo documento al cargar |
-| Qué define el contenido | Formulario → Firestore | Firestore (no el `.env`) |
-| Re-deploy al guardar | No | No: basta con publicar en el admin |
-
-### 1. Resolver el `pageId`
-
-Al arrancar (`landing-template/src/App.jsx` → `resolvePageContext`), elige el documento en este orden:
-
-1. **Query** — `?pageId=maria-garcia` (alias legado `?paginaId=`). Útil en local y en la vista **Local** del admin.
-2. **Dominio** — en producción (no en `localhost`), busca en el hub un documento cuyo `customDomain` coincida con el hostname.
-3. **Variable de build** — `VITE_PAGINA_ID` embebida al hacer `vite build` / `npm run dev`.
-
-Si no hay `pageId`: en **producción** muestra error; en **desarrollo** o con `?preview=true` muestra contenido demo para diseñarlo sin Firestore.
-
-### 2. Leer y normalizar el documento
-
-Con el `pageId` resuelto:
-
-1. Si la ruta indica **Firebase externo** (`useExternalFirebase` + credenciales), lee en ese proyecto; si no, en el **hub**.
-2. Intenta `getDoc` en la colección canónica **`pages`**, y si no existe, en la legado **`paginas`**.
-3. Pasa el resultado por `normalizePageData()` (`@raulizqli/landing-core`) para migrar campos antiguos en español (`nombre` → `name`, etc.).
-
-No hay listados ni listeners: **una lectura** al montar la página.
-
-### 3. Renderizar la landing
-
-El UI sale de `@raulizqli/landing-ui` (`LandingPage`, navbar, hero, secciones…). La lógica de modelo (slides, labels, temas, embeds…) está en `@raulizqli/landing-core`. En el template, muchos archivos de `src/components/` y `src/utils/` son **re-exports** hacia esos paquetes.
-
-### 4. Vista previa desde el admin
-
-| Modo | Qué pasa |
-|------|----------|
-| **Espejo** | El admin renderiza un espejo interno con `formData` (sin tocar el template ni Firestore por tecla). |
-| **Local** | Iframe a `VITE_TEMPLATE_PREVIEW_URL` (dev: `http://localhost:5174`) con `?pageId=…&preview=true`. El admin envía `LANDING_PREVIEW_UPDATE` / `LANDING_PREVIEW_SCROLL` por `postMessage`. |
-
-En preview, el template solo acepta mensajes del origen admin (`localhost` en DEV; `VITE_ADMIN_ORIGIN` en producción). Analytics no se dispara en DEV ni con `?preview=true`.
-
-### 5. Dos formas de desplegarlo
-
-| Modo | Cómo sabe qué landing es | Cuándo usarlo |
-|------|--------------------------|---------------|
-| **Multi-dominio** (recomendado) | Hostname → `customDomain` en Firestore | Un solo Hosting; muchos dominios al mismo sitio |
-| **Por sitio** | `VITE_PAGINA_ID` fijo en cada build | Un sitio Hosting por cliente (`scripts/deploy-client-template.sh`) |
-
-En ambos casos, textos e imágenes siguen en Firestore (o en el Firebase externo del cliente). Cambiar el contenido **no** exige redeploy del template.
-
-### Variables que importan
-
-| Variable | Rol |
-|----------|-----|
-| `VITE_FIREBASE_*` | Conexión al hub (siempre; también para resolver dominios) |
-| `VITE_PAGINA_ID` | Fallback / modo por sitio; en multi-dominio es opcional |
-| `VITE_ENABLE_APP_CHECK` | Opt-in; por defecto **apagado** en el template público |
-| `VITE_ADMIN_ORIGIN` | Origen del admin para aceptar `postMessage` en preview remoto |
-| `VITE_FIREBASE_MEASUREMENT_ID` | GA4 por defecto si el documento no trae `analyticsMeasurementId` |
-
-Detalle de `.env.local` y deploys: [Para qué sirve `landing-template/.env.local`](#para-qué-sirve-landing-templateenvlocal) y [`landing-template/README.md`](landing-template/README.md).
-
----
-
-## Desarrollo local
+Requisitos: Node.js, npm y un proyecto Firebase con una aplicación web configurada.
 
 ```bash
-# Terminal 1 — Admin
+# Instalar todos los workspaces
+npm install
+
+# Configurar variables locales
+cp landing-admin/.env.example landing-admin/.env.local
+cp landing-template/.env.example landing-template/.env.local
+```
+
+Completa las variables `VITE_FIREBASE_*` en ambos archivos. Después, abre dos terminales:
+
+```bash
+# Terminal 1 — CMS
 cd landing-admin
-cp .env.example .env.local   # completa VITE_FIREBASE_* y VITE_TEMPLATE_PREVIEW_URL
-npm install
-npm run dev                  # http://localhost:5173 → redirige a la landing LeftSideDev
-                             # Login: http://localhost:5173/login
-                             # CMS:   http://localhost:5173/app
+npm run dev
 
-# Terminal 2 — Template
+# Terminal 2 — landing pública
 cd landing-template
-cp .env.example .env.local   # completa Firebase + VITE_PAGINA_ID
-npm install
-npm run dev                  # http://localhost:5174
-                             # Landing comercial: http://localhost:5174?pageId=leftsidedev
+npm run dev
 ```
 
-Ambos proyectos liberan su puerto automáticamente antes de arrancar (`5173` admin, `5174` template).
-
-**Rutas del admin**
-
-| Ruta | Sin sesión | Con sesión |
-|------|------------|------------|
-| `/` | Redirect a la landing LeftSideDev (`VITE_MARKETING_URL`) | Redirect a `/app` |
-| `/login` | Pantalla de acceso | Redirect a `/app` |
-| `/app` | Redirect a `/login` | Editor CMS |
-
-**Landing comercial LeftSideDev:** documento Firestore `pages/leftsidedev` (`customDomain: leftsidedev.site`). Seed:
-
-```bash
-cd functions && node scripts/seed-leftsidedev-page.mjs
-```
-
-Vista previa local: `http://localhost:5174?pageId=leftsidedev`. En producción, cuando DNS apunte el template a `leftsidedev.site`, la misma página se resuelve por hostname.
-
-### Variables de entorno
-
-**`landing-admin/.env.local`**
-
-| Variable | Obligatoria | Descripción |
-|----------|-------------|-------------|
-| `VITE_FIREBASE_API_KEY` | Sí | Credenciales Firebase |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Sí | |
-| `VITE_FIREBASE_PROJECT_ID` | Sí | |
-| `VITE_FIREBASE_STORAGE_BUCKET` | Sí | Necesaria para subir imágenes |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Sí | |
-| `VITE_FIREBASE_APP_ID` | Sí | |
-| `VITE_TEMPLATE_PREVIEW_URL` | Dev | `http://localhost:5174` para vista previa Local |
-| `VITE_MARKETING_URL` | No | Destino de `/` sin sesión. Dev tip: `http://localhost:5174?pageId=leftsidedev`. Prod default: `https://leftsidedev.site` |
-| `VITE_FIREBASE_MEASUREMENT_ID` | No | GA4 por defecto si la landing no define ID propio |
-| `VITE_BOOTSTRAP_ROOT_EMAIL` | No | Email del primer root; al iniciar sesión crea `users/{uid}` con rol `root` si no existe |
-| `VITE_RECAPTCHA_SITE_KEY` | Sí (prod) | Clave **reCAPTCHA v3** para App Check (no uses v2) |
-| `VITE_APP_CHECK_DEBUG_TOKEN` | Dev | Token de depuración registrado en Firebase Console |
-
-### Firebase App Check
-
-Las escrituras en Firestore, Storage y las Cloud Functions del CMS exigen un token válido de **App Check**. El login con Auth funciona sin App Check hasta que lo actives en la consola para Authentication.
-
-**Por qué no puedes habilitarlo:** casi siempre es porque la clave es **reCAPTCHA v2** (checkbox). App Check solo acepta **reCAPTCHA v3** (score-based).
-
-**Configuración paso a paso:**
-
-1. Crea una clave nueva en [Google reCAPTCHA Admin](https://www.google.com/recaptcha/admin/create) → tipo **reCAPTCHA v3**.
-2. Dominios: `localhost`, `127.0.0.1`, `landing-admin-9452e.firebaseapp.com` y tus dominios de producción.
-3. Firebase Console → **App Check** → **Apps** → tu app web → proveedor **reCAPTCHA v3** → pega la site key.
-4. En `landing-admin/.env.local` y `landing-template/.env.local`:
-   ```
-   VITE_RECAPTCHA_SITE_KEY=tu_clave_v3
-   ```
-5. **Desarrollo local:** arranca el admin, abre la consola del navegador y copia el token debug que imprime App Check. Regístralo en App Check → **Manage debug tokens**.
-6. Activa App Check en modo **Monitor** para Firestore, Storage y Functions antes de **Enforce**.
-7. Si la API falla al registrar: habilita **Firebase App Check API** en [Google Cloud Console](https://console.cloud.google.com/apis/library/firebaseappcheck.googleapis.com?project=landing-admin-9452e).
-
-El secreto de reCAPTCHA (`RECAPCHA_SECRET`) **no** va en el cliente; solo la site key con prefijo `VITE_`.
-
-### Autenticación y roles (admin)
-
-El panel admin requiere **Firebase Authentication** (email/contraseña). Los permisos viven en Firestore, colección **`users/{uid}`**:
-
-| Rol | Acceso |
-|-----|--------|
-| `root` | Ve y edita **todas** las páginas. Gestiona usuarios. |
-| `admin` | Ve y edita solo las páginas en `assignedPageIds`. |
-| `user` | Ve y edita **una sola** página (`pageId`). |
-
-**Bootstrap inicial (desarrollo):**
-
-1. Activa **Email/Password** en Firebase Console → Authentication.
-2. Crea un usuario con email/contraseña.
-3. En `landing-admin/.env.local`, define `VITE_BOOTSTRAP_ROOT_EMAIL` con ese email.
-4. Inicia sesión en el admin → se crea automáticamente `users/{uid}` con rol `root`.
-5. Despliega las reglas de `firestore.rules` y `storage.rules` (escritura autenticada por rol + App Check).
-6. Configura App Check (ver sección anterior) antes de guardar páginas en producción.
-7. Despliega las Cloud Functions: `npm run deploy:functions` (necesarias para crear usuarios desde el panel).
-
-**Gestionar usuarios desde el panel:** el root abre **Usuarios** en la barra lateral, completa email, contraseña, rol y páginas, y pulsa **Crear usuario**. La función `createCmsUser` registra la cuenta en Firebase Auth y el perfil en `users/{uid}`.
-
-**Cloud Functions** (`functions/`):
-
-| Función | Quién puede llamarla | Qué hace |
-|---------|----------------------|----------|
-| `createCmsUser` | root autenticado | Crea usuario Auth (email/contraseña) + perfil Firestore |
-| `deleteCmsUser` | root autenticado | Elimina perfil Firestore y cuenta Auth |
-| `ensureBillingAccount` | usuario autenticado | Crea / enlaza `billingAccounts/{accountId}` al perfil |
-| `createBillingCheckout` | usuario autenticado | Inicia checkout **Stripe** o **Mercado Pago** (Starter / Pro / Agency) |
-| `setBillingPlanManual` | root | Activa un plan (p. ej. Enterprise) sin pago |
-| `stripeBillingWebhook` | Stripe (HTTP) | Actualiza plan/estado tras pago o cambio de suscripción |
-| `mercadoPagoBillingWebhook` | Mercado Pago (HTTP) | Actualiza plan/estado de preapproval |
-
-### Planes SaaS (4 tiers)
-
-| Plan | Páginas | Highlights | Precio orientativo |
-|------|---------|------------|--------------------|
-| **Starter** | 1 | Secciones básicas | US$19 / MX$349 mes |
-| **Pro** | 1 | Blog, embeds, galería portfolio, mapa lateral, autoplay | US$49 / MX$899 mes |
-| **Agency** | hasta 5 | Firebase externo + deploy hosting + soporte prioritario | US$129 / MX$2499 mes |
-| **Enterprise** | ilimitadas | Todo ilimitado + soporte **24/7** (ventas / activación manual root) | A medida |
-
-- Colección: `billingAccounts` (campos en inglés: `plan`, `status`, `provider`, `stripeCustomerId`, `mercadoPagoPreapprovalId`, `pageIds`, …).
-- `users/{uid}.accountId` enlaza el perfil al account. **Root** bypasea entitlements (ops).
-- UI: botón **Facturación / Billing** en el admin; locale **es / en** (`LocaleProvider`).
-- Código de planes: `packages/landing-core/src/billingPlans.js`.
-
-Variables de entorno en **Cloud Functions** (archivo `functions/.env`, plantilla en `functions/.env.example`):
-
-```bash
-ADMIN_PUBLIC_URL=https://landing-admin-9452e.web.app
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PRICE_STARTER=price_...
-STRIPE_PRICE_PRO=price_...
-STRIPE_PRICE_AGENCY=price_...
-# opcional:
-STRIPE_PRICE_ENTERPRISE=price_...
-MERCADOPAGO_ACCESS_TOKEN=TEST-...
-```
-
-En el admin: `VITE_BILLING_SALES_EMAIL` (mailto del plan Enterprise).
-
-### Checklist de activación billing
-
-1. **Desplegar reglas + functions** (desde la raíz):
-
-```bash
-firebase deploy --only firestore:rules,functions
-# o por separado:
-# firebase deploy --only firestore:rules
-# npm run deploy:functions
-```
-
-2. **Stripe (test primero)**  
-   - Crear 3 productos/precios mensuales (Starter / Pro / Agency).  
-   - Copiar `price_...` a `STRIPE_PRICE_*` y la secret key a `STRIPE_SECRET_KEY`.  
-   - Webhook → URL:  
-     `https://us-central1-landing-admin-9452e.cloudfunctions.net/stripeBillingWebhook`  
-     Eventos: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.  
-   - Copiar el signing secret a `STRIPE_WEBHOOK_SECRET`.  
-   - Volver a desplegar functions: `npm run deploy:functions`.
-
-3. **Mercado Pago**  
-   - Access Token (test o prod) → `MERCADOPAGO_ACCESS_TOKEN`.  
-   - Webhooks / notificaciones → URL:  
-     `https://us-central1-landing-admin-9452e.cloudfunctions.net/mercadoPagoBillingWebhook`  
-   - Redeploy functions.
-
-4. **Probar en el admin**  
-   - Login → botón **Facturación / Billing**.  
-   - Checkout Stripe o Mercado Pago en modo test.  
-   - Enterprise: mailto / activación manual root (`setBillingPlanManual`).
-
-Webhooks (proyecto actual `landing-admin-9452e`):
-
-- Stripe → `https://us-central1-landing-admin-9452e.cloudfunctions.net/stripeBillingWebhook`
-- Mercado Pago → `https://us-central1-landing-admin-9452e.cloudfunctions.net/mercadoPagoBillingWebhook`
-
-Despliegue:
-
-```bash
-npm run deploy:functions
-```
-
-Desarrollo local con emulador (opcional):
-
-```bash
-firebase emulators:start --only functions
-# En landing-admin/.env.local:
-# VITE_FUNCTIONS_EMULATOR_HOST=127.0.0.1:5001
-```
-
-**Edición de usuarios existentes:** actualiza rol y páginas en Firestore. El email y la contraseña de Authentication no se cambian desde el panel (requeriría otra función).
-
-Esquema de perfil:
-
-```json
-{
-  "email": "ana@ejemplo.com",
-  "role": "admin",
-  "accountId": "uid-or-billing-account-id",
-  "assignedPageIds": ["maria-garcia", "lucia-ruiz"],
-  "pageId": ""
-}
-```
-
-Para `user`, solo `pageId` (una página). Las reglas de Firestore y Storage validan estos permisos en el servidor.
-
-**`landing-template/.env.local`**
-
-| Variable | Obligatoria | Descripción |
-|----------|-------------|-------------|
-| `VITE_FIREBASE_*` | Sí | Mismas credenciales que el admin |
-| `VITE_PAGINA_ID` | No* | Fallback del documento a leer (ej. `maria-garcia`). *Obligatorio en modo por-sitio; en multi-dominio suele bastar `customDomain` |
-| `VITE_FIREBASE_MEASUREMENT_ID` | No | ID de medición GA4 (`G-XXXXXXXX`) |
-| `VITE_ADMIN_ORIGIN` | Prod | Origen del admin para `postMessage` en vista previa remota |
-
-### Para qué sirve `landing-template/.env.local`
-
-El archivo **`.env.local`** es la configuración de **tu máquina** al ejecutar `npm run dev` en `landing-template`. No forma parte del repositorio (está en `.gitignore`) y **no** guarda el contenido de las landings: solo indica *cómo conectar* la plantilla con Firebase y *qué documento* leer.
-
-**Flujo de trabajo:**
-
-1. Copia la plantilla sin secretos: `cp .env.example .env.local`
-2. Rellena las variables con los mismos valores Firebase que usa `landing-admin`
-3. Pon en `VITE_PAGINA_ID` el slug del documento que quieres ver (ej. `maria-garcia`)
-4. Arranca `npm run dev` → la app resuelve el `pageId` (`?pageId=`, `VITE_PAGINA_ID` o dominio) y hace `getDoc` a `pages/{id}` (o `paginas/{id}` legado)
-
-**Qué hace cada variable en el template:**
-
-| Variable | Función en desarrollo |
-|----------|----------------------|
-| `VITE_FIREBASE_*` | Credenciales del proyecto Firebase compartido con el admin. Sin ellas no hay conexión a Firestore ni Storage. |
-| `VITE_PAGINA_ID` | **Selector de cliente.** Define qué landing cargar. Cambia este valor para previsualizar otra profesional sin tocar código. |
-| `VITE_FIREBASE_MEASUREMENT_ID` | GA4 por defecto si el documento en Firestore no define `analyticsMeasurementId`. En dev el tracking suele estar desactivado. |
-| `VITE_ADMIN_ORIGIN` | Solo si usas vista previa **Local** del admin apuntando a un template desplegado (no a `localhost`). Debe coincidir con la URL del admin para aceptar `postMessage`. |
-
-**`.env.local` vs producción (Firebase Hosting):**
-
-| Entorno | Dónde va la config | Notas |
-|---------|-------------------|--------|
-| Desarrollo | `landing-template/.env.local` | Un solo archivo; cambias `VITE_PAGINA_ID` para probar distintas landings |
-| Producción | `landing-template/.env.production` antes del build | Vite embebe las variables al compilar; un **sitio de Hosting** por cliente con su `VITE_PAGINA_ID` |
-
-El código del template es **el mismo** para todas las webs. La diferencia entre la landing de una oftalmóloga y la de una psicóloga no está en `.env.local` salvo por `VITE_PAGINA_ID`: textos, imágenes, catálogo y secciones viven en **Firestore** y se editan desde el admin.
-
-**Alternativa en dev sin cambiar `.env.local`:** pasa el ID por query: `http://localhost:5174?pageId=maria-garcia` (así lo abre la vista previa Local del admin). Si no hay `pageId` ni `VITE_PAGINA_ID`, en desarrollo/`?preview=true` verás contenido demo; en producción sin preview, un error de configuración.
-
-Explicación completa del runtime: [Cómo funciona `landing-template`](#cómo-funciona-landing-template).
-
-**No confundir con:**
-
-- **`.env.example`** — plantilla documentada para el equipo; sin valores reales; sí se sube a git
-- **Contenido de la landing** — nombre, servicios, catálogo, etc.; eso está en Firestore, no en variables de entorno
-- **`landing-admin/.env.local`** — config del panel CMS (`VITE_TEMPLATE_PREVIEW_URL`, mismas credenciales Firebase)
-
----
-
-## Esquema de datos (`pages`)
-
-Cada documento en la colección **`pages`** representa una landing. La colección legada **`paginas`** sigue siendo legible para compatibilidad; los guardados nuevos van a `pages`.
-
-### Identidad y contenido
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `name` | string | Nombre profesional |
-| `specialty` | string | Especialidad o enfoque |
-| `vertical` | string | Preset de industria (`generic`, `psychology`, `dental`, `veterinary`, `legal`, `medical`, `beauty`, `fitness`, `education`, `ecommerce`). Default `generic`. Ajusta textos por defecto; `customLabels` tiene prioridad. |
-| `aboutTagline` | string | Frase destacada en «Sobre mí» |
-| `aboutBio` | string | Biografía |
-| `location` | string | Ubicación del consultorio |
-| `locationMapsUrl` | string | Enlace de Google Maps o URL embed (`/maps/embed?pb=...`) |
-| `showLocationMap` | boolean | Mostrar mapa embebido en la sección contacto |
-| `contactMapLayout` | `'below'` \| `'beside'` | Posición del mapa: debajo (default) o al lado en escritorio (en móvil siempre abajo) |
-| `email` | string | Email público |
-| `phone` | string | Teléfono público |
-| `phoneIsWhatsapp` | boolean | Si es `true`, el teléfono abre WhatsApp en lugar de llamada |
-
-### Barra de navegación
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `navMode` | `'profile'` \| `'logo'` | Estilo de marca en el navbar |
-| `navIconUrl` | string | URL de icono/foto (modo perfil) |
-| `navLogoUrl` | string | URL del logo grande (modo logo) |
-| `navIconOnly` | boolean | En modo perfil: solo icono, sin nombre/especialidad |
-| `navCtaTarget` | `'email'` \| `'whatsapp'` \| `'link'` | Destino del botón «Reservar cita» |
-| `navCtaLink` | string | URL personalizada (solo si `navCtaTarget` es `'link'`) |
-
-### Sección antes del hero (`preHero`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `preHeroEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `preHeroMode` | `'banner'` \| `'split'` | Imagen completa o foto + título/texto editables |
-| `preHeroImageSide` | `'left'` \| `'right'` | En modo `split`: lado de la imagen (por defecto `left`) |
-| `preHeroImageUrl` | string | URL o imagen subida a Storage |
-| `preHeroTitle` | string | Título (solo modo `split`) |
-| `preHeroText` | string | Párrafos separados por línea en blanco (solo modo `split`) |
-
-### Carrusel hero (`heroSlides`)
-
-Array de diapositivas. Cada elemento:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `imageUrl` | string | Imagen de fondo (URL o Firebase Storage) |
-| `videoUrl` | string | Enlace de video opcional (YouTube, Vimeo o `.mp4` directo). Fondo en bucle sin sonido |
-| `title` | string | Título opcional |
-| `text` | string | Texto opcional |
-| `showTitle` | boolean | Mostrar título en la diapositiva |
-| `showText` | boolean | Mostrar texto en la diapositiva |
-| `showButtons` | boolean | Mostrar CTAs «Contactar» / «Conocer más» |
-| `buttonsPosition` | string | `center` · `top` · `bottom` · `top-left` · `top-right` · `bottom-left` · `bottom-right` |
-| `showGradient` | boolean | Mostrar velo/degradado oscuro sobre la imagen (por defecto `true`) |
-
-Al guardar, el admin sincroniza `heroTitle` y `heroSubtitle` desde la primera diapositiva (compatibilidad con datos antiguos).
-
-### Servicios y temas (`services`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `servicesSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `servicesSectionTitle` | string | Título de la sección |
-| `servicesSectionText` | string | Texto introductorio opcional |
-| `servicesDisplayMode` | `'stack'` \| `'carousel'` | Lista vertical o carrusel |
-| `servicesCarouselPerView` | `1`–`4` | Ítems visibles por página del carrusel (default `3`) |
-| `servicesCarouselAutoplay` | boolean | `true` = avance automático (~5 s); `false` = solo botones. En automático se pausa al pasar el mouse |
-| `services` | array | Lista de servicios o temas |
-
-Cada elemento de `services`:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `layout` | string | `title` · `title_description` · `title_list` (ver abajo) |
-| `title` | string | Nombre del servicio o tema |
-| `description` | string | Texto (layouts con descripción) |
-| `listItems` | string[] | Ítems de lista, una línea cada uno (layout `title_list`) |
-| `imageUrl` | string | Imagen **opcional** en los tres layouts |
-
-Layouts de ítem:
-
-| `layout` | Contenido |
-|----------|-----------|
-| `title` | Solo título (+ imagen opcional) |
-| `title_description` | Título + descripción (+ imagen opcional) |
-| `title_list` | Título + viñetas (`listItems`) (+ imagen opcional) |
-
-Aliases legacy al leer: `list` / `title_description_image` → `title_description`; `title_image` → `title`; `title_list_image` → `title_list`.
-
-Ubicada entre «Sobre mí» y la sección de catálogo. Solo se muestran ítems visibles según su layout (título/descripción/lista/imagen).
-
-### Catálogo de productos (`catalog`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `catalogSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `catalogSectionTitle` | string | Título de la sección |
-| `catalogSectionText` | string | Texto introductorio opcional |
-| `catalogItems` | array | Lista de productos |
-
-Cada elemento de `catalogItems`:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `title` | string | Nombre del producto |
-| `description` | string | Descripción breve |
-| `imageUrl` | string | Foto del producto (URL o Firebase Storage) |
-| `price` | string | Precio visible opcional (ej. `$2,500 MXN`) |
-| `link` | string | Enlace opcional («Ver más») |
-
-Ubicada entre «Servicios» y «Galería». Útil para lentes, armazones, paquetes u otros productos.
-
-### Galería (`gallery`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `gallerySectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `gallerySectionTitle` | string | Título de la sección |
-| `gallerySectionText` | string | Intro opcional |
-| `galleryPortfolioUrl` | string | URL opcional al portafolio completo externo (Pixieset, SmugMug, Format, etc.) |
-| `galleryPortfolioLabel` | string | Texto del botón CTA (si vacío: etiqueta `gallery.viewPortfolio`) |
-| `galleryItems` | array | Fotos de la galería |
-
-Cada elemento de `galleryItems`:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `imageUrl` | string | Imagen (obligatoria para publicarse) |
-| `caption` | string | Leyenda opcional |
-| `alt` | string | Texto alternativo opcional |
-
-Ubicada entre «Catálogo» y «Video». Ideal para una selección curada; el CTA apunta al portafolio grande externo.
-
-### Sección de video (`videoSection`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `videoSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `videoSectionUrl` | string | Enlace YouTube, Vimeo o `.mp4` directo |
-| `videoSectionTitle` | string | Título opcional sobre el reproductor |
-| `videoSectionText` | string | Texto introductorio opcional (párrafos con línea en blanco) |
-
-Reproductor 16:9 con controles visibles, ubicado entre «Galería» y «Testimonios».
-
-### Testimonios (`testimonials`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `testimonialsEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `testimonialsSectionTitle` | string | Título de la sección (por defecto «Testimonios») |
-| `testimonials` | array | Lista de testimonios |
-
-Cada elemento de `testimonials`:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `title` | string | Nombre o atribución (ej. «María G.») |
-| `quote` | string | Frase del testimonio (obligatoria para mostrarse) |
-| `imageUrl` | string | Foto opcional (URL o Firebase Storage) |
-
-Ubicada entre la sección de video y «Blog» / «Contacto». Solo se muestran entradas con `quote` no vacío. Sin foto, se muestran iniciales del `title` (o una comilla tipográfica).
-
-### Blog / noticias (`blog`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `blogSectionEnabled` | boolean | Mostrar la sección (por defecto `false`) |
-| `blogSectionTitle` | string | Título de la sección |
-| `blogSectionText` | string | Intro opcional |
-| `blogPosts` | array | Entradas / bloques |
-
-Cada elemento de `blogPosts`:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `layout` | string | `title_text` · `title_text_image_left` · `title_image_right_text` · `title_image` · `image_only` |
-| `title` | string | Título del bloque |
-| `text` | string | Cuerpo |
-| `imageUrl` | string | Imagen (según layout) |
-| `imageAlt` | string | Alt opcional |
-
-Ubicada entre «Testimonios» y «Contacto».
-
-### Secciones personalizadas (`customEmbeds`)
-
-Array de bloques extras insertables en distintas posiciones (`placement`: `before_pre_hero`, `after_hero`, `after_gallery`, `after_contact`, …).
-
-| Campo común | Tipo | Descripción |
-|-------------|------|-------------|
-| `id` | string | Identificador estable |
-| `enabled` | boolean | Activo |
-| `type` | string | Tipo de bloque (ver abajo) |
-| `label` | string | Nombre interno (solo admin) |
-| `title` | string | Título visible |
-| `placement` | string | Ancla de posición |
-| `fullWidth` | boolean | Sin contenedor central |
-| `sortOrder` | number | Orden relativo |
-
-Tipos:
-
-| `type` | Uso / campos relevantes |
-|--------|-------------------------|
-| `pre_hero` | Bloque banner/split (`preHeroMode`, `preHeroImageSide`, `imageUrl`, `body`) |
-| `services` | Servicios extra (`serviceItems` con los mismos layouts, `servicesDisplayMode`, `servicesCarouselPerView`, `servicesCarouselAutoplay`) |
-| `portfolio` | Portafolio externo: `portfolioUrl`, `portfolioProvider` (`pixieset` \| `smugmug` \| `format` \| `adobe` \| `custom`), CTA, `htmlCode` opcional (embed) |
-| `faq` | Preguntas (`faqItems[]`) |
-| `steps` | Proceso (`steps[]`) |
-| `text` | Texto editorial (`body`) |
-| `cta` | Banner de cita (`ctaText`, `ctaButtonLabel`, `ctaButtonUrl`) |
-| `quote` | Cita destacada (`quoteText`, `quoteAttribution`) |
-| `embed` | HTML libre (`htmlCode`) |
-
-**Layout lock (roles):** solo **root** puede activar/desactivar secciones de página y añadir/quitar embeds. Admin/user editan el contenido de lo ya habilitado.
-
-> **Compatibilidad:** al leer documentos antiguos con nombres en español (`nombre`, `ubicacion`, `navModo: 'perfil'`, etc.), `normalizePageData()` los convierte automáticamente al esquema en inglés.
-
-### Redes sociales
-
-Se guardan **solo identificadores** (no URLs completas). El prefijo del enlace es fijo en la UI.
-
-| Campo | Prefijo | Ejemplo guardado |
-|-------|---------|------------------|
-| `instagram` | `instagram.com/` | `usuario` |
-| `whatsapp` | `wa.me/` | `525512345678` |
-| `facebook` | `facebook.com/` | `pagina` |
-| `linkedin` | `linkedin.com/in/` | `usuario` |
-| `doctoralia` | `doctoralia.com.mx/` | `nombre-apellido/especialidad` |
-| `tiktok` | `tiktok.com/@` | `usuario` |
-| `youtube` | `youtube.com/@` | `canal` |
-| `socialIconOnly` | — | `true` = botones solo con icono |
-
-### Apariencia por sección (`sectionThemes`)
-
-Objeto opcional con el fondo de cada bloque de la landing. Si no existe, se usan los colores por defecto del diseño.
-
-Claves disponibles: `page`, `nav`, `preHero`, `hero`, `about`, `services`, `catalog`, `gallery`, `video`, `testimonials`, `blog`, `contact`, `social`, `footer`.
-
-Cada sección admite:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `backgroundColor` | string | Color hex (`#F4F1EA`) |
-| `useGradient` | boolean | Activar degradado entre dos colores |
-| `gradientColor` | string | Segundo color del degradado |
-| `gradientDirection` | string | `to-bottom`, `to-top`, `to-left`, `to-right`, `to-bottom-right`, `to-bottom-left`, `to-top-right`, `to-top-left` |
-
-Solo en `nav`:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `backgroundOpacity` | number | Transparencia 0–100 (por defecto `90`). Incluye blur de fondo |
-
-Ejemplo:
-
-```json
-"sectionThemes": {
-  "nav": {
-    "backgroundColor": "#F4F1EA",
-    "useGradient": false,
-    "gradientColor": "#E8E4DB",
-    "gradientDirection": "to-bottom",
-    "backgroundOpacity": 70
-  },
-  "services": {
-    "backgroundColor": "#FFFFFF",
-    "useGradient": true,
-    "gradientColor": "#F4F1EA",
-    "gradientDirection": "to-bottom-right"
-  }
-}
-```
-
-En el admin, cada sección del formulario incluye un bloque **Fondo de sección**; la barra de navegación añade el control de transparencia. **Apariencia general** configura página, hero (fallback sin imagen) y pie.
-
-### Dominio y proyecto Firebase (`customDomain`, `externalFirebase`)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `customDomain` | string | Dominio sin `www.` (ej. `dra-maria.com`). Resolución multi-dominio en producción |
-| `useExternalFirebase` | boolean | Si `true`, el **contenido** se lee/escribe en otro proyecto Firebase |
-| `externalFirebase` | object | `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId` |
-
-Con proyecto externo, el **hub** guarda nombre, `customDomain` y credenciales web; el documento completo vive en la otra cuenta. Configura reglas de **lectura pública** en `pages` / `paginas` (y Storage) en ese proyecto.
-
-**Hosting:** el admin suele estar en el **hub**. El `landing-template` puede estar en el hub o en **otro hosting** (Vercel/Netlify/…): la cuenta se crea a mano y desde el admin se dispara el Deploy Hook — ver [Publicar el template en otro hosting](#publicar-el-template-en-otro-hosting-desde-el-admin).
-
-Guía de datos externos: [Landing con contenido en otra cuenta Firebase](#landing-con-contenido-en-otra-cuenta-firebase).
-
-### Analytics
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `analyticsMeasurementId` | string | ID GA4 (`G-XXXXXXXX`). Si está vacío, usa `VITE_FIREBASE_MEASUREMENT_ID` del deploy |
-
-En producción se registran: `page_view`, clics en CTAs, contacto (email/teléfono) y redes sociales. No se activa en desarrollo ni en vista previa (`?preview=true`).
-
----
-
-## Dónde se guardan los datos
-
-Todo el contenido editable de cada landing vive en **tu proyecto de Firebase**. El código en Firebase Hosting/Git solo sirve la aplicación; **no** guarda textos ni imágenes de las profesionales.
-
-### Resumen rápido
-
-| Qué | Dónde | Cuándo se escribe |
-|-----|--------|-------------------|
-| Textos, toggles, redes, carrusel, configuración | **Firestore** → colección `paginas` | Al pulsar **Guardar y Publicar** en el admin |
-| Imágenes subidas desde el admin | **Firebase Storage** → `paginas/{id}/...` | Al subir un archivo (la URL resultante se guarda en Firestore al publicar) |
-| URLs de imágenes pegadas manualmente | **Firestore** (campo `*Url`) | Al publicar |
-| Credenciales Firebase, `VITE_PAGINA_ID`, GA4 | **`.env.local`** (dev) o **`.env.production`** + build (prod) | Se compilan en el bundle estático; no van en Firestore |
-| Vista previa mientras escribes | **Memoria del navegador** (`formData` en el admin) | En cada tecla; **no** se persiste hasta guardar |
-| Métricas de visitas y clics | **Firebase Analytics / GA4** | Automático en producción (no en dev ni `?preview=true`) |
-
-### Firestore — contenido de cada landing
-
-**Ruta en consola:** [Firebase Console](https://console.firebase.google.com/) → tu proyecto → **Firestore Database** → colección **`paginas`** → documento **`{id}`**.
-
-Ejemplo para la psicóloga con ID `maria-garcia`:
-
-```
-paginas/
-└── maria-garcia/          ← mismo valor que VITE_PAGINA_ID en el deploy
-    ├── name: "Dra. María García"
-    ├── specialty: "Psicología clínica"
-    ├── email: "contacto@ejemplo.com"
-    ├── heroSlides: [ { imageUrl, title, text, ... }, ... ]
-    ├── navIconUrl: "https://firebasestorage.googleapis.com/..."
-    ├── instagram: "usuario"
-    ├── analyticsMeasurementId: "G-XXXXXXXX"
-    └── ... (resto de campos del esquema)
-```
-
-- **Un documento** = una landing.
-- El **ID del documento** es el identificador permanente (slug). Debe coincidir con `VITE_PAGINA_ID` en el deploy del template de esa cliente.
-- El admin **lee** la lista al abrir y **escribe** con `updateDoc` al guardar.
-- El template en producción **solo lee** un documento (`getDoc`) al cargar la página.
-
-### Firebase Storage — archivos de imagen
-
-**Ruta en consola:** Firebase Console → **Storage** → carpeta **`paginas/`**.
-
-Estructura al subir desde el admin:
-
-```
-paginas/
-└── maria-garcia/
-    ├── hero-slide-1-1712345678901.jpg
-    ├── pre-hero-1712345678902.png
-    ├── nav-icono-1712345678903.jpg
-    └── nav-logo-1712345678904.png
-```
-
-- El admin sube el archivo a Storage y obtiene una **URL pública de descarga**.
-- Esa URL se guarda en el campo correspondiente del documento Firestore (`imagenUrl`, `navIconoUrl`, etc.) cuando publicas.
-- Si pegas una URL externa (Unsplash, CDN propio), **no** pasa por Storage: la URL va directo a Firestore.
-
-### Variables de entorno (no son contenido de la landing)
-
-Archivos locales (no subir a git):
-
-- `landing-admin/.env.local`
-- `landing-template/.env.local`
-
-Guía detallada del template: [Para qué sirve `landing-template/.env.local`](#para-qué-sirve-landing-templateenvlocal).
-
-En Firebase Hosting, cada **sitio** del template puede apuntar a un build con `VITE_PAGINA_ID` distinto. Lo importante:
-
-- **`VITE_PAGINA_ID`** indica **qué documento** de Firestore leer; el contenido sigue estando en Firebase.
-- **`VITE_FIREBASE_*`** apuntan al mismo proyecto Firebase que usa el admin.
-
-### Qué no se guarda en la nube
-
-| Dato | Motivo |
-|------|--------|
-| Cambios del formulario sin guardar | Solo existen en el estado React del admin hasta **Guardar y Publicar** |
-| Modo demo (`vista-previa-demo`) | No hay documento en Firestore; contenido de relleno local |
-| Build de `landing-admin/dist` y `landing-template/dist` | Artefactos estáticos subidos a Firebase Hosting; se regeneran en cada deploy |
-
-### Cómo comprobar que los datos están guardados
-
-1. Edita una landing en el admin y pulsa **Guardar y Publicar**.
-2. Abre Firebase Console → Firestore → `paginas` → el documento de esa landing.
-3. Verifica que los campos actualizados coinciden con el formulario.
-4. Si subiste imágenes, revisa Storage en `paginas/{id}/` y que los campos `*Url` en Firestore apunten a `firebasestorage.googleapis.com`.
-5. Recarga la landing pública (o el template local con el `VITE_PAGINA_ID` correcto) para confirmar que lee esos datos.
-
----
-
-## Subida de imágenes
-
-Desde el admin puedes **subir imágenes** (JPG, PNG, WEBP, GIF; máx. 5 MB) además de pegar URLs:
-
-- Fondo del carrusel hero (por diapositiva)
-- Sección antes del hero (foto o banner)
-- Icono/foto del navbar
-- Logo personalizado del navbar
-
-Las imágenes se almacenan en Firebase Storage bajo `paginas/{id}/...` y la URL de descarga se guarda en Firestore al publicar.
-
-### Reglas de Storage
-
-Despliega las reglas incluidas en [`storage.rules`](storage.rules):
-
-```bash
-firebase deploy --only storage
-```
-
----
-
-## Landing con contenido en otra cuenta Firebase
-
-Usa esto cuando el **cliente** quiere que textos e imágenes vivan en **su** proyecto Firestore/Storage, pero el sitio web sigue sirviéndose desde el Hosting del hub (admin + template).
-
-### Qué es externo y qué no
-
-| | Proyecto hub (admin + template) | Proyecto Firebase del cliente |
-|--|--------------------------------|-------------------------------|
-| Hosting / URL / dominios | Sí | No (no hace falta Hosting ahí) |
-| Documento de ruta (`customDomain`, credenciales) | Sí | — |
-| Documento de contenido (`name`, hero, servicios…) | Solo si externo está apagado | Sí, si `useExternalFirebase` |
-| Storage de imágenes de esa landing | Solo si externo está apagado | Sí, si externo está activo |
-| Credenciales en el `.env` del template | Siempre del **hub** | Van en el documento (`externalFirebase`), no en el build |
-
-### Paso 1 — Proyecto del cliente
-
-1. En [Firebase Console](https://console.firebase.google.com/), crea el proyecto en la cuenta del cliente.
-2. Activa **Firestore** y **Storage**.
-3. Añade una app **Web** y copia: `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`.
-4. Reglas mínimas de lectura pública (el template solo lee):
-
-```
-match /pages/{pageId} {
-  allow read: if true;
-  allow write: if false; // o con Auth si el admin escribe autenticado ahí
-}
-match /paginas/{pageId} {
-  allow read: if true;
-  allow write: if false;
-}
-```
-
-Ajusta Storage para servir las imágenes públicas que suba el admin.
-
-### Paso 2 — Crear la landing en el admin (hub)
-
-Con un usuario **root** (crear páginas):
-
-1. Abre el admin del hub.
-2. **+ Nueva landing** → ID slug (ej. `dra-maria`), nombre y vertical.
-3. Se crea el documento de ruta en el hub (`pages/{id}`).
-
-### Paso 3 — Conectar el Firebase externo
-
-1. En el editor, sección **Hosting, analytics y pie**.
-2. (Opcional) **Dominio personalizado** → `dra-maria.com` (sin `www.`).
-3. Marca **Los datos de esta landing viven en otro proyecto Firebase**.
-4. Pega las seis credenciales web del proyecto del cliente.
-5. **Guardar y Publicar**.
-
-Al publicar con externo activo:
-
-- el **contenido** se escribe en el Firestore/Storage del cliente;
-- el **hub** queda con nombre, `customDomain`, `useExternalFirebase` y `externalFirebase`.
-
-### Paso 4 — Cómo se ve en público
-
-| Modo | Qué hacer |
-|------|-----------|
-| **Multi-dominio** (recomendado) | El mismo deploy del template; el hostname debe coincidir con `customDomain`. Añade el dominio al Hosting del **hub**. |
-| **Por sitio** | Build del template con `VITE_PAGINA_ID=dra-maria` y `VITE_FIREBASE_*` del **hub**. |
-
-Probar en local (admin/template apuntando al hub):
+URLs locales:
+
+- Marketing: `http://localhost:5174?pageId=leftsidedev`
+- Login: `http://localhost:5173/login`
+- CMS: `http://localhost:5173/app`
+- Template: `http://localhost:5174?pageId=<page-id>`
+
+## Flujo principal
+
+1. Un usuario autorizado abre una página en el CMS.
+2. El formulario actualiza la vista previa local sin escribir en Firestore.
+3. **Guardar y Publicar** persiste el documento en `pages/{pageId}`.
+4. El template resuelve el `pageId` por query, dominio o variable de entorno.
+5. El template realiza una lectura, normaliza el documento y renderiza la landing.
 
 ```text
-http://localhost:5174?pageId=dra-maria
+landing-admin ── Guardar y Publicar ──► Firestore pages/{pageId}
+       │                                        │
+       └── vista previa local                   ▼
+                                      landing-template ──► visitante
 ```
 
-### Flujo de datos
+La colección `paginas` y los campos antiguos en español se aceptan únicamente para lectura legacy. Las escrituras nuevas usan `pages` y campos en inglés.
 
-```
-Hub Firebase                              Firebase del cliente
-─────────────────                         ───────────────────
-Hosting: admin + template                 (sin Hosting obligatorio)
-pages/{id}:                               pages/{id}:
-  customDomain                              name, hero, services…
-  useExternalFirebase: true                 imágenes en Storage
-  externalFirebase: { …creds }
-```
+## Documentación
 
-Mientras el checkbox esté **apagado**, demo y contenido viven en el hub. Las ediciones posteriores siguen el mismo **Guardar y Publicar** (el admin escribe en el externo).
+### Empezar
 
----
+- [Desarrollo local y variables de entorno](docs/local-development.md)
+- [Arquitectura y estructura del repositorio](docs/architecture.md)
+- [Guía específica del administrador](landing-admin/README.md)
+- [Guía específica del template](landing-template/README.md)
 
-## Publicar el template en otro hosting (desde el admin)
+### Operar la plataforma
 
-Objetivo: el **sitio público** (`landing-template`) vive en Vercel / Netlify / Cloudflare / otro Firebase Hosting (cuenta creada **a mano**). El **admin** no crea esa cuenta: solo guarda la config por landing y, al pulsar **Publicar hosting**, dispara un Deploy Hook (o un workflow de GitHub).
+- [Despliegues, dominios y Firebase externo](docs/deployment.md)
+- [Autenticación, roles y facturación](docs/auth-and-billing.md)
+- [Modelo de datos de una página](docs/page-model.md)
 
-```
-┌─────────────────────┐     POST Deploy Hook      ┌──────────────────────┐
-│  Admin (hub)        │ ───────────────────────►  │  Vercel / Netlify /… │
-│  «Publicar hosting» │                           │  (build del template)│
-└──────────┬──────────┘                           └──────────────────────┘
-           │
-           │ Cloud Function triggerHostingDeploy
-           ▼
-    Firebase Functions (proyecto hub)
-```
+### Paquetes compartidos
 
-### Dónde se hace cada cosa
+- [Uso de los paquetes](packages/README.md)
+- [`landing-core`](packages/landing-core/README.md)
+- [`landing-ui`](packages/landing-ui/README.md)
 
-| Paso | Dónde | Quién |
-|------|--------|--------|
-| Crear el sitio y el Deploy Hook | Panel de **Vercel/Netlify/…** (hosting del template) | Tú / ops |
-| Variables `VITE_FIREBASE_*` | En ese mismo hosting (env del **build** del template) — valores del **proyecto hub** | Tú / ops |
-| Pegar el hook y pulsar publicar | **Admin** → landing → acordeón **Hosting, analytics y pie** → bloque **Hosting del template** | root o admin |
-| Desplegar la Cloud Function (una vez) | Terminal, raíz del monorepo `ecosistema-landings` | Devs |
-| Secrets opcionales globales | Firebase → Functions (env del hub) | Devs |
+## Comandos frecuentes
 
-**No confundir:**
-
-| Pieza | Qué es |
-|-------|--------|
-| Hosting del **admin** | Sigue en Firebase Hosting del **hub** (este repo / CI habitual). |
-| Hosting del **template** | Puede ser el hub **o** Vercel/Netlify/… (esta guía es para “otro hosting”). |
-| `VITE_FIREBASE_*` del template | Siempre del **hub**: el template necesita leer rutas/`customDomain` del hub (y luego el contenido, hub o externo). |
-
-### Ejemplo completo: Vercel (recomendado)
-
-Supongamos la landing `dra-maria` y el sitio Vercel `https://dra-maria.vercel.app`.
-
-#### 1) En Vercel (hosting del template) — manual
-
-1. Entra a [vercel.com](https://vercel.com) → **Add New Project**.
-2. Importa el repo que construye `landing-template` (este monorepo o un repo solo del template).
-3. **Root Directory / Build** según tu setup, por ejemplo:
-   - Build Command: `npm run build:template` (desde la raíz del monorepo), **o**
-   - Root = `landing-template/` con `npm run build` si el `package.json` del template basta.
-4. **Output** = carpeta `dist` del template (`landing-template/dist` si el root es el monorepo; ajusta según Vercel).
-5. En **Settings → Environment Variables**, añade las del **hub** (las mismas que usa el admin en producción), por ejemplo:
-
-| Variable | Ejemplo (inventado) |
-|----------|---------------------|
-| `VITE_FIREBASE_API_KEY` | `AIza…` |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `landing-admin-9452e.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | `landing-admin-9452e` |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `landing-admin-9452e.appspot.com` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `123456789` |
-| `VITE_FIREBASE_APP_ID` | `1:123…:web:…` |
-| `VITE_FIREBASE_MEASUREMENT_ID` | `G-XXXX` (opcional) |
-
-   Si el sitio es **multi-dominio**, **no** fijes `VITE_PAGINA_ID` (la app resuelve por `customDomain`).  
-   Si es **un build por cliente**, añade `VITE_PAGINA_ID=dra-maria`.
-
-6. Haz el **primer deploy** desde Vercel (para verificar que el sitio abre).
-7. Crea el hook: **Project → Settings → Git → Deploy Hooks** → Create Hook  
-   - Name: `admin-publish`  
-   - Branch: la que despliegas (`main` / `master`)  
-   - Copia la URL, tipo:  
-     `https://api.vercel.com/v1/integrations/deploy/prj_xxxx/yyyy`
-
-En **Netlify** el equivalente es: **Site configuration → Build & deploy → Build hooks → Add build hook**.
-
-#### 2) En el admin (hub) — por landing
-
-1. Abre el CMS (admin del hub), inicia sesión como **root** o **admin**.
-2. Selecciona la landing `dra-maria`.
-3. Baja al acordeón **Hosting, analytics y pie**.
-4. En **Hosting del template**:
-   - **Proveedor** → `Webhook (Vercel / Netlify / Cloudflare / custom)`.
-   - **URL pública** (opcional) → `https://dra-maria.vercel.app` o `https://dra-maria.com`.
-   - **Deploy Hook URL** → pega la URL de Vercel del paso anterior.
-5. **Guardar y Publicar** (persiste estos campos en Firestore del hub).
-6. Pulsa **Publicar hosting**.  
-   Eso llama a la Cloud Function `triggerHostingDeploy`, que hace `POST` al Deploy Hook → Vercel vuelve a construir el template.
-
-Si el botón falla con “Cloud Functions no están desplegadas”, falta el paso 3.
-
-#### 3) En tu máquina / CI — una sola vez (Functions)
-
-En la **raíz** del repo `ecosistema-landings` (proyecto Firebase **hub**):
+Ejecuta estos comandos desde la raíz:
 
 ```bash
-npm run deploy:functions
+npm run build             # admin + template
+npm run deploy:rules      # Firestore, índices y Storage
+npm run deploy:functions  # Cloud Functions
+npm run deploy:admin      # CMS en Firebase Hosting
+npm run deploy:template   # landing pública
+npm run deploy:hosting    # admin + template
+npm run extract:template-repo
 ```
 
-Eso despliega, entre otras, `triggerHostingDeploy`. Sin esta función, el botón del admin no puede avisar a Vercel.
-
-#### 4) Después, día a día
-
-| Quieres… | Qué haces |
-|----------|-----------|
-| Cambiar textos/fotos de la landing | Solo **Guardar y Publicar** en el admin (Firestore). **No** hace falta redeploy del hosting. |
-| Actualizar el **código** del template o forzar rebuild | **Publicar hosting** en el admin (o redeploy manual en Vercel). |
-
-### Campos por landing (referencia)
-
-Se editan en el admin → **Hosting, analytics y pie**. Con Firebase externo de contenido, estos campos siguen guardándose en el **hub**.
-
-| Campo (Firestore) | En la UI | Uso |
-|----------------|----------|-----|
-| `hostingProvider` | Proveedor | `hub` · `webhook` · `github` |
-| `hostingDeployHookUrl` | Deploy Hook URL | Obligatorio si proveedor = `webhook` |
-| `hostingPublicUrl` | URL pública | Solo referencia (no despliega sola) |
-| `hostingGithubOwner` / `Repo` / `Workflow` / `Ref` | Campos GitHub | Solo si proveedor = `github` |
-
-### Alternativa: GitHub Actions (sin Deploy Hook de Vercel)
-
-Útil si el rebuild lo hace un workflow del repo (ej. [`.github/workflows/deploy-template-manual.yml`](.github/workflows/deploy-template-manual.yml)).
-
-1. **En GitHub** — el workflow ya existe en el monorepo (`workflow_dispatch`).
-2. **En Firebase Functions (hub)** — define el secreto `GITHUB_DEPLOY_TOKEN` (Personal Access Token con permiso `actions:write` sobre el repo). Cómo fijarlo depende de tu setup v2; lo habitual es al desplegar Functions con params/env, por ejemplo en `functions/.env` local (no lo subas al git) o secrets del proyecto, y luego `npm run deploy:functions`.
-3. **En el admin** (misma sección **Hosting del template**):
-   - Proveedor → `GitHub Actions (workflow_dispatch)`
-   - Owner → `raulizqli` (ejemplo)
-   - Repo → `landing-admin` (ejemplo)
-   - Workflow → `deploy-template-manual.yml`
-   - Branch → `master`
-4. **Publicar hosting** → la Function dispara `workflow_dispatch`.
-
-### Opcional: hook global del hub
-
-Si **todas** las landings “provider = Hub” comparten el **mismo** sitio del template multi-dominio y un solo Deploy Hook:
-
-1. Genera ese hook en Vercel/Netlify (como arriba).
-2. En el entorno de **Cloud Functions del hub**, define:
-
-   `DEFAULT_TEMPLATE_DEPLOY_HOOK_URL=https://api.vercel.com/v1/integrations/deploy/...`
-
-3. En cada landing: proveedor **Hub**, **sin** pegar hook por página (o puedes pegarlo igual y manda el de la página).
-4. **Publicar hosting** usará el hook de la página si existe; si no, el global.
-
-`GITHUB_DEPLOY_TOKEN` solo hace falta si usas proveedor **GitHub**, no para webhooks de Vercel.
-
-### Checklist rápido (caso Vercel)
-
-1. **Vercel** — proyecto del template + `VITE_FIREBASE_*` del hub + primer deploy + Deploy Hook.
-2. **Admin** — landing → Hosting del template → Webhook + pegar hook → Guardar → **Publicar hosting**.
-3. **Repo / máquina** — `npm run deploy:functions` (una vez, o cuando cambies Functions).
-
----
-
-## Cómo agregar una nueva web
-
-### Paso 1 — Crear el documento en Firestore
-
-1. Abre la [Firebase Console](https://console.firebase.google.com/).
-2. Ve a **Build → Firestore Database** (actívala si aún no existe).
-3. Crea o abre la colección **`paginas`**.
-4. Añade un documento con ID en formato slug (ej. `maria-garcia`, `dra-elena-morales`).
-
-   > El ID es permanente. Sin espacios ni mayúsculas.
-
-5. Puedes crear el documento vacío y completar todo desde el admin.
-
-### Paso 2 — Configurar Firebase
-
-**Firestore** — lectura pública para el template:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /paginas/{paginaId} {
-      allow read: if true;
-      allow write: if false;  // ajusta según tu autenticación en el admin
-    }
-  }
-}
-```
-
-**Storage** — ver [`storage.rules`](storage.rules) y despliega con `firebase deploy --only storage`.
-
-**Analytics** (opcional) — en Firebase Console activa Google Analytics y obtén el ID `G-XXXXXXXX`.
-
-### Paso 3 — Editar y publicar desde el admin
-
-1. Configura `landing-admin/.env.local` con `VITE_FIREBASE_*`.
-2. En dev: `VITE_TEMPLATE_PREVIEW_URL=http://localhost:5174`
-3. Arranca: `npm run dev`
-4. Selecciona la landing en la barra lateral.
-5. Edita el formulario; la vista previa (Espejo / Local) se actualiza al instante.
-6. **Guardar y Publicar** persiste en Firestore.
-
-### Paso 4 — Probar el template en local
-
-```env
-VITE_PAGINA_ID=maria-garcia
-```
+Lint por aplicación:
 
 ```bash
-cd landing-template && npm run dev
+npm run lint --prefix landing-admin
+npm run lint --prefix landing-template
 ```
 
-Abre `http://localhost:5174`.
+## Convenciones importantes
 
-### Paso 5 — Desplegar con Firebase Hosting
+- Los campos de Firestore, estado React y props de datos están en inglés.
+- `packages/landing-core/src/pageModel.js` es la fuente de verdad del modelo.
+- El template es de solo lectura y carga un documento por página.
+- La vista previa **Espejo** usa el estado local del formulario; no escribe por cada tecla.
+- Las credenciales del cliente nunca se escriben directamente en JavaScript.
+- Las variables expuestas por Vite deben comenzar con `VITE_`.
+- `.env.local`, `.env.production` y secretos de Functions no se versionan.
 
-El **Hosting** del admin y del template vive en el **proyecto hub**. El contenido de cada landing puede estar en el hub o en un Firebase externo ([guía](#landing-con-contenido-en-otra-cuenta-firebase)).
+## Estructura resumida
 
-#### Configuración inicial (una vez)
-
-```bash
-# En la raíz del repositorio
-npm install
-cp .firebaserc.example .firebaserc   # edita TU_PROJECT_ID
-
-# Firebase CLI (si no usas el de node_modules)
-npm install -g firebase-tools
-firebase login
-```
-
-En [Firebase Console](https://console.firebase.google.com/) → **Hosting** → **Comenzar** y crea dos sitios:
-
-| Sitio sugerido | Target en `firebase.json` | Contenido |
-|----------------|---------------------------|-----------|
-| `landing-admin` | `admin` | Panel CMS |
-| `landing-template` (o uno por cliente) | `template` | Landing pública |
-
-Asocia los targets:
-
-```bash
-firebase target:apply hosting admin landing-admin
-firebase target:apply hosting template landing-template
-```
-
-Variables de producción (se leen al hacer `vite build`):
-
-```bash
-cp landing-admin/.env.production.example landing-admin/.env.production
-cp landing-template/.env.production.example landing-template/.env.production
-# Completa VITE_FIREBASE_* y VITE_PAGINA_ID en el template
-```
-
-Despliega reglas + hosting:
-
-```bash
-npm run deploy:rules      # firestore.rules + storage.rules
-npm run deploy:admin      # build + hosting del CMS
-npm run deploy:template   # build + hosting del template
-# o todo junto:
-npm run deploy:hosting
-```
-
-URLs por defecto: `https://landing-admin-9452e.web.app` (admin) y `https://landing-template-9452e.web.app` (template).
-
-#### Modo recomendado: un deploy, muchos dominios
-
-1. Un solo sitio de Hosting para `landing-template` (sin `VITE_PAGINA_ID` en producción, o como fallback).
-2. En el admin → **Dominio y proyecto Firebase**, asigna `customDomain` a cada landing.
-3. En Firebase Hosting del template, añade **todos los dominios** de clientes al mismo sitio.
-4. Despliega una vez: `npm run deploy:template` — cualquier fix llega a todas las landings.
-
-```bash
-# .env.production del template — solo credenciales hub, VITE_PAGINA_ID opcional
-npm run deploy:template
-```
-
-#### Modo alternativo: un sitio Hosting por cliente
-
-Cada profesional puede tener su **propio sitio** en el mismo proyecto Firebase:
-
-1. Console → Hosting → **Agregar otro sitio** (ej. `landing-maria-garcia`)
-2. En `.env.production` del template, pon `VITE_PAGINA_ID=maria-garcia`
-3. Despliega:
-
-```bash
-chmod +x scripts/deploy-client-template.sh
-./scripts/deploy-client-template.sh maria-garcia landing-maria-garcia
-```
-
-#### Proyecto Firebase en otra cuenta (cliente)
-
-Para que los datos (textos, imágenes, Firestore) vivan en la cuenta del cliente:
-
-1. En el admin, activa **Los datos viven en otro proyecto Firebase**.
-2. Pega las credenciales del proyecto externo (Firebase Console → Configuración del proyecto).
-3. Configura en **esa cuenta** las mismas reglas de lectura en `paginas` y Storage (`paginas/{id}/...`).
-4. **Guardar y Publicar** escribe el contenido en el proyecto externo; el hub solo guarda dominio + credenciales.
-
-El listado del admin sigue en el hub; al abrir la landing se carga el documento completo del proyecto externo.
-
-| Variable en `.env.production` (template) | Valor |
-|------------------------------------------|-------|
-| `VITE_FIREBASE_*` | Credenciales del **hub** (siempre, para resolver dominios) |
-| `VITE_PAGINA_ID` | Opcional si usas solo dominios; obligatorio en modo por sitio |
-| `VITE_FIREBASE_MEASUREMENT_ID` | `G-XXXXXXXX` (opcional) |
-
-### Paso 6 — Dominio personalizado (opcional)
-
-Firebase Console → **Hosting** → sitio del cliente → **Agregar dominio personalizado** → configura DNS (registros A/TXT que indica Firebase).
-
----
-
-## Vista previa en el admin
-
-| Modo | Comportamiento |
-|------|----------------|
-| **Espejo** | Renderiza un componente interno con `formData` local (sin lecturas a Firestore por tecla) |
-| **Local** | Iframe a `landing-template` con `?pageId=...&preview=true` y sincronización por `postMessage` |
-
-En dev, si no hay documentos en Firestore, aparece **Vista previa demo** con contenido aleatorio.
-
-### Indicadores de contenido (acordeón)
-
-Las secciones del formulario muestran, **colapsadas**, una pastilla con el estado de datos:
-
-- **Verde** — hay información (ej. nombre · especialidad, `3 ítems`, `Con video`)
-- **Gris** — vacía o incompleta (`Sin datos`, `Activo, falta URL`)
-
-Así se ve de un vistazo qué bloques ya tienen contenido capturado.
-
-### Layout del CMS
-
-El admin usa pantalla completa fija (`h-dvh`) sin scroll del documento: cada columna (lista, formulario, espejo) scrollea por su cuenta. El espejo sincroniza la sección activa **solo** dentro del panel de vista previa (no mueve el formulario).
-
----
-
-## Estructura del repositorio
-
-```
-ecosistema-landings/              # Repo hub (admin + infra Firebase)
+```text
+ecosistema-landings/
+├── landing-admin/       CMS React + Vite
+├── landing-template/    aplicación pública React + Vite
 ├── packages/
-│   ├── landing-core/             # Utilidades compartidas (pageModel, labels, secciones…)
-│   └── landing-ui/               # Componentes React compartidos (LandingPage, Navbar…)
-├── firebase.json                 # Firestore, Storage, Functions, Hosting admin
+│   ├── landing-core/    modelo y utilidades
+│   └── landing-ui/      componentes compartidos
+├── functions/           Firebase Cloud Functions
+├── docs/                documentación operativa y técnica
+├── scripts/             automatización de despliegues y extracción
+├── firebase.json
 ├── firestore.rules
-├── storage.rules
-├── .firebaserc.example
-├── package.json                  # Workspaces + deploy:admin, deploy:rules…
-├── scripts/
-│   └── deploy-client-template.sh
-├── landing-admin/                # CMS (React + Vite + Tailwind + Firebase)
-│   └── src/
-│       ├── App.jsx
-│       ├── components/
-│       └── utils/                # Re-exporta @raulizqli/landing-core + lógica admin
-├── landing-template/             # Landing pública (desplegable como repo aparte)
-│   ├── firebase.json             # Solo Hosting del template
-│   ├── .firebaserc.example
-│   └── src/
-└── README.md
+└── storage.rules
 ```
 
-**Código compartido:** `packages/landing-core` centraliza el modelo de página y normalizadores. `packages/landing-ui` centraliza los componentes de la landing (Navbar, Hero, secciones…). Admin y template importan ambos paquetes; los archivos locales en `src/utils/` y `src/components/` son re-exports finos.
+## Seguridad
 
-**Deploy:** el hub despliega admin y reglas (`npm run deploy:admin`). El template se despliega desde su carpeta (`npm run deploy:template` en la raíz, o `npm run deploy` dentro de `landing-template/`). Ambos apuntan al mismo proyecto Firebase.
+Antes de producción:
 
-Los editores del admin (`*FieldsEditor.jsx`) siguen solo en `landing-admin`.
+1. Configura Firebase Authentication y los roles en `users/{uid}`.
+2. Despliega `firestore.rules` y `storage.rules`.
+3. Configura App Check con reCAPTCHA v3.
+4. Mantén claves privadas, tokens de proveedores y secretos fuera del repositorio.
+5. Prueba Stripe y Mercado Pago en sandbox antes de usar credenciales reales.
 
----
-
-## Separar en repositorios Git
-
-| Repo | Contenido |
-|------|-----------|
-| **ecosistema-landings** (hub) | `landing-admin`, `functions`, reglas Firestore/Storage, `packages/` |
-| **landing-template** (opcional) | Template + copia de `packages/` para deploy autónomo |
-
-### Extraer el template
-
-```bash
-npm run extract:template-repo
-# → ../landing-template-repo/
-
-cd ../landing-template-repo
-cp .firebaserc.example .firebaserc
-npm install && npm run dev
-git init && git remote add origin <url> && git push -u origin main
-```
-
-El hub puede seguir en el monorepo con `landing-template/` como carpeta local hasta que migres por completo. La vista previa Local del admin usa `VITE_TEMPLATE_PREVIEW_URL` (dev: `http://localhost:5174`).
-
-### Publicar paquetes en GitHub Packages
-
-`@raulizqli/landing-core` y `@raulizqli/landing-ui` se publican en GitHub Packages del repo `raulizqli/landing-admin`.
-
-```bash
-git tag packages-v0.1.0 && git push origin packages-v0.1.0   # dispara CI
-# o localmente (con GITHUB_TOKEN exportado):
-npm run publish:packages
-```
-
-Instalación en otros proyectos: [`packages/README.md`](packages/README.md).
-
----
-
-## Comandos útiles
-
-```bash
-# Instalar CLI de deploy (raíz)
-npm install
-
-# Build de producción
-npm run build
-# o por proyecto:
-cd landing-admin && npm run build
-cd landing-template && npm run build
-
-# Firebase (desde la raíz, con .firebaserc configurado)
-npm run deploy:rules
-npm run deploy:admin
-npm run deploy:template
-npm run deploy:hosting
-
-# Generar repo standalone del template
-npm run extract:template-repo
-
-# Lint
-cd landing-admin && npm run lint
-cd landing-template && npm run lint
-```
+Consulta [Autenticación, roles y facturación](docs/auth-and-billing.md) para la configuración completa.

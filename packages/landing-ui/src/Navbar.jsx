@@ -12,6 +12,50 @@ import {
   normalizeNavAlign,
 } from '@raulizqli/landing-core/sectionVisibility';
 import { formatNavSpecialty } from '@raulizqli/landing-core/navDisplay';
+import {
+  PAGE_LANGUAGE_OPTIONS,
+  normalizeEnabledLanguages,
+  normalizePageLanguage,
+} from '@raulizqli/landing-core/pageTranslations';
+
+function PublicLanguageSwitcher({
+  languages,
+  language,
+  interactive,
+  onLanguageChange,
+}) {
+  if (languages.length < 2) return null;
+
+  return (
+    <div
+      className="shrink-0 inline-flex items-center rounded-full border border-[#2A342D]/15 bg-white/60 p-0.5"
+      role="group"
+      aria-label={language === 'es' ? 'Cambiar idioma' : 'Change language'}
+    >
+      {PAGE_LANGUAGE_OPTIONS
+        .filter((option) => languages.includes(option.value))
+        .map((option) => {
+          const active = option.value === language;
+          const className = `rounded-full px-2 py-1 text-[10px] font-semibold transition ${
+            active ? 'bg-[#2A342D] text-white' : 'text-[#2A342D]/65 hover:text-[#2A342D]'
+          }`;
+          return interactive ? (
+            <button
+              key={option.value}
+              type="button"
+              className={className}
+              aria-pressed={active}
+              onClick={() => onLanguageChange?.(option.value)}
+            >
+              {option.shortLabel}
+            </button>
+          ) : (
+            <span key={option.value} className={className}>{option.shortLabel}</span>
+          );
+        })}
+    </div>
+  );
+}
 
 function BrandBlock({
   logoMode,
@@ -102,6 +146,7 @@ export default function Navbar({
   ctaExternal = false,
   interactive = true,
   data,
+  onLanguageChange,
 }) {
   const labels = resolvePageLabels(data);
   const logoMode = navMode === 'logo';
@@ -113,6 +158,9 @@ export default function Navbar({
   const align = normalizeNavAlign(data?.navAlign);
   const menuItems = showMenu ? getNavMenuItems(data) : [];
   const [menuOpen, setMenuOpen] = useState(false);
+  const defaultLanguage = normalizePageLanguage(data?.defaultLanguage ?? data?.labelLanguage);
+  const language = normalizePageLanguage(data?.activeLanguage ?? data?.labelLanguage, defaultLanguage);
+  const enabledLanguages = normalizeEnabledLanguages(data?.enabledLanguages, defaultLanguage);
 
   const displayName = name || getLabel(labels, 'placeholders.psychologistName');
   const specialtyCase = data?.navSpecialtyCase === 'capitalize' ? 'capitalize' : 'uppercase';
@@ -130,6 +178,10 @@ export default function Navbar({
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [menuOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [language]);
 
   const iconElement = iconUrl ? (
     <img
@@ -187,6 +239,15 @@ export default function Navbar({
     )
   ) : null;
 
+  const languageSwitcher = (
+    <PublicLanguageSwitcher
+      languages={enabledLanguages}
+      language={language}
+      interactive={interactive}
+      onLanguageChange={onLanguageChange}
+    />
+  );
+
   const desktopMenu = showMenu && menuItems.length > 0 ? (
     <MenuLinks
       items={menuItems}
@@ -236,6 +297,7 @@ export default function Navbar({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {mobileToggle}
+          {languageSwitcher}
           {cta}
         </div>
       </>
@@ -243,7 +305,7 @@ export default function Navbar({
   } else if (align === 'right' && showCta) {
     rowContent = (
       <>
-        <div className="flex items-center gap-2 shrink-0">{cta}</div>
+        <div className="flex items-center gap-2 shrink-0">{languageSwitcher}{cta}</div>
         {brandCluster}
       </>
     );
@@ -253,6 +315,7 @@ export default function Navbar({
         {brand}
         {desktopMenu}
         {mobileToggle}
+        {languageSwitcher}
         {cta}
       </div>
     );

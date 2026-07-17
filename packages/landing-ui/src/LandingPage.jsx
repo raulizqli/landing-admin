@@ -7,7 +7,12 @@ import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { isFooterSectionEnabled } from '@raulizqli/landing-core/sectionVisibility';
 
-export default function LandingPage({ data, interactive = true, className = '' }) {
+export default function LandingPage({
+  data,
+  interactive = true,
+  className = '',
+  onLanguageChange,
+}) {
   const labels = resolvePageLabels(data);
   const name = data.name || getLabel(labels, 'placeholders.psychologistName');
   const specialty = data.specialty || getLabel(labels, 'placeholders.specialty');
@@ -30,6 +35,7 @@ export default function LandingPage({ data, interactive = true, className = '' }
         ctaExternal={bookingCta.external}
         interactive={interactive}
         data={data}
+        onLanguageChange={onLanguageChange}
       />
 
       <LandingMainContent data={data} specialty={specialty} interactive={interactive} />

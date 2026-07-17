@@ -2,7 +2,7 @@
 
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 import {
@@ -14,6 +14,24 @@ export { hasValidFirebaseConfig, normalizeFirebaseConfig };
 
 const HUB_APP_NAME = 'hub';
 let functionsEmulatorConnected = false;
+const firestoreByAppName = new Map();
+
+/**
+ * Firefox Enhanced Tracking Protection often blocks Firestore WebChannel.
+ * Force long-polling so Auth can succeed while Firestore still loads profiles/pages.
+ */
+function getFirestoreForApp(app) {
+  const key = app.name;
+  if (firestoreByAppName.has(key)) {
+    return firestoreByAppName.get(key);
+  }
+
+  const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  });
+  firestoreByAppName.set(key, db);
+  return db;
+}
 
 export function getHubConfigFromEnv() {
   return {
@@ -38,7 +56,7 @@ export function getHubApp() {
 }
 
 export function getHubDb() {
-  return getFirestore(getHubApp());
+  return getFirestoreForApp(getHubApp());
 }
 
 export function getHubStorage() {
@@ -69,7 +87,7 @@ export function getDbForConfig(config) {
   }
   const normalized = normalizeFirebaseConfig(config);
   const appName = `ext-${normalized.projectId}`;
-  return getFirestore(getOrInitFirebaseApp(normalized, appName));
+  return getFirestoreForApp(getOrInitFirebaseApp(normalized, appName));
 }
 
 export function getStorageForConfig(config) {

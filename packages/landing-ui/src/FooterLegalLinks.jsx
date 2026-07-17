@@ -14,7 +14,7 @@ export default function FooterLegalLinks({ data, interactive = true }) {
     <>
       <nav
         className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs"
-        aria-label="Documentos legales"
+        aria-label={data?.labelLanguage === 'en' ? 'Legal documents' : 'Documentos legales'}
       >
         {documents.map((doc, index) => {
           const linkClass = 'opacity-60 hover:opacity-100 underline-offset-2 hover:underline transition-opacity';

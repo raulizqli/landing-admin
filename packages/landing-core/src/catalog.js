@@ -1,6 +1,9 @@
 
+import { createContentId, normalizeContentId } from './contentIds.js';
+
 export function createEmptyCatalogItem() {
   return {
+    id: createContentId('catalog'),
     title: '',
     description: '',
     imageUrl: '',
@@ -11,6 +14,7 @@ export function createEmptyCatalogItem() {
 
 export function normalizeCatalogItem(item = {}) {
   return {
+    id: normalizeContentId(item.id, createContentId('catalog')),
     title: item.title || item.titulo || item.name || '',
     description: item.description || item.descripcion || item.text || item.texto || '',
     imageUrl: item.imageUrl || item.imagenUrl || '',

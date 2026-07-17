@@ -67,7 +67,11 @@ export function AuthProvider({ children }) {
         await loadBillingForProfile(nextProfile);
       } catch (error) {
         console.error('Error al cargar el perfil de usuario:', error);
-        setAuthError('auth.profile');
+        const code = String(error?.code ?? '');
+        const offline = code.includes('unavailable')
+          || code.includes('offline')
+          || /offline|unavailable|Failed to get document because the client is offline/i.test(String(error?.message ?? ''));
+        setAuthError(offline ? 'auth.offline' : 'auth.profile');
         setProfile(null);
         setBillingAccount(null);
       } finally {

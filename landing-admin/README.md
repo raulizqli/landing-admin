@@ -24,6 +24,13 @@ Variables en `.env.local`:
 
 ## Cómo agregar una nueva web
 
-Ver la guía paso a paso completa en [`../README.md`](../README.md).
+Ver [Desarrollo local](../docs/local-development.md#crear-una-página) para crear y probar una página.
 
-En resumen: crea el documento en Firestore → edítalo aquí → despliega `landing-template` con el `VITE_PAGINA_ID` correspondiente.
+En resumen: crea la landing en el CMS → edítala → **Guardar y Publicar** → ábrela en el template con `?pageId=<id>` o configura su dominio.
+
+## Documentación
+
+- [Arquitectura del ecosistema](../docs/architecture.md)
+- [Variables y desarrollo local](../docs/local-development.md)
+- [Autenticación, roles y billing](../docs/auth-and-billing.md)
+- [Modelo de datos](../docs/page-model.md)

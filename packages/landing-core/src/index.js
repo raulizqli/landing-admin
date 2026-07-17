@@ -23,6 +23,8 @@ export * from './preHero.js';
 export * from './socialLinks.js';
 export * from './pageLoadErrors.js';
 export * from './pageModel.js';
+export * from './pageTranslations.js';
+export * from './contentIds.js';
 export * from './legalDocuments.js';
 export * from './externalFirebase.js';
 export * from './hostingDeploy.js';

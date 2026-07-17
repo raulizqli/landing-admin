@@ -22,6 +22,11 @@ import { normalizeNavSpecialtyCase } from './navDisplay';
 import { normalizeLegalDocuments } from './legalDocuments';
 import { normalizePreHeroImageSide } from './preHero';
 import { normalizeHostingDeployFields } from './hostingDeploy';
+import {
+  normalizeEnabledLanguages,
+  normalizePageLanguage,
+  normalizePageTranslations,
+} from './pageTranslations';
 
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
@@ -128,6 +133,9 @@ export const EMPTY_PAGE = {
   sectionThemes: {},
   showHeroSpecialty: false,
   labelLanguage: 'es',
+  defaultLanguage: 'es',
+  enabledLanguages: ['es'],
+  translations: { es: {}, en: {} },
   customLabels: { es: {}, en: {} },
   customEmbeds: [],
 };
@@ -182,7 +190,7 @@ function normalizeHeroSlidesFromLegacy(data) {
     return [createEmptySlide()];
   }
 
-  return [{
+  return [normalizeHeroSlide({
     imageUrl: '',
     title,
     text,
@@ -191,7 +199,7 @@ function normalizeHeroSlidesFromLegacy(data) {
     showButtons,
     showGradient: true,
     buttonsPosition: 'center',
-  }];
+  })];
 }
 
 export function normalizePageData(data = {}) {
@@ -261,7 +269,9 @@ export function normalizePageData(data = {}) {
   next.sectionThemes = normalizeSectionThemes(next.sectionThemes);
 
   next.vertical = normalizeVertical(next.vertical);
-  next.labelLanguage = normalizeLabelLanguage(next.labelLanguage);
+  next.defaultLanguage = normalizePageLanguage(next.defaultLanguage ?? next.labelLanguage);
+  next.enabledLanguages = normalizeEnabledLanguages(next.enabledLanguages, next.defaultLanguage);
+  next.labelLanguage = normalizeLabelLanguage(next.defaultLanguage);
   next.customLabels = normalizeCustomLabels(next.customLabels);
   next.customEmbeds = normalizeCustomEmbeds(next.customEmbeds).filter((embed) => (
     isCustomSectionVisible({ ...embed, enabled: true })
@@ -289,6 +299,8 @@ export function normalizePageData(data = {}) {
   Object.assign(next, normalizeHostingDeployFields(next));
 
   Object.assign(next, normalizeLegalDocuments(next));
+  next.translations = normalizePageTranslations(next.translations, next, next.defaultLanguage);
+  delete next.activeLanguage;
 
   return next;
 }

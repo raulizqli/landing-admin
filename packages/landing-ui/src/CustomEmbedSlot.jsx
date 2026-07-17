@@ -22,7 +22,12 @@ export default function CustomEmbedSlot({ data, placement, interactive = true })
       data-preview-section={isFirstVisiblePlacement ? SECTION_IDS.embeds : undefined}
     >
       {embeds.map((embed) => (
-        <CustomEmbedBlock key={embed.id} embed={embed} interactive={interactive} />
+        <CustomEmbedBlock
+          key={embed.id}
+          embed={embed}
+          interactive={interactive}
+          language={data?.activeLanguage || data?.labelLanguage}
+        />
       ))}
     </div>
   );

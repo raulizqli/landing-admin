@@ -1,3 +1,5 @@
+import { createContentId, normalizeContentId } from './contentIds.js';
+
 export const HERO_BUTTON_POSITIONS = [
   { value: 'center', label: 'Centro (con el texto)' },
   { value: 'top', label: 'Arriba · centrado' },
@@ -38,6 +40,7 @@ export function getHeroButtonsOverlayClass(position, { clearCarouselDots = false
 
 export function createEmptySlide() {
   return {
+    id: createContentId('slide'),
     imageUrl: '',
     videoUrl: '',
     title: '',
@@ -52,6 +55,7 @@ export function createEmptySlide() {
 
 export function normalizeHeroSlide(slide = {}) {
   return {
+    id: normalizeContentId(slide.id, createContentId('slide')),
     imageUrl: slide.imageUrl || slide.imagenUrl || '',
     videoUrl: slide.videoUrl || slide.videoLink || '',
     title: slide.title || '',

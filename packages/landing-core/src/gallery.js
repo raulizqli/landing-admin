@@ -1,6 +1,9 @@
 
+import { createContentId, normalizeContentId } from './contentIds.js';
+
 export function createEmptyGalleryItem() {
   return {
+    id: createContentId('gallery'),
     imageUrl: '',
     caption: '',
     alt: '',
@@ -9,6 +12,7 @@ export function createEmptyGalleryItem() {
 
 export function normalizeGalleryItem(item = {}) {
   return {
+    id: normalizeContentId(item.id, createContentId('gallery')),
     imageUrl: String(item.imageUrl || item.imagenUrl || '').trim(),
     caption: String(item.caption || item.leyenda || item.title || item.titulo || '').trim(),
     alt: String(item.alt || item.textoAlt || '').trim(),

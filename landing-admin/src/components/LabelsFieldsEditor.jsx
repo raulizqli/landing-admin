@@ -17,8 +17,9 @@ export default function LabelsFieldsEditor({
   groupIds = null,
   showLanguagePicker = true,
   compact = false,
+  language: languageProp,
 }) {
-  const language = normalizeLabelLanguage(formData.labelLanguage);
+  const language = normalizeLabelLanguage(languageProp ?? formData.labelLanguage);
   const groups = Array.isArray(groupIds)
     ? LABEL_GROUPS.filter((group) => groupIds.includes(group.id))
     : LABEL_GROUPS;
@@ -96,7 +97,10 @@ export default function LabelsFieldsEditor({
           <div className="space-y-3">
             {group.keys.map((key) => {
               const customValue = getCustomLabelValue(formData.customLabels, language, key);
-              const defaultValue = getDefaultLabelForPage(formData, key);
+              const defaultValue = getDefaultLabelForPage(
+                { ...formData, labelLanguage: language },
+                key,
+              );
 
               return (
                 <div key={`${language}-${key}`} className="space-y-1">

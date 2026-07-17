@@ -42,6 +42,8 @@
     "./socialLinks": "./src/socialLinks.js",
     "./pageLoadErrors": "./src/pageLoadErrors.js",
     "./pageModel": "./src/pageModel.js",
+    "./pageTranslations": "./src/pageTranslations.js",
+    "./contentIds": "./src/contentIds.js",
     "./legalDocuments": "./src/legalDocuments.js",
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",

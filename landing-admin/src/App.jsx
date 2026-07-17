@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { listPageDocuments } from './utils/firestoreAccess';
 import { db } from './firebase';
 import { createEmptySlide } from './utils/heroSlides';
-import { hydratePageForm, normalizePageData } from './utils/pageModel';
+import { hydratePageForm } from './utils/pageModel';
 import HeroSlidesEditor from './components/HeroSlidesEditor';
 import SocialFieldsEditor from './components/SocialFieldsEditor';
 import CustomEmbedsFieldsEditor from './components/CustomEmbedsFieldsEditor';
@@ -18,6 +18,7 @@ import BlogFieldsEditor from './components/BlogFieldsEditor';
 import AboutFieldsEditor from './components/AboutFieldsEditor';
 import PageAppearanceEditor from './components/PageAppearanceEditor';
 import LabelsFieldsEditor from './components/LabelsFieldsEditor';
+import PageLanguagesEditor from './components/PageLanguagesEditor';
 import LocationFieldsEditor from './components/LocationFieldsEditor';
 import PhoneFieldsEditor from './components/PhoneFieldsEditor';
 import LegalDocumentsFieldsEditor from './components/LegalDocumentsFieldsEditor';
@@ -49,6 +50,11 @@ import { applyLockedPageLayout } from './utils/layoutLock';
 import { isFlagEnabled } from './utils/sectionVisibility';
 import { normalizeCustomEmbeds } from './utils/customEmbeds';
 import { getEditorSectionFill } from './utils/editorSectionFill';
+import {
+  normalizePageLanguage,
+  resolvePageLanguage,
+  updatePageTranslation,
+} from '@raulizqli/landing-core/pageTranslations';
 
 const TEMPLATE_PREVIEW_URL = (
   import.meta.env.VITE_TEMPLATE_PREVIEW_URL?.replace(/\/$/, '')
@@ -75,12 +81,13 @@ function hydrateForm(landing) {
 }
 
 export default function App() {
-  const { user, profile, loading: authLoading, signOut, hasAccess } = useAuth();
+  const { user, profile, loading: authLoading, signOut, hasAccess, authError } = useAuth();
   const { t } = useLocale();
   const entitlements = useEntitlements();
   const [landings, setLandings] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [formData, setFormData] = useState(null);
+  const [editingLanguage, setEditingLanguage] = useState('es');
   const [layoutBaseline, setLayoutBaseline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -118,15 +125,28 @@ export default function App() {
   const upgradeLabel = t('common.upgrade');
   const openBilling = () => setShowBilling(true);
 
-  const hasActiveCustomEmbeds = normalizeCustomEmbeds(formData?.customEmbeds)
+  const editorData = useMemo(
+    () => (formData
+      ? resolvePageLanguage(formData, editingLanguage, { fallback: false })
+      : null),
+    [formData, editingLanguage],
+  );
+
+  const handleEditorChange = useCallback((nextEditorData) => {
+    setFormData((current) => (
+      current ? updatePageTranslation(current, nextEditorData, editingLanguage) : current
+    ));
+  }, [editingLanguage]);
+
+  const hasActiveCustomEmbeds = normalizeCustomEmbeds(editorData?.customEmbeds)
     .some((embed) => embed.enabled !== false);
 
   const showEditorSection = (flag, defaultEnabled = true) => (
-    canManageLayout || isFlagEnabled(formData, flag, defaultEnabled)
+    canManageLayout || isFlagEnabled(editorData, flag, defaultEnabled)
   );
 
   const localPreviewUrl = selectedId && TEMPLATE_PREVIEW_URL
-    ? `${TEMPLATE_PREVIEW_URL}?pageId=${encodeURIComponent(selectedId)}&preview=true`
+    ? `${TEMPLATE_PREVIEW_URL}?pageId=${encodeURIComponent(selectedId)}&preview=true&lang=${editingLanguage}`
     : null;
 
   const activatePreviewSection = useCallback((sectionKey) => {
@@ -141,11 +161,12 @@ export default function App() {
         type: 'LANDING_PREVIEW_UPDATE',
         data: formData,
         pageId: selectedId,
+        language: editingLanguage,
         scrollSectionId: previewScrollSectionId,
       },
       TEMPLATE_PREVIEW_URL
     );
-  }, [formData, selectedId, previewScrollSectionId]);
+  }, [formData, selectedId, editingLanguage, previewScrollSectionId]);
 
   useEffect(() => {
     if (previewSource !== 'local') return;
@@ -175,6 +196,7 @@ export default function App() {
     if (landing.id === DEMO_PREVIEW_ID) {
       const hydrated = hydrateForm(landing);
       setFormData(hydrated);
+      setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
       return;
     }
@@ -182,11 +204,13 @@ export default function App() {
       const data = await loadPageForEditor(landing.id, landing);
       const hydrated = hydrateForm({ id: landing.id, ...data });
       setFormData(hydrated);
+      setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
     } catch (error) {
       console.error('Error al cargar la landing:', error);
       const hydrated = hydrateForm(landing);
       setFormData(hydrated);
+      setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
     }
   };
@@ -214,6 +238,7 @@ export default function App() {
           const loaded = await loadPageForEditor(first.id, first);
           const hydrated = hydrateForm({ id: first.id, ...loaded });
           setFormData(hydrated);
+          setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
           setLayoutBaseline(hydrated);
         } else if (canCreatePages(profile)) {
           // Root with an empty hub: stay in the editor shell and create the first landing.
@@ -225,6 +250,7 @@ export default function App() {
           setSelectedId(DEMO_PREVIEW_ID);
           const hydrated = hydrateForm({ id: DEMO_PREVIEW_ID });
           setFormData(hydrated);
+          setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
           setLayoutBaseline(hydrated);
         } else {
           setSelectedId(null);
@@ -243,6 +269,7 @@ export default function App() {
           setSelectedId(DEMO_PREVIEW_ID);
           const hydrated = hydrateForm({ id: DEMO_PREVIEW_ID });
           setFormData(hydrated);
+          setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
           setLayoutBaseline(hydrated);
         } else {
           setAccessError('No se pudieron cargar las páginas asignadas.');
@@ -310,6 +337,7 @@ export default function App() {
       setSelectedId(pageId);
       const hydrated = hydrateForm({ id: pageId, ...created });
       setFormData(hydrated);
+      setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
       setShowCreatePage(false);
     } finally {
@@ -322,23 +350,37 @@ export default function App() {
   }
 
   if (!hasAccess) {
+    const isOffline = authError === 'auth.offline';
     return (
       <div className="h-screen flex items-center justify-center bg-[#F4F1EA] p-6 font-sans">
         <div className="max-w-md bg-white border border-[#2A342D]/10 rounded-2xl shadow-xl p-8 text-center">
           <div className="flex justify-end mb-2">
             <LanguageSwitcher className="text-[#2A342D]" />
           </div>
-          <h1 className="font-serif text-2xl text-[#2A342D] mb-2">{t('common.unauthorizedTitle')}</h1>
+          <h1 className="font-serif text-2xl text-[#2A342D] mb-2">
+            {isOffline ? t('common.offlineTitle') : t('common.unauthorizedTitle')}
+          </h1>
           <p className="text-sm text-[#2A342D]/70 mb-6">
-            {t('common.unauthorizedBody')}
+            {isOffline ? t('common.offlineBody') : t('common.unauthorizedBody')}
           </p>
-          <button
-            type="button"
-            onClick={signOut}
-            className="bg-[#4A5D4E] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#3d4d41]"
-          >
-            {t('common.signOut')}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            {isOffline && (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="bg-[#4A5D4E] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#3d4d41]"
+              >
+                {t('common.retry')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={signOut}
+              className={`${isOffline ? 'bg-white text-[#2A342D] border border-[#2A342D]/15' : 'bg-[#4A5D4E] text-white'} rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90`}
+            >
+              {t('common.signOut')}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -537,7 +579,7 @@ export default function App() {
 
       {/* 2. FORMULARIO */}
       <div className="w-5/12 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-6 bg-white border-r border-gray-200 shadow-inner">
-        {formData ? (
+        {editorData ? (
           <form onSubmit={handleSaveChanges} className="space-y-4">
             <div className="flex justify-between items-center border-b pb-4">
               <div>
@@ -554,7 +596,7 @@ export default function App() {
 
             <EditorSection
               sectionKey="identity"
-              fillStatus={getEditorSectionFill('identity', formData)}
+              fillStatus={getEditorSectionFill('identity', editorData)}
               title="Identidad y apariencia"
               description="Nombre, tipo de negocio, idioma, fondo y textos de respaldo"
               defaultOpen
@@ -562,163 +604,170 @@ export default function App() {
             >
               <div className="space-y-2">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase">Nombre Profesional</label>
-                <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none" />
+                <input type="text" value={editorData.name || ''} onChange={e => handleEditorChange({...editorData, name: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none" />
               </div>
-              <VerticalFieldsEditor formData={formData} onChange={setFormData} />
-              <PageAppearanceEditor formData={formData} onChange={setFormData} sections={['page']} />
-              <LabelsFieldsEditor
+              <PageLanguagesEditor
                 formData={formData}
+                editingLanguage={editingLanguage}
+                onEditingLanguageChange={setEditingLanguage}
                 onChange={setFormData}
+              />
+              <VerticalFieldsEditor formData={editorData} onChange={handleEditorChange} />
+              <PageAppearanceEditor formData={editorData} onChange={handleEditorChange} sections={['page']} />
+              <LabelsFieldsEditor
+                formData={editorData}
+                onChange={handleEditorChange}
                 groupIds={['placeholders']}
-                showLanguagePicker
+                showLanguagePicker={false}
                 compact
+                language={editingLanguage}
               />
             </EditorSection>
 
             <EditorSection
               sectionKey="nav"
-              fillStatus={getEditorSectionFill('nav', formData)}
+              fillStatus={getEditorSectionFill('nav', editorData)}
               title="Navegación"
               description="Layout, menú, CTA y colores"
               onActivate={activatePreviewSection}
             >
-              <NavFieldsEditor formData={formData} onChange={setFormData} pageId={selectedId} />
-              <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['navigation']} showLanguagePicker={false} compact />
+              <NavFieldsEditor formData={editorData} onChange={handleEditorChange} pageId={selectedId} />
+              <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['navigation']} showLanguagePicker={false} compact language={editingLanguage} />
             </EditorSection>
 
             {canManageLayout && (
               <EditorSection
                 sectionKey="visibility"
-                fillStatus={getEditorSectionFill('visibility', formData)}
+                fillStatus={getEditorSectionFill('visibility', editorData)}
                 title="Visibilidad de secciones"
                 description="Activa o desactiva bloques (el navbar siempre queda)"
                 onActivate={activatePreviewSection}
               >
-                <SectionVisibilityFieldsEditor formData={formData} onChange={setFormData} />
+                <SectionVisibilityFieldsEditor formData={editorData} onChange={handleEditorChange} />
               </EditorSection>
             )}
 
             {showEditorSection('preHeroEnabled', false) && (
               <EditorSection
                 sectionKey="preHero"
-                fillStatus={getEditorSectionFill('preHero', formData)}
+                fillStatus={getEditorSectionFill('preHero', editorData)}
                 title="Pre-hero"
                 description="Bloque editorial antes del carrusel"
                 onActivate={activatePreviewSection}
               >
                 <PreHeroFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                 />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['preHero']} showLanguagePicker={false} compact />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['preHero']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
             {showEditorSection('heroSectionEnabled', true) && (
               <EditorSection
                 sectionKey="hero"
-                fillStatus={getEditorSectionFill('hero', formData)}
+                fillStatus={getEditorSectionFill('hero', editorData)}
                 title="Hero"
                 description="Especialidad, diapositivas, colores y botones"
                 defaultOpen={false}
                 onActivate={activatePreviewSection}
               >
                 <HeroSlidesEditor
-                  slides={formData.heroSlides || [createEmptySlide()]}
-                  onChange={(heroSlides) => setFormData({ ...formData, heroSlides })}
+                  slides={editorData.heroSlides || [createEmptySlide()]}
+                  onChange={(heroSlides) => handleEditorChange({ ...editorData, heroSlides })}
                   pageId={selectedId}
-                  formData={formData}
-                  onFormChange={setFormData}
+                  formData={editorData}
+                  onFormChange={handleEditorChange}
                 />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['hero']} showLanguagePicker={false} compact />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['hero']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
             {showEditorSection('aboutSectionEnabled', true) && (
               <EditorSection
                 sectionKey="about"
-                fillStatus={getEditorSectionFill('about', formData)}
+                fillStatus={getEditorSectionFill('about', editorData)}
                 title="Acerca de"
                 description="Título, frase, texto descriptivo y colores"
                 onActivate={activatePreviewSection}
               >
-                <AboutFieldsEditor formData={formData} onChange={setFormData} />
+                <AboutFieldsEditor formData={editorData} onChange={handleEditorChange} />
               </EditorSection>
             )}
 
             {showEditorSection('servicesSectionEnabled', false) && (
               <EditorSection
                 sectionKey="services"
-                fillStatus={getEditorSectionFill('services', formData)}
+                fillStatus={getEditorSectionFill('services', editorData)}
                 title="Servicios"
                 description="Áreas de atención, colores y etiquetas"
                 onActivate={activatePreviewSection}
               >
                 <ServicesFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                   canUseCarouselAutoplay={entitlements.canUseServicesCarouselAutoplay}
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['services']} showLanguagePicker={false} compact />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['services']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
             {showEditorSection('catalogSectionEnabled', false) && (
               <EditorSection
                 sectionKey="catalog"
-                fillStatus={getEditorSectionFill('catalog', formData)}
+                fillStatus={getEditorSectionFill('catalog', editorData)}
                 title="Catálogo"
                 description="Productos o recursos, colores y etiquetas"
                 onActivate={activatePreviewSection}
               >
                 <CatalogFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                 />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['catalog']} showLanguagePicker={false} compact />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['catalog']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
             {showEditorSection('gallerySectionEnabled', false) && (
               <EditorSection
                 sectionKey="gallery"
-                fillStatus={getEditorSectionFill('gallery', formData)}
+                fillStatus={getEditorSectionFill('gallery', editorData)}
                 title="Galería"
                 description="Imágenes del espacio, colores y etiquetas"
                 onActivate={activatePreviewSection}
               >
                 <GalleryFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                   canUsePortfolioCta={entitlements.canUseGalleryPortfolio}
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['gallery']} showLanguagePicker={false} compact />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['gallery']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
             {showEditorSection('videoSectionEnabled', false) && (
               <EditorSection
                 sectionKey="video"
-                fillStatus={getEditorSectionFill('video', formData)}
+                fillStatus={getEditorSectionFill('video', editorData)}
                 title="Video"
                 description="Sección de video y colores"
                 onActivate={activatePreviewSection}
               >
                 <VideoSectionFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   canToggleSection={canManageLayout}
                 />
               </EditorSection>
@@ -727,18 +776,18 @@ export default function App() {
             {showEditorSection('testimonialsEnabled', false) && (
               <EditorSection
                 sectionKey="testimonials"
-                fillStatus={getEditorSectionFill('testimonials', formData)}
+                fillStatus={getEditorSectionFill('testimonials', editorData)}
                 title="Testimonios"
                 description="Citas, colores y etiquetas"
                 onActivate={activatePreviewSection}
               >
                 <TestimonialsFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                 />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['testimonials']} showLanguagePicker={false} compact />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['testimonials']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -750,18 +799,18 @@ export default function App() {
               >
                 <EditorSection
                   sectionKey="blog"
-                  fillStatus={getEditorSectionFill('blog', formData)}
+                  fillStatus={getEditorSectionFill('blog', editorData)}
                   title="Blog / noticias"
                   description="Entradas con layouts, colores y etiquetas"
                   onActivate={activatePreviewSection}
                 >
                   <BlogFieldsEditor
-                    formData={formData}
-                    onChange={setFormData}
+                    formData={editorData}
+                    onChange={handleEditorChange}
                     pageId={selectedId}
                     canToggleSection={canManageLayout}
                   />
-                  <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['blog']} showLanguagePicker={false} compact />
+                  <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['blog']} showLanguagePicker={false} compact language={editingLanguage} />
                 </EditorSection>
               </PlanGate>
             )}
@@ -769,37 +818,37 @@ export default function App() {
             {showEditorSection('contactSectionEnabled', true) && (
               <EditorSection
                 sectionKey="contact"
-                fillStatus={getEditorSectionFill('contact', formData)}
+                fillStatus={getEditorSectionFill('contact', editorData)}
                 title="Contacto"
                 description="Ubicación, email, teléfono y etiquetas"
                 onActivate={activatePreviewSection}
               >
                 <LocationFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   canUseMapBeside={entitlements.canUseContactMapBeside}
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
                 <div className="space-y-2">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase">Email Público</label>
-                  <input type="email" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
+                  <input type="email" value={editorData.email || ''} onChange={e => handleEditorChange({...editorData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
                 </div>
-                <PhoneFieldsEditor formData={formData} onChange={setFormData} />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['contact', 'messages']} showLanguagePicker={false} compact />
+                <PhoneFieldsEditor formData={editorData} onChange={handleEditorChange} />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['contact', 'messages']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
             {showEditorSection('socialSectionEnabled', true) && (
               <EditorSection
                 sectionKey="social"
-                fillStatus={getEditorSectionFill('social', formData)}
+                fillStatus={getEditorSectionFill('social', editorData)}
                 title="Redes sociales"
                 description="Enlaces, colores y etiquetas"
                 onActivate={activatePreviewSection}
               >
-                <SocialFieldsEditor formData={formData} onChange={setFormData} />
-                <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['social']} showLanguagePicker={false} compact />
+                <SocialFieldsEditor formData={editorData} onChange={handleEditorChange} />
+                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['social']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -811,14 +860,14 @@ export default function App() {
               >
                 <EditorSection
                   sectionKey="embeds"
-                  fillStatus={getEditorSectionFill('embeds', formData)}
+                  fillStatus={getEditorSectionFill('embeds', editorData)}
                   title="Secciones personalizadas"
                   description="FAQ, formulario, CTA, texto, cita o código HTML"
                   onActivate={activatePreviewSection}
                 >
                   <CustomEmbedsFieldsEditor
-                    formData={formData}
-                    onChange={setFormData}
+                    formData={editorData}
+                    onChange={handleEditorChange}
                     canManageLayout={canManageLayout}
                     pageId={selectedId}
                   />
@@ -828,15 +877,15 @@ export default function App() {
 
             <EditorSection
               sectionKey="footer"
-              fillStatus={getEditorSectionFill('footer', formData)}
+              fillStatus={getEditorSectionFill('footer', editorData)}
               title="Hosting, analytics y pie"
               description="Dominio, Firebase externo, GA4, documentos legales y colores del footer"
               onActivate={activatePreviewSection}
             >
               {canManageHosting && (
                 <SiteHostingFieldsEditor
-                  formData={formData}
-                  onChange={setFormData}
+                  formData={editorData}
+                  onChange={handleEditorChange}
                   pageId={selectedId}
                   canUseExternalFirebase={entitlements.canUseExternalFirebase}
                   canUseHostingDeploy={entitlements.canUseHostingDeploy}
@@ -851,15 +900,15 @@ export default function App() {
                 </p>
                 <input
                   type="text"
-                  value={formData.analyticsMeasurementId || ''}
-                  onChange={(e) => setFormData({ ...formData, analyticsMeasurementId: e.target.value.trim() })}
+                  value={editorData.analyticsMeasurementId || ''}
+                  onChange={(e) => handleEditorChange({ ...editorData, analyticsMeasurementId: e.target.value.trim() })}
                   placeholder="G-XXXXXXXXXX"
                   className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none font-mono"
                 />
               </div>
-              <LegalDocumentsFieldsEditor formData={formData} onChange={setFormData} />
-              <PageAppearanceEditor formData={formData} onChange={setFormData} sections={['footer']} />
-              <LabelsFieldsEditor formData={formData} onChange={setFormData} groupIds={['footer']} showLanguagePicker={false} compact />
+              <LegalDocumentsFieldsEditor formData={editorData} onChange={handleEditorChange} />
+              <PageAppearanceEditor formData={editorData} onChange={handleEditorChange} sections={['footer']} />
+              <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['footer']} showLanguagePicker={false} compact language={editingLanguage} />
             </EditorSection>
           </form>
         ) : (
@@ -912,6 +961,7 @@ export default function App() {
               <LandingMirror
                 previewData={formData}
                 previewSeed={selectedId}
+                language={editingLanguage}
                 scrollSectionId={previewScrollSectionId}
               />
             </div>

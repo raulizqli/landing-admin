@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { LandingPage } from '@raulizqli/landing-ui';
 import { withPreviewContent } from '@raulizqli/landing-core/previewContent';
+import { resolvePageLanguage } from '@raulizqli/landing-core/pageTranslations';
 
 function getScrollParent(node) {
   let current = node?.parentElement;
@@ -26,9 +27,12 @@ function scrollIntoScrollParent(target, behavior = 'smooth') {
   parent.scrollTo({ top: Math.max(0, nextTop), behavior });
 }
 
-export default function LandingMirror({ previewData, previewSeed, scrollSectionId }) {
+export default function LandingMirror({ previewData, previewSeed, language, scrollSectionId }) {
   const rootRef = useRef(null);
-  const data = withPreviewContent(previewData, { seed: previewSeed, enabled: true });
+  const data = resolvePageLanguage(
+    withPreviewContent(previewData, { seed: previewSeed, enabled: true }),
+    language,
+  );
 
   useEffect(() => {
     if (!scrollSectionId || !rootRef.current) return undefined;

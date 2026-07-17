@@ -9,6 +9,27 @@ import { normalizePreHeroImageSide, splitPreHeroParagraphs } from '@raulizqli/la
 import { ServicesItemsLayout } from './ServicesSection.jsx';
 import { trackCtaClick } from './trackInteraction.js';
 
+const COPY = {
+  en: {
+    customSection: 'Custom section',
+    bookAppointment: 'Book appointment',
+    faq: 'Frequently asked questions',
+    steps: 'How we work',
+    services: 'Services',
+    portfolio: 'Portfolio',
+    viewPortfolio: 'View full portfolio',
+  },
+  es: {
+    customSection: 'Sección personalizada',
+    bookAppointment: 'Reservar cita',
+    faq: 'Preguntas frecuentes',
+    steps: 'Cómo trabajamos',
+    services: 'Servicios',
+    portfolio: 'Portafolio',
+    viewPortfolio: 'Ver portafolio completo',
+  },
+};
+
 function activateScripts(container) {
   const scripts = container.querySelectorAll('script');
   scripts.forEach((oldScript) => {
@@ -23,7 +44,7 @@ function activateScripts(container) {
   });
 }
 
-function SectionShell({ embed, children, className = '' }) {
+function SectionShell({ embed, children, className = '', copy = COPY.es }) {
   const contentClass = embed.fullWidth
     ? 'w-full px-5 py-10 sm:py-14'
     : 'max-w-5xl mx-auto px-5 py-10 sm:py-14';
@@ -33,7 +54,7 @@ function SectionShell({ embed, children, className = '' }) {
       className={`border-y border-[#2A342D]/10 custom-embed-section ${className}`.trim()}
       data-embed-id={embed.id}
       data-section-type={embed.type || 'embed'}
-      aria-label={embed.label || embed.title || 'Sección personalizada'}
+      aria-label={embed.label || embed.title || copy.customSection}
     >
       <div className={contentClass}>{children}</div>
     </section>
@@ -102,12 +123,12 @@ function QuoteSection({ embed }) {
   );
 }
 
-function CtaSection({ embed, interactive }) {
+function CtaSection({ embed, interactive, copy }) {
   const href = String(embed.ctaButtonUrl || '').trim() || '#contact';
   const external = /^https?:\/\//i.test(href);
 
   return (
-    <SectionShell embed={embed} className="bg-[#4A5D4E]/5">
+    <SectionShell embed={embed} className="bg-[#4A5D4E]/5" copy={copy}>
       <div className="max-w-2xl mx-auto text-center space-y-5">
         <SectionTitle title={embed.title} />
         {embed.ctaText && (
@@ -120,11 +141,11 @@ function CtaSection({ embed, interactive }) {
             onClick={() => trackCtaClick('custom_section_cta')}
             className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors"
           >
-            {embed.ctaButtonLabel || 'Reservar cita'}
+            {embed.ctaButtonLabel || copy.bookAppointment}
           </a>
         ) : (
           <span className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
-            {embed.ctaButtonLabel || 'Reservar cita'}
+            {embed.ctaButtonLabel || copy.bookAppointment}
           </span>
         )}
       </div>
@@ -132,12 +153,12 @@ function CtaSection({ embed, interactive }) {
   );
 }
 
-function FaqSection({ embed }) {
+function FaqSection({ embed, copy }) {
   const items = (embed.faqItems || []).filter((item) => item.question && item.answer);
 
   return (
-    <SectionShell embed={embed}>
-      <SectionTitle title={embed.title || 'Preguntas frecuentes'} />
+    <SectionShell embed={embed} copy={copy}>
+      <SectionTitle title={embed.title || copy.faq} />
       <div className="max-w-3xl mx-auto space-y-3">
         {items.map((item, index) => (
           <details
@@ -158,12 +179,12 @@ function FaqSection({ embed }) {
   );
 }
 
-function StepsSection({ embed }) {
+function StepsSection({ embed, copy }) {
   const items = (embed.steps || []).filter((item) => item.title || item.description);
 
   return (
-    <SectionShell embed={embed}>
-      <SectionTitle title={embed.title || 'Cómo trabajamos'} />
+    <SectionShell embed={embed} copy={copy}>
+      <SectionTitle title={embed.title || copy.steps} />
       <ol className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {items.map((item, index) => (
           <li
@@ -292,13 +313,13 @@ function PreHeroEmbedSection({ embed }) {
   );
 }
 
-function ServicesEmbedSection({ embed, interactive }) {
+function ServicesEmbedSection({ embed, interactive, copy }) {
   const items = getVisibleServiceItems(embed.serviceItems);
   if (items.length === 0) return null;
 
   return (
-    <SectionShell embed={embed}>
-      <SectionTitle title={embed.title || 'Servicios'} />
+    <SectionShell embed={embed} copy={copy}>
+      <SectionTitle title={embed.title || copy.services} />
       {embed.body && (
         <p className="text-sm text-current/60 text-center max-w-2xl mx-auto mb-8 leading-relaxed">
           {embed.body}
@@ -315,18 +336,18 @@ function ServicesEmbedSection({ embed, interactive }) {
   );
 }
 
-function PortfolioSection({ embed, interactive }) {
+function PortfolioSection({ embed, interactive, copy }) {
   const portfolioUrl = String(embed.portfolioUrl ?? '').trim();
   const hasCode = Boolean(String(embed.htmlCode ?? '').trim());
   if (!portfolioUrl && !hasCode) return null;
 
   const paragraphs = splitSectionParagraphs(embed.body);
-  const buttonLabel = String(embed.ctaButtonLabel ?? '').trim() || 'Ver portafolio completo';
+  const buttonLabel = String(embed.ctaButtonLabel ?? '').trim() || copy.viewPortfolio;
   const external = /^https?:\/\//i.test(portfolioUrl);
 
   return (
-    <SectionShell embed={embed}>
-      <SectionTitle title={embed.title || 'Portafolio'} />
+    <SectionShell embed={embed} copy={copy}>
+      <SectionTitle title={embed.title || copy.portfolio} />
       {paragraphs.length > 0 && (
         <div className="max-w-2xl mx-auto space-y-3 text-sm text-current/70 leading-relaxed text-center mb-8">
           {paragraphs.map((paragraph, index) => (
@@ -361,16 +382,17 @@ function PortfolioSection({ embed, interactive }) {
   );
 }
 
-export default function CustomEmbedBlock({ embed, interactive = true }) {
+export default function CustomEmbedBlock({ embed, interactive = true, language = 'es' }) {
   const type = normalizeSectionType(embed?.type);
+  const copy = language === 'en' ? COPY.en : COPY.es;
 
   if (type === 'pre_hero') return <PreHeroEmbedSection embed={embed} />;
-  if (type === 'services') return <ServicesEmbedSection embed={embed} interactive={interactive} />;
-  if (type === 'portfolio') return <PortfolioSection embed={embed} interactive={interactive} />;
-  if (type === 'faq') return <FaqSection embed={embed} />;
-  if (type === 'steps') return <StepsSection embed={embed} />;
+  if (type === 'services') return <ServicesEmbedSection embed={embed} interactive={interactive} copy={copy} />;
+  if (type === 'portfolio') return <PortfolioSection embed={embed} interactive={interactive} copy={copy} />;
+  if (type === 'faq') return <FaqSection embed={embed} copy={copy} />;
+  if (type === 'steps') return <StepsSection embed={embed} copy={copy} />;
   if (type === 'text') return <TextSection embed={embed} />;
-  if (type === 'cta') return <CtaSection embed={embed} interactive={interactive} />;
+  if (type === 'cta') return <CtaSection embed={embed} interactive={interactive} copy={copy} />;
   if (type === 'quote') return <QuoteSection embed={embed} />;
   return <HtmlEmbedSection embed={embed} />;
 }

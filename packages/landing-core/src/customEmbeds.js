@@ -7,6 +7,7 @@ import {
   isServiceItemVisible,
 } from './services.js';
 import { normalizePreHeroImageSide } from './preHero.js';
+import { createContentId, normalizeContentId } from './contentIds.js';
 
 export const EMBED_PLACEMENTS = [
   { value: 'before_pre_hero', label: 'Antes del pre-hero' },
@@ -142,6 +143,7 @@ function createId(prefix = 'section') {
 
 export function createEmptyFaqItem(overrides = {}) {
   return {
+    id: createContentId('faq'),
     question: '',
     answer: '',
     ...overrides,
@@ -150,6 +152,7 @@ export function createEmptyFaqItem(overrides = {}) {
 
 export function createEmptyStepItem(overrides = {}) {
   return {
+    id: createContentId('step'),
     title: '',
     description: '',
     ...overrides,
@@ -159,6 +162,7 @@ export function createEmptyStepItem(overrides = {}) {
 function normalizeFaqItems(items) {
   if (!Array.isArray(items)) return [];
   return items.map((item) => ({
+    id: normalizeContentId(item?.id, createContentId('faq')),
     question: String(item?.question ?? item?.pregunta ?? '').trim(),
     answer: String(item?.answer ?? item?.respuesta ?? '').trim(),
   }));
@@ -167,6 +171,7 @@ function normalizeFaqItems(items) {
 function normalizeStepItems(items) {
   if (!Array.isArray(items)) return [];
   return items.map((item) => ({
+    id: normalizeContentId(item?.id, createContentId('step')),
     title: String(item?.title ?? item?.titulo ?? '').trim(),
     description: String(item?.description ?? item?.descripcion ?? '').trim(),
   }));

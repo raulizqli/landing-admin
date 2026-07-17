@@ -8,6 +8,10 @@ import { fetchPageContent } from './utils/pageContent';
 import { getPageLoadErrorMessage } from './utils/pageLoadErrors';
 import { PAGE_ID } from './firebase';
 import { resolvePageFaviconUrl, setDocumentFavicon } from './utils/documentFavicon';
+import {
+  normalizePageLanguage,
+  resolvePageLanguage,
+} from '@raulizqli/landing-core/pageTranslations';
 
 function getSearchParams() {
   return new URLSearchParams(window.location.search);
@@ -25,11 +29,24 @@ function isAllowedPreviewSender(origin) {
   return adminOrigin ? origin === adminOrigin : false;
 }
 
-function useDemoContent(pageId, labelSuffix = '') {
+function resolveDocumentTitle(data, { preview = false, labelSuffix = '' } = {}) {
+  const name = String(data?.name ?? '').trim();
+  const specialty = String(data?.specialty ?? '').trim();
+
+  let title = '';
+  if (name && specialty) title = `${name} — ${specialty}`;
+  else if (name) title = name;
+  else if (specialty) title = specialty;
+  else title = 'Landing';
+
+  if (!preview) return title;
+  if (labelSuffix) return `Vista previa — ${title} (${labelSuffix})`;
+  return `Vista previa — ${title}`;
+}
+
+function createDemoContent(pageId, labelSuffix = '') {
   const demoData = generateRandomPreviewContent(pageId);
-  document.title = labelSuffix
-    ? `Vista previa — Psicología (${labelSuffix})`
-    : 'Vista previa — Psicología';
+  document.title = resolveDocumentTitle(demoData, { preview: true, labelSuffix });
   return demoData;
 }
 
@@ -62,6 +79,8 @@ export default function App() {
   const [pageData, setPageData] = useState(null);
   const [livePreviewData, setLivePreviewData] = useState(null);
   const [livePreviewPageId, setLivePreviewPageId] = useState(null);
+  const [livePreviewLanguage, setLivePreviewLanguage] = useState(null);
+  const [activeLanguage, setActiveLanguage] = useState(() => getSearchParams().get('lang'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [usingDemoFallback, setUsingDemoFallback] = useState(false);
@@ -91,6 +110,7 @@ export default function App() {
       if (event.data?.type !== 'LANDING_PREVIEW_UPDATE') return;
       setLivePreviewData(event.data.data ?? null);
       setLivePreviewPageId(event.data.pageId ?? null);
+      setLivePreviewLanguage(event.data.language ?? null);
       setUsingDemoFallback(false);
       if (event.data.scrollSectionId) {
         window.setTimeout(() => scrollToPreviewSection(event.data.scrollSectionId), 100);
@@ -122,7 +142,7 @@ export default function App() {
             if (previewMode || import.meta.env.DEV) {
               setResolvedPageId(contextPageId);
               setRouteData(null);
-              setPageData(useDemoContent(contextPageId, 'sin ID'));
+              setPageData(createDemoContent(contextPageId, 'sin ID'));
               setUsingDemoFallback(true);
               setLoading(false);
               return;
@@ -150,7 +170,7 @@ export default function App() {
 
         if (!raw) {
           if (previewMode || import.meta.env.DEV) {
-            setPageData(useDemoContent(context.pageId, 'demo local'));
+            setPageData(createDemoContent(context.pageId, 'demo local'));
             setUsingDemoFallback(true);
             return;
           }
@@ -164,9 +184,7 @@ export default function App() {
           : normalized;
 
         setPageData(data);
-        document.title = data.name
-          ? `${data.name} — Psicología`
-          : 'Psicología profesional';
+        document.title = resolveDocumentTitle(data, { preview: previewMode });
       } catch (err) {
         console.error('Error al cargar la página:', err);
         if (cancelled) return;
@@ -174,7 +192,7 @@ export default function App() {
         if (previewMode || import.meta.env.DEV) {
           setResolvedPageId(contextPageId);
           setRouteData(null);
-          setPageData(useDemoContent(contextPageId, 'demo local'));
+          setPageData(createDemoContent(contextPageId, 'demo local'));
           setUsingDemoFallback(true);
           return;
         }
@@ -193,7 +211,7 @@ export default function App() {
 
   const pageId = livePreviewPageId || resolvedPageId;
 
-  const displayData = useMemo(() => {
+  const baseDisplayData = useMemo(() => {
     const source = livePreviewPageId === resolvedPageId && livePreviewData ? livePreviewData : pageData;
     if (!source) return source;
     const normalized = normalizePageData(source);
@@ -201,13 +219,44 @@ export default function App() {
     return withPreviewContent(normalized, { seed: pageId, enabled: !usingDemoFallback });
   }, [livePreviewPageId, livePreviewData, pageData, previewMode, pageId, resolvedPageId, usingDemoFallback]);
 
+  const displayData = useMemo(() => {
+    if (!baseDisplayData) return baseDisplayData;
+    let storedLanguage = null;
+    if (!activeLanguage && pageId) {
+      try {
+        storedLanguage = window.localStorage.getItem(`landing-language:${pageId}`);
+      } catch {
+        // Ignore storage restrictions and use the page default.
+      }
+    }
+    return resolvePageLanguage(
+      baseDisplayData,
+      livePreviewLanguage || activeLanguage || storedLanguage || baseDisplayData.defaultLanguage,
+    );
+  }, [activeLanguage, baseDisplayData, livePreviewLanguage, pageId]);
+
+  const handleLanguageChange = (language) => {
+    if (!baseDisplayData || !pageId) return;
+    const next = normalizePageLanguage(language, baseDisplayData.defaultLanguage);
+    if (!baseDisplayData.enabledLanguages?.includes(next)) return;
+    setActiveLanguage(next);
+    setLivePreviewLanguage(next);
+    try {
+      window.localStorage.setItem(`landing-language:${pageId}`, next);
+    } catch {
+      // The URL still preserves the selection when storage is unavailable.
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', next);
+    window.history.replaceState({}, '', url);
+  };
+
   useEffect(() => {
     if (!displayData) return;
-    document.title = displayData.name
-      ? `${displayData.name} — Psicología`
-      : 'Psicología profesional';
+    document.title = resolveDocumentTitle(displayData, { preview: previewMode });
+    document.documentElement.lang = displayData.activeLanguage || displayData.labelLanguage || 'es';
     setDocumentFavicon(resolvePageFaviconUrl(displayData));
-  }, [displayData]);
+  }, [displayData, previewMode]);
 
   useEffect(() => {
     if (!displayData || previewMode || loading || error || !pageId || usingDemoFallback) return;
@@ -225,5 +274,5 @@ export default function App() {
       : <ErrorState message="No hay datos disponibles para esta página." />;
   }
 
-  return <LandingPage data={displayData} />;
+  return <LandingPage data={displayData} onLanguageChange={handleLanguageChange} />;
 }

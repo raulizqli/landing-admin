@@ -1,3 +1,5 @@
+import { createContentId, normalizeContentId } from './contentIds.js';
+
 /** Blog / news block layouts for the landing section. */
 export const BLOG_LAYOUTS = [
   {
@@ -56,6 +58,7 @@ export function getBlogLayoutMeta(layout) {
 
 export function createEmptyBlogPost(layout = 'title_text') {
   return {
+    id: createContentId('post'),
     layout: normalizeBlogLayout(layout),
     title: '',
     text: '',
@@ -66,6 +69,7 @@ export function createEmptyBlogPost(layout = 'title_text') {
 
 export function normalizeBlogPost(item = {}) {
   return {
+    id: normalizeContentId(item.id, createContentId('post')),
     layout: normalizeBlogLayout(item.layout || item.tipo || item.blockType),
     title: String(item.title || item.titulo || '').trim(),
     text: String(item.text || item.texto || item.body || '').trim(),

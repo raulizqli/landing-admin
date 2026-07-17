@@ -1,3 +1,5 @@
+import { createContentId, normalizeContentId } from './contentIds.js';
+
 export const SERVICE_ITEM_LAYOUTS = [
   {
     value: 'title',
@@ -28,6 +30,7 @@ const SERVICE_LAYOUT_ALIASES = {
 
 export function createEmptyService(overrides = {}) {
   return {
+    id: createContentId('service'),
     layout: 'title_description',
     title: '',
     description: '',
@@ -77,6 +80,7 @@ export function normalizeService(item = {}) {
   }
 
   return {
+    id: normalizeContentId(item.id, createContentId('service')),
     layout,
     title: item.title || item.titulo || '',
     description,
