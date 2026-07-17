@@ -1,23 +1,33 @@
 /**
- * Public LeftSideDev marketing URL (login «back to site» link).
- *
- * Prefer the template hosting URL while leftsidedev.site still points at the
- * admin CMS — otherwise same-origin links just bounce back to /login.
+ * Public LeftSideDev marketing / sales landing URL.
+ * Used for guest redirects from admin `/` and the login «back to site» link.
  */
+export const DEFAULT_PRODUCTION_MARKETING_URL =
+  'https://landing-template-9452e.web.app/?pageId=leftsidedev';
+
+function normalizeMarketingUrl(raw) {
+  const url = String(raw ?? '').trim();
+  if (!url) return '';
+  // Keep `/?query` intact; only strip a bare trailing slash.
+  if (url.includes('?') || url.includes('#')) return url;
+  return url.replace(/\/$/, '');
+}
+
 export function getMarketingUrl() {
-  const fromEnv = String(import.meta.env.VITE_MARKETING_URL ?? '').trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  const fromEnv = normalizeMarketingUrl(import.meta.env.VITE_MARKETING_URL);
+  if (fromEnv) return fromEnv;
 
   if (import.meta.env.DEV) {
-    return 'http://localhost:5174?pageId=leftsidedev';
+    return 'http://localhost:5174/?pageId=leftsidedev';
   }
 
-  return 'https://landing-template-9452e.web.app?pageId=leftsidedev';
+  return DEFAULT_PRODUCTION_MARKETING_URL;
 }
 
 /**
- * Whether the marketing URL is on a different origin than the admin.
- * Used to hide «back to site» when it would only reload the CMS.
+ * Whether hard-redirecting to the marketing URL is safe.
+ * Same-origin targets must not use location.replace — that loops forever when
+ * the admin CMS is served on the marketing hostname.
  */
 export function isExternalMarketingUrl(
   marketingUrl = getMarketingUrl(),
