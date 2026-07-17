@@ -1,10 +1,8 @@
-import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import { useAuth } from './contexts/AuthContext.jsx';
 import { useLocale } from './i18n/LocaleContext.jsx';
-import { getMarketingUrl } from './utils/marketingUrl.js';
 
 function AuthLoadingScreen() {
   const { t } = useLocale();
@@ -15,31 +13,13 @@ function AuthLoadingScreen() {
   );
 }
 
-function GuestMarketingRedirect() {
-  const { t } = useLocale();
-  const marketingUrl = getMarketingUrl();
-
-  useEffect(() => {
-    window.location.replace(marketingUrl);
-  }, [marketingUrl]);
-
-  return (
-    <div className="h-screen flex flex-col items-center justify-center gap-3 bg-[#081810] text-white font-sans p-6 text-center">
-      <p className="text-sm tracking-wide uppercase opacity-80 animate-pulse">
-        {t('shell.redirectingMarketing')}
-      </p>
-      <a href={marketingUrl} className="text-[#40B850] text-sm underline underline-offset-2">
-        {marketingUrl}
-      </a>
-    </div>
-  );
-}
-
 function RootRoute() {
   const { user, loading } = useAuth();
   if (loading) return <AuthLoadingScreen />;
   if (user) return <Navigate to="/app" replace />;
-  return <GuestMarketingRedirect />;
+  // Never hard-redirect guests to VITE_MARKETING_URL: when the CMS is served on
+  // that same host (e.g. leftsidedev.site), location.replace loops forever.
+  return <Navigate to="/login" replace />;
 }
 
 function LoginRoute() {

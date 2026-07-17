@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LanguageSwitcher, useLocale } from '../i18n/LocaleContext';
-import { getMarketingUrl } from '../utils/marketingUrl';
+import { getMarketingUrl, isExternalMarketingUrl } from '../utils/marketingUrl';
 
 export default function LoginScreen() {
   const { signIn, authError } = useAuth();
@@ -11,6 +11,7 @@ export default function LoginScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState('');
   const marketingUrl = getMarketingUrl();
+  const showBackToSite = isExternalMarketingUrl(marketingUrl);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -35,13 +36,15 @@ export default function LoginScreen() {
   return (
     <div className="min-h-screen bg-[#081810] flex items-center justify-center p-6 font-sans">
       <div className="w-full max-w-md bg-white border border-[#2A342D]/10 rounded-2xl shadow-xl p-8">
-        <div className="flex justify-between items-center mb-2 gap-2">
-          <a
-            href={marketingUrl}
-            className="text-[11px] font-semibold text-[#40B850] hover:underline underline-offset-2"
-          >
-            ← {t('login.backToSite')}
-          </a>
+        <div className={`flex items-center mb-2 gap-2 ${showBackToSite ? 'justify-between' : 'justify-end'}`}>
+          {showBackToSite ? (
+            <a
+              href={marketingUrl}
+              className="text-[11px] font-semibold text-[#40B850] hover:underline underline-offset-2"
+            >
+              ← {t('login.backToSite')}
+            </a>
+          ) : null}
           <LanguageSwitcher className="text-[#2A342D]" />
         </div>
         <div className="mb-8 text-center">
