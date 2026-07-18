@@ -201,17 +201,17 @@ Cost control: default small model; cache repeated SEO meta; charge overage later
 
 **Exit:** Pro subscriber can generate and publish polished bio + SEO in &lt;10 minutes.
 
-### Phase 2 — Agency scale
+### Phase 2 — Agency scale + BYOK
 
 - Brand tone preset per page (`aiTone` on page doc).
 - Batch “improve empty sections” for one page.
+- **Bring-your-own API key** (OpenAI / Gemini / Anthropic) on the billing account.
 - Usage export for agency owners.
 
 ### Phase 3 — Enterprise Marketing Site
 
 - Service / case-study / FAQ generators into `marketingRoutes`.
-- Optional BYO key.
-- Higher or unlimited quota in contract.
+- BYOK + optional higher platform quota in contract.
 
 ---
 
