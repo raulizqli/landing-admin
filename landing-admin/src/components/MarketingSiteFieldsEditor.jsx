@@ -178,6 +178,14 @@ export default function MarketingSiteFieldsEditor({
               />
               Floating contact
             </label>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={marketing.newsletterEnabled === true}
+                onChange={(e) => onChange(updateMarketing(formData, { newsletterEnabled: e.target.checked }))}
+              />
+              Newsletter teaser in footer
+            </label>
           </div>
 
           <label className="block text-[11px]">

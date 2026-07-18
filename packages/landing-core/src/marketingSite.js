@@ -23,9 +23,19 @@ export const MARKETING_ROUTE_TYPES = [
 
 export const MVP_MARKETING_ROUTE_TYPES = ['home', 'services_index', 'service', 'contact'];
 
+export const PHASE4_MARKETING_ROUTE_TYPES = [
+  ...MVP_MARKETING_ROUTE_TYPES,
+  'case_studies_index',
+  'case_study',
+  'blog_index',
+  'blog_post',
+  'estimate',
+  'resources',
+];
+
 export const ROUTES_SUBCOLLECTION = 'routes';
 
-const DEFAULT_ENABLED_ROUTE_TYPES = [...MVP_MARKETING_ROUTE_TYPES];
+const DEFAULT_ENABLED_ROUTE_TYPES = [...PHASE4_MARKETING_ROUTE_TYPES];
 
 function asString(value) {
   return String(value ?? '').trim();
@@ -224,18 +234,94 @@ function emptyIndexContent() {
   };
 }
 
+function emptyCaseStudyContent() {
+  return {
+    client: '',
+    industry: '',
+    summary: '',
+    problem: '',
+    solution: '',
+    architecture: [''],
+    technologies: [],
+    timeline: '',
+    results: [{ label: '', value: '' }],
+    testimonialQuote: '',
+    testimonialAuthor: '',
+    testimonialRole: '',
+  };
+}
+
+function emptyBlogPostContent() {
+  return {
+    category: 'AI',
+    date: '',
+    readingMinutes: 5,
+    excerpt: '',
+    tags: [],
+    body: [''],
+  };
+}
+
+function emptyEstimateContent() {
+  return {
+    headline: 'Estimate your project',
+    body: 'A planning range—not a quote. Discovery still validates integrations and success metrics.',
+    baseMvp: 12000,
+    baseProduct: 28000,
+    basePlatform: 55000,
+  };
+}
+
+function emptyResourcesContent() {
+  return {
+    headline: 'Free AI implementation checklist',
+    body: 'A practical guide for leaders and builders preparing their first production AI workflow.',
+    checklist: [
+      'Name the job-to-be-done and the metric that proves success.',
+      'Inventory systems of record and who owns credentials.',
+      'Classify actions: read, draft, write—and where humans must approve.',
+      'List 10 real failure cases for your first eval set.',
+    ],
+    guideTitle: 'Free guide: AI for businesses',
+    guideBody: 'Start where tickets and documents already concentrate value. Fund data cleanup. Measure a baseline before you launch.',
+  };
+}
+
+function emptyContentForType(type) {
+  switch (type) {
+    case 'service':
+      return emptyServiceContent();
+    case 'home':
+      return emptyHomeContent();
+    case 'contact':
+      return emptyContactContent();
+    case 'case_study':
+      return emptyCaseStudyContent();
+    case 'blog_post':
+      return emptyBlogPostContent();
+    case 'estimate':
+      return emptyEstimateContent();
+    case 'resources':
+      return emptyResourcesContent();
+    default:
+      return emptyIndexContent();
+  }
+}
+
+function asResult(value = {}) {
+  return {
+    label: asString(value?.label),
+    value: asString(value?.value),
+  };
+}
+
 export function createEmptyMarketingRoute(partial = {}) {
   const type = MARKETING_ROUTE_TYPES.includes(partial.type) ? partial.type : 'custom';
   const slug = type === 'service' || type === 'case_study' || type === 'blog_post' || type === 'custom'
     ? slugify(partial.slug || partial.title || 'page')
     : '';
   const id = asString(partial.id) || `${type}${slug ? `-${slug}` : ''}` || `route-${Date.now()}`;
-
-  let content;
-  if (type === 'service') content = { ...emptyServiceContent(), ...(partial.content || {}) };
-  else if (type === 'home') content = { ...emptyHomeContent(), ...(partial.content || {}) };
-  else if (type === 'contact') content = { ...emptyContactContent(), ...(partial.content || {}) };
-  else content = { ...emptyIndexContent(), ...(partial.content || {}) };
+  const content = { ...emptyContentForType(type), ...(partial.content || {}) };
 
   return {
     id,
@@ -292,6 +378,53 @@ export function normalizeRouteContent(type, content = {}) {
     return {
       headline: asString(content.headline) || 'Book a discovery call',
       body: asString(content.body),
+    };
+  }
+  if (type === 'case_study') {
+    return {
+      client: asString(content.client),
+      industry: asString(content.industry),
+      summary: asString(content.summary),
+      problem: asString(content.problem),
+      solution: asString(content.solution),
+      architecture: normalizeStringList(content.architecture, { min: 1 }),
+      technologies: asStringArray(content.technologies),
+      timeline: asString(content.timeline),
+      results: Array.isArray(content.results) && content.results.length
+        ? content.results.map(asResult)
+        : [{ label: '', value: '' }],
+      testimonialQuote: asString(content.testimonialQuote),
+      testimonialAuthor: asString(content.testimonialAuthor),
+      testimonialRole: asString(content.testimonialRole),
+    };
+  }
+  if (type === 'blog_post') {
+    const minutes = Number(content.readingMinutes);
+    return {
+      category: asString(content.category) || 'AI',
+      date: asString(content.date),
+      readingMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 5,
+      excerpt: asString(content.excerpt),
+      tags: asStringArray(content.tags),
+      body: normalizeStringList(content.body, { min: 1 }),
+    };
+  }
+  if (type === 'estimate') {
+    return {
+      headline: asString(content.headline) || 'Estimate your project',
+      body: asString(content.body),
+      baseMvp: Number(content.baseMvp) || 12000,
+      baseProduct: Number(content.baseProduct) || 28000,
+      basePlatform: Number(content.basePlatform) || 55000,
+    };
+  }
+  if (type === 'resources') {
+    return {
+      headline: asString(content.headline) || 'Free AI implementation checklist',
+      body: asString(content.body),
+      checklist: normalizeStringList(content.checklist, { min: 1 }),
+      guideTitle: asString(content.guideTitle) || 'Free guide: AI for businesses',
+      guideBody: asString(content.guideBody),
     };
   }
   return {
@@ -385,6 +518,92 @@ export function createMarketingSiteSkeleton({ name = 'Marketing Site', brand = '
         title: 'AI Agents',
         description: 'Production AI agents with tool use, guardrails, and evals.',
       },
+    },
+    {
+      id: 'case-studies-index',
+      type: 'case_studies_index',
+      title: 'Case Studies',
+      sortOrder: 20,
+      content: {
+        headline: 'Case studies',
+        body: 'Problem → Solution → Architecture → Results.',
+      },
+    },
+    {
+      id: 'case-support-agents',
+      type: 'case_study',
+      slug: 'support-ai-agents',
+      title: 'AI agents that cut support response time from 18 hours to under 2 minutes',
+      sortOrder: 21,
+      content: {
+        client: 'Regional SaaS support org',
+        industry: 'B2B Software',
+        summary: 'Reduced customer support response time from 18 hours to under 2 minutes using AI Agents and workflow automation.',
+        problem: 'Tier-1 tickets sat in a shared inbox for hours. CSAT slipped while hiring lagged ticket growth.',
+        solution: 'A supervised AI agent classifies tickets, retrieves grounded answers, drafts replies, and escalates high-risk cases.',
+        architecture: [
+          'Helpdesk webhooks',
+          'Classifier + RAG',
+          'Draft generator',
+          'Human approval for risky writes',
+        ],
+        technologies: ['OpenAI', 'RAG', 'n8n', 'Node.js'],
+        timeline: '6 weeks to supervised production',
+        results: [
+          { label: 'First response time', value: '18h → <2 min' },
+          { label: 'Tier-1 deflection', value: '62%' },
+        ],
+        testimonialQuote: 'The agent did not replace our team—it removed the queue.',
+        testimonialAuthor: 'Head of Support',
+        testimonialRole: 'B2B SaaS',
+      },
+    },
+    {
+      id: 'blog-index',
+      type: 'blog_index',
+      title: 'Blog',
+      sortOrder: 30,
+      content: {
+        headline: 'Blog',
+        body: 'Technical notes on AI engineering, architecture, and automation.',
+      },
+    },
+    {
+      id: 'blog-how-to-build-ai-agents',
+      type: 'blog_post',
+      slug: 'how-to-build-ai-agents',
+      title: 'How to Build AI Agents That Survive Production',
+      sortOrder: 31,
+      content: {
+        category: 'AI',
+        date: '2026-06-12',
+        readingMinutes: 12,
+        excerpt: 'A practical blueprint for tool contracts, guardrails, evals, and human-in-the-loop.',
+        tags: ['AI Agents', 'Evals', 'Architecture'],
+        body: [
+          'Most AI agent demos collapse under permissions, flaky tools, and unclear ownership.',
+          'Start from a job-to-be-done with a measurable outcome.',
+          'Model tools as typed contracts with idempotency keys and explicit side-effect levels.',
+          'Ship in stages: shadow mode, supervised, then autonomy on the narrow safe path.',
+        ],
+      },
+    },
+    {
+      id: 'estimate',
+      type: 'estimate',
+      title: 'Estimate',
+      sortOrder: 80,
+      content: {
+        headline: 'Estimate your project',
+        body: 'A planning range—not a quote. Discovery still validates integrations and success metrics.',
+      },
+    },
+    {
+      id: 'resources',
+      type: 'resources',
+      title: 'Resources',
+      sortOrder: 85,
+      content: emptyResourcesContent(),
     },
     {
       id: 'contact',

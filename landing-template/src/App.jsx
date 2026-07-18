@@ -66,24 +66,84 @@ function resolveDocumentTitle(data, { preview = false, labelSuffix = '', path = 
   return `Vista previa — ${title}`;
 }
 
+function upsertJsonLd(id, payload) {
+  const existing = document.getElementById(id);
+  if (!payload) {
+    existing?.remove();
+    return;
+  }
+  const script = existing || document.createElement('script');
+  script.id = id;
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify(payload);
+  if (!existing) document.head.appendChild(script);
+}
+
 function applyMarketingMeta(data, path = '/') {
-  if (!isMarketingSite(data)) return;
+  if (!isMarketingSite(data)) {
+    upsertJsonLd('marketing-faq-schema', null);
+    upsertJsonLd('marketing-service-schema', null);
+    upsertJsonLd('marketing-article-schema', null);
+    return;
+  }
   const route = findMarketingRouteByPath(data.marketingRoutes, path);
   const description = String(
     route?.seo?.description
       || route?.content?.metaDescription
+      || route?.content?.excerpt
       || data?.seo?.defaultDescription
-      || data?.marketing?.primaryCta?.label
       || '',
   ).trim();
-  if (!description) return;
-  let meta = document.head.querySelector('meta[name="description"]');
-  if (!meta) {
-    meta = document.createElement('meta');
-    meta.setAttribute('name', 'description');
-    document.head.appendChild(meta);
+  if (description) {
+    let meta = document.head.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', description);
   }
-  meta.setAttribute('content', description);
+
+  if (route?.type === 'service') {
+    const faqs = (route.content?.faqs || []).filter((item) => item.question && item.answer);
+    upsertJsonLd('marketing-service-schema', {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: route.title,
+      description: route.content?.summary || description,
+      provider: { '@type': 'Organization', name: data.name },
+    });
+    upsertJsonLd(
+      'marketing-faq-schema',
+      faqs.length
+        ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: { '@type': 'Answer', text: item.answer },
+          })),
+        }
+        : null,
+    );
+    upsertJsonLd('marketing-article-schema', null);
+  } else if (route?.type === 'blog_post') {
+    upsertJsonLd('marketing-article-schema', {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: route.title,
+      datePublished: route.content?.date || undefined,
+      description: route.content?.excerpt || description,
+      author: { '@type': 'Organization', name: data.name },
+    });
+    upsertJsonLd('marketing-faq-schema', null);
+    upsertJsonLd('marketing-service-schema', null);
+  } else {
+    upsertJsonLd('marketing-faq-schema', null);
+    upsertJsonLd('marketing-service-schema', null);
+    upsertJsonLd('marketing-article-schema', null);
+  }
 }
 
 function createDemoContent(pageId, labelSuffix = '') {

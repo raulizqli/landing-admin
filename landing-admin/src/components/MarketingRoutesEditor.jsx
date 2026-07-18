@@ -121,7 +121,12 @@ function RouteContentEditor({ route, onChange }) {
     );
   }
 
-  if (route.type === 'contact' || route.type === 'services_index') {
+  if (
+    route.type === 'contact'
+    || route.type === 'services_index'
+    || route.type === 'case_studies_index'
+    || route.type === 'blog_index'
+  ) {
     return (
       <div className="space-y-3">
         <input
@@ -138,6 +143,108 @@ function RouteContentEditor({ route, onChange }) {
           onChange={(e) => setContent({ body: e.target.value })}
           className="w-full rounded-lg border p-2 text-xs"
         />
+      </div>
+    );
+  }
+
+  if (route.type === 'case_study') {
+    return (
+      <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input type="text" placeholder="Client" value={content.client || ''} onChange={(e) => setContent({ client: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+          <input type="text" placeholder="Industry" value={content.industry || ''} onChange={(e) => setContent({ industry: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        </div>
+        <textarea placeholder="Summary" rows={2} value={content.summary || ''} onChange={(e) => setContent({ summary: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <textarea placeholder="Problem" rows={3} value={content.problem || ''} onChange={(e) => setContent({ problem: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <textarea placeholder="Solution" rows={3} value={content.solution || ''} onChange={(e) => setContent({ solution: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <StringListEditor label="Architecture" values={content.architecture} onChange={(architecture) => setContent({ architecture })} />
+        <label className="block text-[11px]">
+          <span className="mb-1 block font-bold uppercase text-gray-400">Technologies (comma-separated)</span>
+          <input
+            type="text"
+            value={(content.technologies || []).join(', ')}
+            onChange={(e) => setContent({
+              technologies: e.target.value.split(',').map((item) => item.trim()).filter(Boolean),
+            })}
+            className="w-full rounded-lg border p-2 text-xs"
+          />
+        </label>
+        <input type="text" placeholder="Timeline" value={content.timeline || ''} onChange={(e) => setContent({ timeline: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <StringListEditor
+          label="Results (Label: Value)"
+          values={(content.results || []).map((item) => `${item.label || ''}: ${item.value || ''}`)}
+          onChange={(rows) => setContent({
+            results: rows.map((row) => {
+              const [label, ...rest] = String(row).split(':');
+              return { label: (label || '').trim(), value: rest.join(':').trim() };
+            }),
+          })}
+        />
+        <textarea placeholder="Testimonial quote" rows={2} value={content.testimonialQuote || ''} onChange={(e) => setContent({ testimonialQuote: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input type="text" placeholder="Testimonial author" value={content.testimonialAuthor || ''} onChange={(e) => setContent({ testimonialAuthor: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+          <input type="text" placeholder="Testimonial role" value={content.testimonialRole || ''} onChange={(e) => setContent({ testimonialRole: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        </div>
+      </div>
+    );
+  }
+
+  if (route.type === 'blog_post') {
+    return (
+      <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <input type="text" placeholder="Category" value={content.category || ''} onChange={(e) => setContent({ category: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+          <input type="date" value={content.date || ''} onChange={(e) => setContent({ date: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+          <input type="number" min="1" placeholder="Minutes" value={content.readingMinutes || 5} onChange={(e) => setContent({ readingMinutes: Number(e.target.value) || 5 })} className="w-full rounded-lg border p-2 text-xs" />
+        </div>
+        <textarea placeholder="Excerpt" rows={2} value={content.excerpt || ''} onChange={(e) => setContent({ excerpt: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <StringListEditor label="Body paragraphs" values={content.body} onChange={(body) => setContent({ body })} />
+        <label className="block text-[11px]">
+          <span className="mb-1 block font-bold uppercase text-gray-400">Tags (comma-separated)</span>
+          <input
+            type="text"
+            value={(content.tags || []).join(', ')}
+            onChange={(e) => setContent({
+              tags: e.target.value.split(',').map((item) => item.trim()).filter(Boolean),
+            })}
+            className="w-full rounded-lg border p-2 text-xs"
+          />
+        </label>
+      </div>
+    );
+  }
+
+  if (route.type === 'estimate') {
+    return (
+      <div className="space-y-3">
+        <input type="text" placeholder="Headline" value={content.headline || ''} onChange={(e) => setContent({ headline: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <textarea placeholder="Body" rows={2} value={content.body || ''} onChange={(e) => setContent({ body: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="block text-[11px]">
+            <span className="mb-1 block font-bold uppercase text-gray-400">MVP base</span>
+            <input type="number" value={content.baseMvp || 12000} onChange={(e) => setContent({ baseMvp: Number(e.target.value) || 0 })} className="w-full rounded-lg border p-2 text-xs" />
+          </label>
+          <label className="block text-[11px]">
+            <span className="mb-1 block font-bold uppercase text-gray-400">Product base</span>
+            <input type="number" value={content.baseProduct || 28000} onChange={(e) => setContent({ baseProduct: Number(e.target.value) || 0 })} className="w-full rounded-lg border p-2 text-xs" />
+          </label>
+          <label className="block text-[11px]">
+            <span className="mb-1 block font-bold uppercase text-gray-400">Platform base</span>
+            <input type="number" value={content.basePlatform || 55000} onChange={(e) => setContent({ basePlatform: Number(e.target.value) || 0 })} className="w-full rounded-lg border p-2 text-xs" />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  if (route.type === 'resources') {
+    return (
+      <div className="space-y-3">
+        <input type="text" placeholder="Headline" value={content.headline || ''} onChange={(e) => setContent({ headline: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <textarea placeholder="Body" rows={2} value={content.body || ''} onChange={(e) => setContent({ body: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <StringListEditor label="Checklist items" values={content.checklist} onChange={(checklist) => setContent({ checklist })} />
+        <input type="text" placeholder="Guide title" value={content.guideTitle || ''} onChange={(e) => setContent({ guideTitle: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
+        <textarea placeholder="Guide body" rows={3} value={content.guideBody || ''} onChange={(e) => setContent({ guideBody: e.target.value })} className="w-full rounded-lg border p-2 text-xs" />
       </div>
     );
   }
@@ -224,19 +331,41 @@ export default function MarketingRoutesEditor({ formData, onChange, activeRouteI
     setRoutes(routes.map((route) => (route.id === normalized.id ? normalized : route)));
   };
 
-  const addService = () => {
-    const slug = `service-${routes.filter((route) => route.type === 'service').length + 1}`;
+  const addRoute = (type, title) => {
+    if (type === 'estimate' && routes.some((item) => item.type === 'estimate')) return;
+    if (type === 'resources' && routes.some((item) => item.type === 'resources')) return;
+
+    const count = routes.filter((route) => route.type === type).length + 1;
+    const slug = type === 'service' || type === 'case_study' || type === 'blog_post'
+      ? `${type.replaceAll('_', '-')}-${count}`
+      : '';
     const route = createEmptyMarketingRoute({
-      type: 'service',
+      type,
       slug,
-      title: 'New service',
+      title: title || `New ${type}`,
       sortOrder: 20 + routes.length,
-      content: {
-        summary: 'Describe the service outcome in one or two sentences.',
-        whoFor: 'Who benefits from this service.',
-      },
     });
-    setRoutes([...routes, route]);
+    let next = [...routes];
+    if (type === 'case_study' && !routes.some((item) => item.type === 'case_studies_index')) {
+      next.push(createEmptyMarketingRoute({
+        id: 'case-studies-index',
+        type: 'case_studies_index',
+        title: 'Case Studies',
+        sortOrder: 20,
+        content: { headline: 'Case studies', body: 'Problem → Solution → Architecture → Results.' },
+      }));
+    }
+    if (type === 'blog_post' && !routes.some((item) => item.type === 'blog_index')) {
+      next.push(createEmptyMarketingRoute({
+        id: 'blog-index',
+        type: 'blog_index',
+        title: 'Blog',
+        sortOrder: 30,
+        content: { headline: 'Blog', body: 'Technical notes and guides.' },
+      }));
+    }
+    next = [...next, route];
+    setRoutes(next);
     onSelectRoute?.(route.id);
   };
 
@@ -258,13 +387,25 @@ export default function MarketingRoutesEditor({ formData, onChange, activeRouteI
             <span className="ml-1 font-mono text-[9px] opacity-60">{route.path}</span>
           </button>
         ))}
-        <button
-          type="button"
-          onClick={addService}
-          className="rounded-lg border border-dashed border-indigo-300 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600"
-        >
-          + Service page
+        <button type="button" onClick={() => addRoute('service', 'New service')} className="rounded-lg border border-dashed border-indigo-300 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600">
+          + Service
         </button>
+        <button type="button" onClick={() => addRoute('case_study', 'New case study')} className="rounded-lg border border-dashed border-indigo-300 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600">
+          + Case study
+        </button>
+        <button type="button" onClick={() => addRoute('blog_post', 'New blog post')} className="rounded-lg border border-dashed border-indigo-300 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600">
+          + Blog post
+        </button>
+        {!routes.some((route) => route.type === 'estimate') && (
+          <button type="button" onClick={() => addRoute('estimate', 'Estimate')} className="rounded-lg border border-dashed border-indigo-300 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600">
+            + Estimate
+          </button>
+        )}
+        {!routes.some((route) => route.type === 'resources') && (
+          <button type="button" onClick={() => addRoute('resources', 'Resources')} className="rounded-lg border border-dashed border-indigo-300 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-600">
+            + Resources
+          </button>
+        )}
       </div>
 
       {activeRoute ? (
@@ -279,7 +420,7 @@ export default function MarketingRoutesEditor({ formData, onChange, activeRouteI
                 className="w-full rounded-lg border p-2 text-xs"
               />
             </label>
-            {(activeRoute.type === 'service' || activeRoute.type === 'custom') && (
+            {['service', 'case_study', 'blog_post', 'custom'].includes(activeRoute.type) && (
               <label className="block text-[11px]">
                 <span className="mb-1 block font-bold uppercase text-gray-400">Slug</span>
                 <input
@@ -333,7 +474,7 @@ export default function MarketingRoutesEditor({ formData, onChange, activeRouteI
 
           <RouteContentEditor route={activeRoute} onChange={updateActive} />
 
-          {activeRoute.type === 'service' && (
+          {['service', 'case_study', 'blog_post', 'estimate', 'resources'].includes(activeRoute.type) && (
             <button
               type="button"
               className="text-[11px] font-semibold text-red-600"
@@ -343,7 +484,7 @@ export default function MarketingRoutesEditor({ formData, onChange, activeRouteI
                 onSelectRoute?.(next[0]?.id || '');
               }}
             >
-              Delete this service route
+              Delete this route
             </button>
           )}
         </div>
