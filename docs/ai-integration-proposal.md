@@ -20,12 +20,12 @@ Without breaking:
 
 | Tier | AI access | Model path | Monthly budget (suggested) | Capabilities |
 |---|---|---|---|---|
-| **Free tier** (Starter **or** unpaid/lapsed CMS) | **AI Lite** | **Free models** — Gemini Flash / Groq (platform free-tier keys) | ~15 gens / mo | Bio/hero **rewrite** only (no blog batch, no Marketing Site) |
-| **Pro** (active) | **AI Assist** | Paid mini (OpenAI / Gemini paid) | ~50 gens / mo | Rewrite, services, blog draft, SEO meta |
-| **Agency** (active) | **AI Studio** | Paid mini **or BYOK** | ~200 gens / mo | + batch, tone presets, own API token |
-| **Enterprise** (active) | **AI Studio +** | Paid / BYOK | Custom | + Marketing Site generators |
+| **Free tier** (Starter **or** unpaid/lapsed CMS) | **AI Lite** | **Ollama** (preferred) and/or Gemini/Groq free | Soft cap ~30 gens / mo (Ollama can be higher) | Bio/hero **rewrite** only |
+| **Pro** (active) | **AI Assist** | Paid mini (OpenAI / Gemini paid); Ollama optional | ~50 gens / mo | Rewrite, services, blog draft, SEO meta |
+| **Agency** (active) | **AI Studio** | Paid mini, **BYOK**, or **own Ollama URL** | ~200 gens / mo | + batch, tone presets |
+| **Enterprise** (active) | **AI Studio +** | Paid / BYOK / private Ollama | Custom | + Marketing Site generators |
 
-**Rule of thumb:** free users never burn paid OpenAI tokens; paid users never depend on flaky free quotas for core UX.
+**Rule of thumb:** first tiers prefer **Ollama / free APIs** so we don’t spend paid tokens; Pro+ can still use paid models for quality.
 
 ### Entitlement flags
 
