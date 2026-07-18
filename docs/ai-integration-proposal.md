@@ -4,7 +4,7 @@
 
 Add **AI-assisted content tools inside the admin CMS**, with two tracks:
 
-1. **Free tier → free models** — Starter and unpaid/free-tier CMS accounts get **AI Lite** routed to free-tier providers (Gemini / Groq), tight monthly caps.  
+1. **Free / first tiers → cheap AI Lite** — Starter and unpaid/free-tier CMS use **free cloud models (Gemini/Groq)** and/or **Ollama** (no per-token bill).  
 2. **Paid Pro+ → paid models** — better quality, higher quotas, BYOK on Agency/Enterprise.
 
 Without breaking:
@@ -39,10 +39,10 @@ features: {
 Hard gate in `runAiAssist`:
 
 - Resolve lane: `lite` vs `full` from plan + billing status.
-- **Lite:** allow even when `past_due` / `canceled` / Starter; use free-model provider; enforce lite quota + lite action allow-list.
-- **Full:** require `active|trialing` + Pro+; use paid provider or BYOK.
+- **Lite:** allow even when `past_due` / `canceled` / Starter; prefer **Ollama**, else Gemini/Groq free; lite action allow-list.
+- **Full:** require `active|trialing` + Pro+; use paid provider, BYOK, or remote Ollama.
 - Root bypass as today.
-- Never call the model from the browser with a secret key.
+- Cloud API keys never exposed to the browser. **Local Ollama** is the exception: the admin browser may call `127.0.0.1` directly (no secret).
 
 ---
 
@@ -205,15 +205,47 @@ There is no reliable **unlimited free** API for a multi-tenant SaaS. What exists
 | **OpenRouter** | Some free models | BYOK compatible | Free models crowded/slow; quality varies |
 | **Mistral / DeepSeek** | Free or cheap tiers | BYOK compatible | Check current ToS for commercial use |
 | **Hugging Face Inference** | Limited free | Weak for v1 | Cold starts, less stable JSON |
-| **Ollama / local LLM** | Free (self-host) | Enterprise only | Client must host GPU/CPU; not our cloud default |
-| **OpenAI / Anthropic** | Paid | Platform default | No meaningful free production tier |
+| **Ollama / local LLM** | Free (self-host) | **First-tier Lite (recommended)** | No per-token cost; needs CPU/GPU host |
+| **OpenAI / Anthropic** | Paid | Pro+ platform default | No meaningful free production tier |
 
-**Recommendation — free model for free tier**
+### Ollama for first tiers (recommended cheap path)
 
-1. **Free-tier CMS / Starter → AI Lite** on **Gemini free** (primary) or **Groq free** (fallback), platform-managed keys, ~15 gens/mo, rewrite-only.  
-2. **Pro+ active → paid mini** for predictable quality (OpenAI or Gemini paid).  
-3. **Agency+ BYOK** if they want their own token (including their own free Gemini/Groq keys).  
-4. If the free provider rate-limits Lite, show a friendly “quota busy — try later or upgrade to Pro” — never silently charge paid APIs for free users.
+Ollama gives **better control and $0 token spend** for Starter / free-tier CMS. Three ways to wire it:
+
+| Mode | Who runs the model | How the admin CMS calls it | Best for |
+|---|---|---|---|
+| **A. Hub Ollama** | Our small VPS/GPU | Cloud Function → `OLLAMA_BASE_URL` | Default Lite for all first-tier users (zero client setup) |
+| **B. Local Ollama** | Editor’s machine | **Browser → `http://127.0.0.1:11434`** (Lite only) | Power users; fully free; works offline for generation |
+| **C. Remote Ollama BYOK** | Client’s VPS | Function → their HTTPS Ollama/OpenAI-compatible URL | Agency / studios with their own box |
+
+Suggested Lite models (Spanish/English copy, modest hardware):
+
+- `llama3.2` / `llama3.1:8b`
+- `qwen2.5:7b` (strong multilingual)
+- `gemma2:9b` or `mistral:7b`
+
+Admin UX for first tiers:
+
+```text
+AI Lite engine:
+  (•) Platform Ollama (hub)     ← default, no tokens
+  ( ) Cloud free (Gemini/Groq) ← fallback if hub busy
+  ( ) Local Ollama on this PC  ← requires Ollama installed + model pulled
+```
+
+Notes:
+
+- **Local Ollama cannot be reached from Cloud Functions** (`localhost` is the user’s PC). Mode B is browser-side for Lite rewrite only, with the same prompt templates and JSON validation as the server lane.
+- Hub Ollama cost = **server electricity/RAM**, not tokens — usually cheaper at Lite volume than Gemini/OpenAI.
+- Still enforce a soft monthly cap (abuse / CPU protection); can be higher than cloud-free Lite.
+- If Ollama fails, fall back to Gemini/Groq free — **never** to paid OpenAI on the free tier.
+
+**Recommendation — first tiers**
+
+1. **Default Lite = Hub Ollama** (cheap, no client install).  
+2. Optional **Local Ollama** for users who installed it on their PC.  
+3. **Gemini/Groq free** as automatic fallback.  
+4. **Pro+** keeps paid mini models for quality; they can still use Ollama if they want.
 
 ### Bring your own API key (BYOK) — yes
 
@@ -253,7 +285,7 @@ Rules:
 - Key is sent once over HTTPS to `setAiProviderConfig` (account admin / root).
 - `runAiAssist` decrypts server-side; responses never echo the key.
 - BYOK failure → clear error; offer platform fallback if quota remains.
-- Free-tier / Starter: **AI Lite only** (free models). BYOK stays Agency+ so free users don’t need to bring a key.
+- Free-tier / Starter: **AI Lite only** (Ollama-first, free-cloud fallback). BYOK / remote Ollama stays Agency+.
 - Offline public site does **not** block CMS AI Lite (editors can still polish copy while the apex is offline).
 
 Platform secrets:
@@ -264,11 +296,12 @@ AI_PROVIDER=openai
 OPENAI_API_KEY=…
 AI_MODEL=gpt-4.1-mini
 
-# Free / Lite lane (Starter + unpaid free-tier)
-AI_LITE_PROVIDER=gemini
-GEMINI_API_KEY=…          # free-tier AI Studio key OK for Lite
-AI_LITE_MODEL=gemini-2.0-flash
-AI_LITE_FALLBACK_PROVIDER=groq
+# Free / Lite lane (Starter + unpaid free-tier) — prefer Ollama
+AI_LITE_PROVIDER=ollama
+OLLAMA_BASE_URL=http://ollama.internal:11434
+AI_LITE_MODEL=qwen2.5:7b
+AI_LITE_FALLBACK_PROVIDER=gemini
+GEMINI_API_KEY=…
 GROQ_API_KEY=…
 ANTHROPIC_API_KEY=…       # full lane / BYOK optional
 ```
@@ -294,11 +327,11 @@ Buyer promise:
 
 Upsell path:
 
-1. Free-tier / Starter uses ✨ Lite (free model) → hits cap or wants blog/SEO → upgrade to Pro (paid model).  
-2. Agency multi-brand → higher quota + BYOK + presets.  
+1. Free-tier / Starter uses ✨ Lite on **Ollama** (or free cloud fallback) → wants blog/SEO quality → upgrade to Pro.  
+2. Agency multi-brand → higher quota + BYOK / remote Ollama + presets.  
 3. Enterprise Marketing Site → route-aware generators.
 
-Cost control: default small model; cache repeated SEO meta; charge overage later if needed (`aiOverage` add-on).
+Cost control: Ollama for Lite volume; paid mini only on Pro+; cache repeated SEO meta; optional `aiOverage` later.
 
 ---
 
@@ -313,20 +346,20 @@ Cost control: default small model; cache repeated SEO meta; charge overage later
 
 **Exit:** free-tier account can run Lite rewrite into `formData`; Pro lane gated separately.
 
-### Phase 1 — Free Lite + Pro pack
+### Phase 1 — Lite (Ollama + free cloud) + Pro pack
 
-- **Lite:** real Gemini/Groq free-model integration (rewrite only).
+- **Lite:** Hub Ollama adapter + Gemini/Groq fallback; optional **Local Ollama** from the admin browser.
 - **Full:** paid OpenAI/Gemini — rewrite, hero, services, SEO meta, blog draft.
-- Sidebar shows Lite vs Pro quota.
+- Sidebar shows engine (Ollama / Gemini) + Lite vs Pro quota.
 - Spanish/English prompts.
 
-**Exit:** free user polishes bio on free models; Pro user gets full assist on paid models.
+**Exit:** free user polishes bio via Ollama (no paid tokens); Pro user gets full assist.
 
-### Phase 2 — Agency scale + BYOK
+### Phase 2 — Agency scale + BYOK + remote Ollama
 
 - Brand tone preset per page (`aiTone` on page doc).
 - Batch “improve empty sections” for one page.
-- **Bring-your-own API key** (OpenAI / Gemini / Anthropic) on the billing account.
+- **BYOK** (OpenAI / Gemini / Anthropic) **and remote Ollama URL** on the billing account.
 - Usage export for agency owners.
 
 ### Phase 3 — Enterprise Marketing Site
@@ -348,22 +381,22 @@ Cost control: default small model; cache repeated SEO meta; charge overage later
 
 ## Open decisions
 
-1. **Lite free provider** — Gemini free (recommended) vs Groq free as primary.  
-2. **Lite monthly cap** — 10 vs 15 vs 20 generations.  
-3. **BYOK from which plan?** — Agency+ (recommended) vs Pro add-on.  
-4. **Overage on paid lane** — hard stop vs metered add-on.  
-5. **Public chatbot** — out of scope for v1; revisit as `aiChatWidget`.  
-6. **Default language of prompts** — follow page `defaultLanguage` (recommended).
+1. **Lite primary engine** — Hub Ollama (recommended) vs Gemini free first.  
+2. **Hub Ollama host size** — CPU-only 7B vs small GPU.  
+3. **Local Ollama in browser** — ship in v1 Lite vs Phase 1.5.  
+4. **Lite monthly cap** — 15 vs 30 (higher OK if Ollama is hub-hosted).  
+5. **BYOK / remote Ollama from which plan?** — Agency+ (recommended).  
+6. **Public chatbot** — out of scope for v1.  
+7. **Default language of prompts** — follow page `defaultLanguage` (recommended).
 
 ---
 
 ## Recommendation
 
-Ship **Phase 0 + Phase 1** with an explicit split:
+Ship **Phase 0 + Phase 1** with:
 
-- **Free tier → free models (AI Lite).**  
-- **Pro+ → paid models (AI Assist)** + Agency BYOK later.  
-- One callable, field-scoped actions, apply-to-`formData` only.  
-- Separate quotas per lane on the billing account.
+- **First tiers → Ollama-first AI Lite** (hub + optional local), Gemini/Groq free as fallback — **no paid tokens**.  
+- **Pro+ → paid models** for quality, plus Agency BYOK / remote Ollama later.  
+- One assist UX, apply-to-`formData` only, quotas per lane.
 
-This matches “use the free model for the free tier” while keeping paid AI quality predictable.
+That is the cheaper path to generate prompts for Starter/free-tier without burning cloud tokens.
