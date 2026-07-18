@@ -3,9 +3,12 @@ import {
   normalizeService,
   normalizeServicesCarouselAutoplay,
   normalizeServicesCarouselPerView,
+  normalizeServicesCarouselTransition,
   normalizeServicesDisplayMode,
+  normalizeServicesVisualStyle,
   isServiceItemVisible,
 } from './services.js';
+import { createEmptySectionCustomStyle, normalizeSectionCustomStyle } from './sectionCustomStyle.js';
 import { normalizePreHeroImageSide } from './preHero.js';
 import { createContentId, normalizeContentId } from './contentIds.js';
 
@@ -212,6 +215,9 @@ export function createEmptyCustomEmbed(overrides = {}) {
     servicesDisplayMode: 'stack',
     servicesCarouselPerView: 3,
     servicesCarouselAutoplay: false,
+    servicesVisualStyle: 'cards',
+    servicesCarouselTransition: 'fade',
+    servicesCustomStyle: createEmptySectionCustomStyle(),
     portfolioUrl: '',
     portfolioProvider: 'custom',
     fullWidth: false,
@@ -248,6 +254,9 @@ export function createCustomSectionByType(type, overrides = {}) {
       servicesDisplayMode: 'stack',
       servicesCarouselPerView: 3,
       servicesCarouselAutoplay: false,
+      servicesVisualStyle: 'cards',
+      servicesCarouselTransition: 'fade',
+      servicesCustomStyle: createEmptySectionCustomStyle(),
     });
   }
 
@@ -295,6 +304,9 @@ export function normalizeCustomEmbeds(embeds) {
       servicesDisplayMode: normalizeServicesDisplayMode(embed.servicesDisplayMode),
       servicesCarouselPerView: normalizeServicesCarouselPerView(embed.servicesCarouselPerView),
       servicesCarouselAutoplay: normalizeServicesCarouselAutoplay(embed.servicesCarouselAutoplay),
+      servicesVisualStyle: normalizeServicesVisualStyle(embed.servicesVisualStyle),
+      servicesCarouselTransition: normalizeServicesCarouselTransition(embed.servicesCarouselTransition),
+      servicesCustomStyle: normalizeSectionCustomStyle(embed.servicesCustomStyle),
       portfolioUrl: String(embed.portfolioUrl ?? '').trim(),
       portfolioProvider: normalizePortfolioProvider(embed.portfolioProvider),
       fullWidth: embed.fullWidth === true,

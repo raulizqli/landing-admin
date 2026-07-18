@@ -73,3 +73,74 @@ describe('hydratePageForm', () => {
     expect(form.defaultLanguage).toBe('es');
   });
 });
+
+describe('services and catalog visual styles', () => {
+  it('defaults visual style and carousel transition fields', () => {
+    const normalized = normalizePageData({});
+    expect(normalized.servicesVisualStyle).toBe('cards');
+    expect(normalized.servicesCarouselTransition).toBe('fade');
+    expect(normalized.catalogVisualStyle).toBe('cards');
+    expect(normalized.servicesCustomStyle.shadow).toBe('soft');
+    expect(normalized.catalogCustomStyle.shadow).toBe('soft');
+    expect(EMPTY_PAGE.servicesVisualStyle).toBe('cards');
+    expect(EMPTY_PAGE.servicesCarouselTransition).toBe('fade');
+    expect(EMPTY_PAGE.catalogVisualStyle).toBe('cards');
+  });
+
+  it('keeps valid visual style, custom style, and transition values', () => {
+    const normalized = normalizePageData({
+      servicesVisualStyle: 'custom',
+      servicesCarouselTransition: 'slide',
+      catalogVisualStyle: 'custom',
+      servicesCustomStyle: { backgroundColor: '#112233', borderRadius: 8, hover: 'opacity' },
+      catalogCustomStyle: { shadow: 'none', entrance: 'slideUp' },
+    });
+    expect(normalized.servicesVisualStyle).toBe('custom');
+    expect(normalized.servicesCarouselTransition).toBe('slide');
+    expect(normalized.catalogVisualStyle).toBe('custom');
+    expect(normalized.servicesCustomStyle.backgroundColor).toBe('#112233');
+    expect(normalized.servicesCustomStyle.borderRadius).toBe(8);
+    expect(normalized.servicesCustomStyle.hover).toBe('opacity');
+    expect(normalized.catalogCustomStyle.shadow).toBe('none');
+    expect(normalized.catalogCustomStyle.entrance).toBe('slideUp');
+  });
+
+  it('falls back safely for invalid visual style and transition values', () => {
+    const normalized = normalizePageData({
+      servicesVisualStyle: 'neon',
+      servicesCarouselTransition: 'zoom',
+      catalogVisualStyle: 'glass',
+    });
+    expect(normalized.servicesVisualStyle).toBe('cards');
+    expect(normalized.servicesCarouselTransition).toBe('fade');
+    expect(normalized.catalogVisualStyle).toBe('cards');
+  });
+
+  it('normalizes services visual fields on custom embed services blocks', () => {
+    const normalized = normalizePageData({
+      customEmbeds: [
+        {
+          id: 'embed-1',
+          type: 'services',
+          enabled: true,
+          servicesVisualStyle: 'minimal',
+          servicesCarouselTransition: 'none',
+          serviceItems: [{ title: 'Consulta', layout: 'title' }],
+        },
+        {
+          id: 'embed-2',
+          type: 'services',
+          enabled: true,
+          servicesVisualStyle: 'invalid',
+          servicesCarouselTransition: 'spin',
+          serviceItems: [{ title: 'Otro', layout: 'title' }],
+        },
+      ],
+    });
+
+    expect(normalized.customEmbeds[0].servicesVisualStyle).toBe('minimal');
+    expect(normalized.customEmbeds[0].servicesCarouselTransition).toBe('none');
+    expect(normalized.customEmbeds[1].servicesVisualStyle).toBe('cards');
+    expect(normalized.customEmbeds[1].servicesCarouselTransition).toBe('fade');
+  });
+});

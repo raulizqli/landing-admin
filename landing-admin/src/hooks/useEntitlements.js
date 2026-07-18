@@ -51,6 +51,7 @@ export function useEntitlements() {
       canUseExternalFirebase: has('externalFirebase'),
       canUseHostingDeploy: has('hostingDeploy'),
       canUseServicesCarouselAutoplay: has('servicesCarouselAutoplay'),
+      canUseCustomSectionVisualStyle: has('customSectionVisualStyle'),
       canUseContactMapBeside: has('contactMapBeside'),
       canUseMarketingSite: has('marketingSite'),
       hasSupport247: has('support247'),

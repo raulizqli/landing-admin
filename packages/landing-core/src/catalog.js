@@ -1,6 +1,20 @@
 
 import { createContentId, normalizeContentId } from './contentIds.js';
 
+export const CATALOG_VISUAL_STYLES = [
+  { value: 'cards', label: 'Tarjetas', description: 'Tarjetas con borde y sombra suave' },
+  { value: 'minimal', label: 'Minimal', description: 'Sin borde ni sombra, más aire' },
+  { value: 'editorial', label: 'Editorial', description: 'Separadores y tipografía abierta' },
+  { value: 'custom', label: 'Personalizado', description: 'Define CSS propio (Pro+)' },
+];
+
+const CATALOG_VISUAL_STYLE_VALUES = new Set(CATALOG_VISUAL_STYLES.map((item) => item.value));
+
+export function normalizeCatalogVisualStyle(value) {
+  const style = String(value ?? '').trim();
+  return CATALOG_VISUAL_STYLE_VALUES.has(style) ? style : 'cards';
+}
+
 export function createEmptyCatalogItem() {
   return {
     id: createContentId('catalog'),

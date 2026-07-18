@@ -14,13 +14,23 @@ import {
   createEmptyService,
   getServiceLayoutMeta,
   normalizeServiceLayout,
+  normalizeServicesCarouselTransition,
+  normalizeServicesVisualStyle,
   SERVICE_ITEM_LAYOUTS,
   SERVICES_CAROUSEL_MOTION_MODES,
   SERVICES_CAROUSEL_PER_VIEW_OPTIONS,
+  SERVICES_CAROUSEL_TRANSITIONS,
   SERVICES_DISPLAY_MODES,
+  SERVICES_VISUAL_STYLES,
   serviceListItemsToText,
 } from '../utils/services';
 import ImageUrlField from './ImageUrlField';
+import VisualOptionPicker, {
+  CAROUSEL_TRANSITION_PREVIEW_MAP,
+  SERVICE_LAYOUT_PREVIEW_MAP,
+  VISUAL_STYLE_PREVIEW_MAP,
+} from './VisualOptionPicker';
+import SectionCustomStyleEditor from './SectionCustomStyleEditor';
 
 function FaqItemsEditor({ items, onChange }) {
   const list = items.length > 0 ? items : [createEmptyFaqItem()];
@@ -124,7 +134,15 @@ function StepsEditor({ items, onChange }) {
   );
 }
 
-function TypeFields({ item, onChange, pageId, pageData }) {
+function TypeFields({
+  item,
+  onChange,
+  pageId,
+  pageData,
+  canUseCustomVisualStyle = false,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const type = normalizeSectionType(item.type);
 
   if (type === 'pre_hero') {
@@ -212,6 +230,8 @@ function TypeFields({ item, onChange, pageId, pageData }) {
 
   if (type === 'services') {
     const displayMode = item.servicesDisplayMode === 'carousel' ? 'carousel' : 'stack';
+    const visualStyle = normalizeServicesVisualStyle(item.servicesVisualStyle);
+    const carouselTransition = normalizeServicesCarouselTransition(item.servicesCarouselTransition);
     const serviceItems = Array.isArray(item.serviceItems) && item.serviceItems.length > 0
       ? item.serviceItems
       : [createEmptyService()];
@@ -234,6 +254,35 @@ function TypeFields({ item, onChange, pageId, pageData }) {
             placeholder="Breve descripción de los servicios."
             className="w-full border rounded-lg px-3 py-2 text-xs resize-y"
           />
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-[10px] font-bold text-gray-400 uppercase">Estilo visual</label>
+          {!canUseCustomVisualStyle && (
+            <button
+              type="button"
+              onClick={onUpgradePlan}
+              className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+            >
+              {upgradeLabel} · Personalizado en Pro+
+            </button>
+          )}
+          <VisualOptionPicker
+            name={`services-visual-style-${item.id}`}
+            options={SERVICES_VISUAL_STYLES}
+            value={visualStyle}
+            onChange={(next) => onChange('servicesVisualStyle', next)}
+            previewMap={VISUAL_STYLE_PREVIEW_MAP}
+            lockedValues={canUseCustomVisualStyle ? [] : ['custom']}
+            onLockedSelect={() => onUpgradePlan?.()}
+          />
+          {visualStyle === 'custom' && canUseCustomVisualStyle && (
+            <SectionCustomStyleEditor
+              label="CSS del bloque"
+              value={item.servicesCustomStyle}
+              onChange={(servicesCustomStyle) => onChange('servicesCustomStyle', servicesCustomStyle)}
+            />
+          )}
         </div>
 
         <fieldset className="space-y-2">
@@ -288,6 +337,19 @@ function TypeFields({ item, onChange, pageId, pageData }) {
                 </label>
               ))}
             </fieldset>
+
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">
+                Transición del carrusel
+              </label>
+              <VisualOptionPicker
+                name={`services-carousel-transition-${item.id}`}
+                options={SERVICES_CAROUSEL_TRANSITIONS}
+                value={carouselTransition}
+                onChange={(next) => onChange('servicesCarouselTransition', next)}
+                previewMap={CAROUSEL_TRANSITION_PREVIEW_MAP}
+              />
+            </div>
           </>
         )}
 
@@ -321,21 +383,16 @@ function TypeFields({ item, onChange, pageId, pageData }) {
                 </button>
               </div>
 
-              <fieldset className="space-y-1.5">
-                <legend className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo</legend>
-                {SERVICE_ITEM_LAYOUTS.map((option) => (
-                  <label key={option.value} className="flex items-center gap-2 text-xs text-gray-600">
-                    <input
-                      type="radio"
-                      name={`custom-service-layout-${item.id}-${index}`}
-                      checked={layout === option.value}
-                      onChange={() => updateServiceItem(index, 'layout', option.value)}
-                      className="border-gray-300"
-                    />
-                    {option.label}
-                  </label>
-                ))}
-              </fieldset>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Tipo</label>
+                <VisualOptionPicker
+                  name={`custom-service-layout-${item.id}-${index}`}
+                  options={SERVICE_ITEM_LAYOUTS}
+                  value={layout}
+                  onChange={(next) => updateServiceItem(index, 'layout', next)}
+                  previewMap={SERVICE_LAYOUT_PREVIEW_MAP}
+                />
+              </div>
 
               <input
                 type="text"
@@ -566,7 +623,15 @@ function TypeFields({ item, onChange, pageId, pageData }) {
   );
 }
 
-export default function CustomEmbedsFieldsEditor({ formData, onChange, canManageLayout = true, pageId }) {
+export default function CustomEmbedsFieldsEditor({
+  formData,
+  onChange,
+  canManageLayout = true,
+  pageId,
+  canUseCustomVisualStyle = false,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   // Do not normalize/trim on every render — that strips trailing spaces while typing.
   const items = Array.isArray(formData.customEmbeds) ? formData.customEmbeds : [];
   const visibleItems = canManageLayout
@@ -742,6 +807,9 @@ export default function CustomEmbedsFieldsEditor({ formData, onChange, canManage
                   onChange={(field, value) => updateItemById(item.id, field, value)}
                   pageId={pageId}
                   pageData={formData}
+                  canUseCustomVisualStyle={canUseCustomVisualStyle}
+                  onUpgradePlan={onUpgradePlan}
+                  upgradeLabel={upgradeLabel}
                 />
 
                 {canManageLayout && (

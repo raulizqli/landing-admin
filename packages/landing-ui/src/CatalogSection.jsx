@@ -8,8 +8,17 @@ import {
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
+import {
+  entranceDelayStyle,
+  getCatalogVisualClasses,
+  getGridGapClass,
+} from './sectionVisualStyles.js';
 
-function CatalogCard({ item, interactive = true, labels }) {
+function mergeStyles(...styles) {
+  return Object.assign({}, ...styles.filter(Boolean));
+}
+
+function CatalogCard({ item, interactive = true, labels, visualClasses, entranceStyle }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
   const description = String(item.description ?? '').trim();
@@ -17,9 +26,12 @@ function CatalogCard({ item, interactive = true, labels }) {
   const itemLink = resolveCatalogItemLink(item);
 
   return (
-    <article className="bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm overflow-hidden h-full flex flex-col">
+    <article
+      className={`${visualClasses.article} ${visualClasses.entrance}`}
+      style={mergeStyles(visualClasses.articleStyle, entranceStyle)}
+    >
       {imageUrl ? (
-        <div className="aspect-[4/3] bg-[#E8E4DB] overflow-hidden">
+        <div className={`aspect-[4/3] bg-[#E8E4DB] overflow-hidden ${visualClasses.media}`}>
           <img
             src={imageUrl}
             alt={title || getLabel(labels, 'catalog.productAlt')}
@@ -27,14 +39,14 @@ function CatalogCard({ item, interactive = true, labels }) {
           />
         </div>
       ) : (
-        <div className="aspect-[4/3] bg-[#E8E4DB] flex items-center justify-center">
+        <div className={`aspect-[4/3] bg-[#E8E4DB] flex items-center justify-center ${visualClasses.media}`}>
           <span className="text-xs uppercase tracking-widest text-[#2A342D]/35">{getLabel(labels, 'catalog.noImage')}</span>
         </div>
       )}
 
-      <div className="p-5 sm:p-6 flex flex-col flex-1">
+      <div className={visualClasses.body}>
         {title && (
-          <h3 className="font-serif text-lg sm:text-xl text-[#2A342D] mb-2 leading-snug">
+          <h3 className={`${visualClasses.title} mb-2`}>
             {title}
           </h3>
         )}
@@ -80,6 +92,8 @@ export default function CatalogSection({ data, interactive = true }) {
   const sectionTitle = String(data.catalogSectionTitle ?? '').trim() || getLabel(labels, 'catalog.defaultTitle');
   const introParagraphs = splitCatalogSectionText(data.catalogSectionText);
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'catalog'), { sectionKey: 'catalog' });
+  const visualClasses = getCatalogVisualClasses(data.catalogVisualStyle, data.catalogCustomStyle);
+  const gapClass = getGridGapClass(data.catalogVisualStyle, data.catalogCustomStyle);
 
   return (
     <section id={SECTION_IDS.catalog} className="border-y border-[#2A342D]/10" style={sectionStyle}>
@@ -101,9 +115,16 @@ export default function CatalogSection({ data, interactive = true }) {
           )}
         </div>
 
-        <div className={`grid gap-5 sm:gap-6 ${items.length === 1 ? 'max-w-sm mx-auto' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
+        <div className={`grid ${gapClass} ${items.length === 1 ? 'max-w-sm mx-auto' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
           {items.map((item, index) => (
-            <CatalogCard key={`catalog-item-${index}`} item={item} interactive={interactive} labels={labels} />
+            <CatalogCard
+              key={`catalog-item-${index}`}
+              item={item}
+              interactive={interactive}
+              labels={labels}
+              visualClasses={visualClasses}
+              entranceStyle={entranceDelayStyle(index)}
+            />
           ))}
         </div>
       </div>

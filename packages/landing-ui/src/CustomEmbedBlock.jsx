@@ -330,6 +330,9 @@ function ServicesEmbedSection({ embed, interactive, copy }) {
         displayMode={embed.servicesDisplayMode}
         carouselPerView={embed.servicesCarouselPerView}
         carouselAutoplay={embed.servicesCarouselAutoplay}
+        carouselTransition={embed.servicesCarouselTransition}
+        visualStyle={embed.servicesVisualStyle}
+        customStyle={embed.servicesCustomStyle}
         interactive={interactive}
       />
     </SectionShell>
