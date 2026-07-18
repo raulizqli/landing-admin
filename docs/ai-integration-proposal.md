@@ -107,11 +107,12 @@ Language: prompts respect `defaultLanguage` / `enabledLanguages`; UI labels stay
 ```text
 Admin UI
   → httpsCallable('runAiAssist')
-      → assert paid + aiAssist (+ quota)
-      → provider (OpenAI / Anthropic / Gemini via env)
+      → resolve lane: lite (free model) | full (paid/BYOK)
+      → assert quota for that lane
+      → provider adapter
       → structured JSON matching field schema
       → log usage to billingAccounts/{id}/aiUsage/{yyyy-mm}
-  ← { result, usage }
+  ← { result, usage, lane }
   → merge into formData (no Firestore write yet)
 ```
 
@@ -207,12 +208,12 @@ There is no reliable **unlimited free** API for a multi-tenant SaaS. What exists
 | **Ollama / local LLM** | Free (self-host) | Enterprise only | Client must host GPU/CPU; not our cloud default |
 | **OpenAI / Anthropic** | Paid | Platform default | No meaningful free production tier |
 
-**Recommendation**
+**Recommendation — free model for free tier**
 
-1. **Platform default:** paid mini model (OpenAI or Gemini paid) so Pro subscribers get predictable quality.  
-2. **“Free for the subscriber” path:** BYOK with **Gemini free tier** or **Groq free tier** (Agency+). They use their own free quota; we don’t pay tokens.  
-3. **Optional platform trial:** route Starter’s 5 trial gens through Gemini free/paid with hard caps — not unlimited.  
-4. Never depend on a free tier alone for all paid customers (outages, ToS, rate limits).
+1. **Free-tier CMS / Starter → AI Lite** on **Gemini free** (primary) or **Groq free** (fallback), platform-managed keys, ~15 gens/mo, rewrite-only.  
+2. **Pro+ active → paid mini** for predictable quality (OpenAI or Gemini paid).  
+3. **Agency+ BYOK** if they want their own token (including their own free Gemini/Groq keys).  
+4. If the free provider rate-limits Lite, show a friendly “quota busy — try later or upgrade to Pro” — never silently charge paid APIs for free users.
 
 ### Bring your own API key (BYOK) — yes
 
@@ -252,16 +253,24 @@ Rules:
 - Key is sent once over HTTPS to `setAiProviderConfig` (account admin / root).
 - `runAiAssist` decrypts server-side; responses never echo the key.
 - BYOK failure → clear error; offer platform fallback if quota remains.
-- Free-tier / unpaid: AI disabled (platform and BYOK).
+- Free-tier / Starter: **AI Lite only** (free models). BYOK stays Agency+ so free users don’t need to bring a key.
+- Offline public site does **not** block CMS AI Lite (editors can still polish copy while the apex is offline).
 
-Platform secrets (default mode only):
+Platform secrets:
 
 ```bash
+# Paid lane (Pro+)
 AI_PROVIDER=openai
 OPENAI_API_KEY=…
 AI_MODEL=gpt-4.1-mini
-GEMINI_API_KEY=…
-ANTHROPIC_API_KEY=…
+
+# Free / Lite lane (Starter + unpaid free-tier)
+AI_LITE_PROVIDER=gemini
+GEMINI_API_KEY=…          # free-tier AI Studio key OK for Lite
+AI_LITE_MODEL=gemini-2.0-flash
+AI_LITE_FALLBACK_PROVIDER=groq
+GROQ_API_KEY=…
+ANTHROPIC_API_KEY=…       # full lane / BYOK optional
 ```
 
 ---
@@ -285,8 +294,8 @@ Buyer promise:
 
 Upsell path:
 
-1. Starter user hits ✨ → upgrade to Pro.  
-2. Agency multi-brand → higher quota + presets.  
+1. Free-tier / Starter uses ✨ Lite (free model) → hits cap or wants blog/SEO → upgrade to Pro (paid model).  
+2. Agency multi-brand → higher quota + BYOK + presets.  
 3. Enterprise Marketing Site → route-aware generators.
 
 Cost control: default small model; cache repeated SEO meta; charge overage later if needed (`aiOverage` add-on).
@@ -297,21 +306,21 @@ Cost control: default small model; cache repeated SEO meta; charge overage later
 
 ### Phase 0 — Foundations (small)
 
-- `features.aiAssist` + `aiMonthlyGenerations` on plans.
-- `useEntitlements().canUseAiAssist`.
-- Callable stub `runAiAssist` (echo / fake) + quota doc.
-- Admin `AiAssistButton` wired to one field (`aboutBio`) with Apply → `formData`.
+- `aiAssistLite` + `aiAssist` + per-lane monthly caps on plans.
+- `useEntitlements().canUseAiAssistLite` / `canUseAiAssist`.
+- Callable stub `runAiAssist` with `lane: 'lite' | 'full'` + quota docs.
+- Admin `AiAssistButton` on `aboutBio` (Lite allow-list).
 
-**Exit:** paid check + quota + local apply works without a real provider.
+**Exit:** free-tier account can run Lite rewrite into `formData`; Pro lane gated separately.
 
-### Phase 1 — Pro content pack
+### Phase 1 — Free Lite + Pro pack
 
-- Real provider integration.
-- Actions: rewrite, hero, services blurb, SEO meta, blog draft.
-- Sidebar quota meter.
+- **Lite:** real Gemini/Groq free-model integration (rewrite only).
+- **Full:** paid OpenAI/Gemini — rewrite, hero, services, SEO meta, blog draft.
+- Sidebar shows Lite vs Pro quota.
 - Spanish/English prompts.
 
-**Exit:** Pro subscriber can generate and publish polished bio + SEO in &lt;10 minutes.
+**Exit:** free user polishes bio on free models; Pro user gets full assist on paid models.
 
 ### Phase 2 — Agency scale + BYOK
 
@@ -339,22 +348,22 @@ Cost control: default small model; cache repeated SEO meta; charge overage later
 
 ## Open decisions
 
-1. **Default platform provider** — OpenAI mini (recommended) vs Gemini Flash for LATAM cost.  
-2. **BYOK from which plan?** — Agency+ (recommended) vs Pro add-on.  
-3. **Starter trial** — 5 free gens vs hard paywall.  
-4. **Overage on platform mode** — hard stop vs metered add-on.  
-5. **Public chatbot** — out of scope for v1; revisit as separate entitlement `aiChatWidget`.  
+1. **Lite free provider** — Gemini free (recommended) vs Groq free as primary.  
+2. **Lite monthly cap** — 10 vs 15 vs 20 generations.  
+3. **BYOK from which plan?** — Agency+ (recommended) vs Pro add-on.  
+4. **Overage on paid lane** — hard stop vs metered add-on.  
+5. **Public chatbot** — out of scope for v1; revisit as `aiChatWidget`.  
 6. **Default language of prompts** — follow page `defaultLanguage` (recommended).
 
 ---
 
 ## Recommendation
 
-Ship **Phase 0 + Phase 1** as the first paid differentiator after Marketing Site:
+Ship **Phase 0 + Phase 1** with an explicit split:
 
-- Entitlement on **Pro+**.
-- One callable, field-scoped actions, apply-to-`formData` only.
-- Quota on the billing account.
-- Enterprise route generators as the natural upsell into Marketing Site.
+- **Free tier → free models (AI Lite).**  
+- **Pro+ → paid models (AI Assist)** + Agency BYOK later.  
+- One callable, field-scoped actions, apply-to-`formData` only.  
+- Separate quotas per lane on the billing account.
 
-This reuses the existing entitlement, billing health, and admin UX patterns without forking the template for AI.
+This matches “use the free model for the free tier” while keeping paid AI quality predictable.
