@@ -140,34 +140,69 @@ Limits by plan in `billingPlans.js` (e.g. `aiMonthlyGenerations: 50 | 200 | null
 
 Soft warn at 80%; hard reject at 100% with upgrade CTA.
 
-### Which AI (provider) — recommendation
+### Which AI APIs — multi-provider design
+
+Architecture uses a **provider adapter** inside Cloud Functions. Adding another API = new adapter + UI option, not a rewrite.
+
+```text
+runAiAssist
+  → resolve credentials (platform | BYOK)
+  → AiProvider.chatJson({ system, user, schema })
+      ├── openai      (OpenAI, Azure OpenAI, Groq, Mistral, DeepSeek, Together… via baseUrl)
+      ├── gemini      (Google AI Studio / Vertex)
+      └── anthropic   (Claude)
+  → validate JSON against field schema
+```
 
 **Platform default (included quota on Pro+):**
 
 | Setting | Default | Why |
 |---|---|---|
-| Provider | **OpenAI** | Best tooling for structured JSON field fills; easy swap later |
-| Model | **`gpt-4.1-mini`** (or current mini/fast tier) | Low cost for short landing copy |
-| Fallback (optional) | **Google Gemini** (`gemini-2.0-flash`) | Strong LATAM pricing / latency alternative via `AI_PROVIDER=gemini` |
+| Provider | **OpenAI** | Structured JSON + mature SDK |
+| Model | **`gpt-4.1-mini`** (or current mini tier) | Cheap/fast for short landing copy |
+| Env fallback | **Gemini Flash** | Optional LATAM cost/latency switch |
 
-Anthropic Claude can be a third adapter later; not required for v1.
+**Supported providers (roadmap)**
 
-All calls go through Cloud Functions — the browser never sees the platform key.
+| Provider | v1 | BYOK | Notes |
+|---|---|---|---|
+| **OpenAI** | ✅ default | ✅ | `gpt-4.1-mini`, `gpt-4o-mini`, etc. |
+| **Google Gemini** | ✅ adapter | ✅ | `gemini-2.0-flash` / 1.5 flash |
+| **Anthropic Claude** | ✅ adapter | ✅ | `claude-sonnet` / Haiku for cost |
+| **Azure OpenAI** | Phase 2 | ✅ | Same OpenAI adapter + custom `baseUrl` + deployment name |
+| **OpenAI-compatible** | Phase 2 | ✅ | One adapter covers **Groq, Mistral, DeepSeek, Together, Fireworks, OpenRouter**, local gateways |
+| **Grok (xAI)** | Later | ✅ | Usually OpenAI-compatible endpoint |
+| **Perplexity** | Out of scope v1 | — | Search-oriented; weak fit for structured CMS fills |
+| **Custom HTTP** | Enterprise | ✅ | Rare; only if client has a private LLM proxy |
+
+OpenAI-compatible BYOK fields:
+
+```js
+{
+  provider: 'openai_compatible',
+  baseUrl: 'https://api.groq.com/openai/v1',  // or mistral/deepseek/together…
+  apiKeyEncrypted: '…',
+  model: 'llama-3.3-70b-versatile'
+}
+```
+
+All calls go through Cloud Functions — the browser never sees platform or BYOK secrets.
 
 ### Bring your own API key (BYOK) — yes
 
 Paid subscribers (recommended **Agency + Enterprise**; optional Pro add-on) can choose:
 
-1. **Platform AI** — uses our key + monthly generation quota (simpler).  
-2. **Your own token** — subscriber pastes their OpenAI / Gemini / Anthropic key; we call *their* provider; **quota soft-limit only** (abuse cap), no platform token billing.
+1. **Platform AI** — our key + monthly generation quota.  
+2. **Your own token** — their OpenAI / Gemini / Anthropic / Azure / OpenAI-compatible key; **soft abuse cap only**, no platform token cost.
 
-Admin UX (Billing or page AI settings):
+Admin UX (Billing → AI settings):
 
 ```text
 AI provider:  ( ) Platform included   (•) Use my API key
-Provider:     [ OpenAI ▾ ]
-API key:      [ sk-•••••••••••• ]
-Model:        [ gpt-4.1-mini    ]
+Provider:     [ OpenAI ▾ | Gemini | Anthropic | Azure OpenAI | OpenAI-compatible ]
+Base URL:     [ https://api.groq.com/openai/v1 ]   ← compatible / Azure only
+API key:      [ •••••••••••••••• ]
+Model:        [ gpt-4.1-mini ]
 Test connection  ·  Remove key
 ```
 
@@ -177,9 +212,9 @@ Storage (Functions / Admin SDK only):
 // billingAccounts/{accountId}.aiProvider
 {
   mode: 'platform' | 'byok',
-  provider: 'openai' | 'gemini' | 'anthropic',
-  // NEVER return full key to the client after save — only last4 + status
-  apiKeyEncrypted: '…',      // Secret Manager or KMS-wrapped
+  provider: 'openai' | 'gemini' | 'anthropic' | 'azure_openai' | 'openai_compatible',
+  baseUrl: '',                 // required for azure / compatible
+  apiKeyEncrypted: '…',        // Secret Manager or KMS-wrapped
   apiKeyLast4: 'ab12',
   model: 'gpt-4.1-mini',
   updatedAt: '…'
@@ -188,10 +223,10 @@ Storage (Functions / Admin SDK only):
 
 Rules:
 
-- Key is sent once over HTTPS to `setAiProviderConfig` (root/admin of that account).
-- Callable `runAiAssist` decrypts server-side; responses never echo the key.
-- If BYOK key fails (invalid/billing), show a clear error and offer fallback to platform mode if the plan still has quota.
-- Free-tier / unpaid accounts: AI disabled entirely (no platform, no BYOK).
+- Key is sent once over HTTPS to `setAiProviderConfig` (account admin / root).
+- `runAiAssist` decrypts server-side; responses never echo the key.
+- BYOK failure → clear error; offer platform fallback if quota remains.
+- Free-tier / unpaid: AI disabled (platform and BYOK).
 
 Platform secrets (default mode only):
 
@@ -199,7 +234,6 @@ Platform secrets (default mode only):
 AI_PROVIDER=openai
 OPENAI_API_KEY=…
 AI_MODEL=gpt-4.1-mini
-# optional fallbacks
 GEMINI_API_KEY=…
 ANTHROPIC_API_KEY=…
 ```
