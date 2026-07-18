@@ -30,3 +30,4 @@ export * from './externalFirebase.js';
 export * from './hostingDeploy.js';
 export * from './billingPlans.js';
 export * from './marketingSite.js';
+export * from './marketingSeo.js';

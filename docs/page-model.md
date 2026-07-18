@@ -76,7 +76,11 @@ pages/{pageId}/routes/{routeId}
 
 En el editor viven en memoria como `marketingRoutes[]`. Requiere plan Enterprise (`features.marketingSite`). Helpers en `packages/landing-core/src/marketingSite.js`.
 
-MVP de tipos de ruta: `home`, `services_index`, `service`, `contact`.
+Tipos de ruta: `home`, `services_index`, `service`, `case_studies_index`, `case_study`, `blog_index`, `blog_post`, `estimate`, `resources`, `contact`, …
+
+Al publicar en modo marketing se regenera `seoArtifacts` (`sitemapXml`, `rssXml`, `robotsTxt`, `baseUrl`, `generatedAt`) vía `marketingSeo.js`. Los feeds públicos los sirven Cloud Functions (`marketingSitemap`, `marketingRss`, `marketingRobots`).
+
+Deploy operativo: [marketing-site-deploy.md](./marketing-site-deploy.md).
 
 ## Navegación
 

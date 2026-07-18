@@ -235,6 +235,14 @@ export default function MarketingSiteFieldsEditor({
               onChange={(e) => onChange(updateSeo(formData, { canonicalBaseUrl: e.target.value }))}
               className="w-full rounded-lg border p-2 text-xs"
             />
+            {formData.seoArtifacts?.generatedAt && (
+              <p className="text-[10px] text-emerald-700">
+                Last SEO artifacts: {new Date(formData.seoArtifacts.generatedAt).toLocaleString()}
+                {formData.seoArtifacts.baseUrl
+                  ? ` · ${formData.seoArtifacts.baseUrl}/sitemap.xml`
+                  : ' · set canonical base URL or custom domain to generate absolute URLs'}
+              </p>
+            )}
           </div>
         </>
       )}

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.deleteCmsUser = exports.createCmsUser = void 0;
+exports.marketingRobots = exports.marketingRss = exports.marketingSitemap = exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.deleteCmsUser = exports.createCmsUser = void 0;
 const firebase_functions_1 = require("firebase-functions");
 (0, firebase_functions_1.setGlobalOptions)({ maxInstances: 10 });
 var cmsUsers_js_1 = require("./cmsUsers.js");
@@ -14,4 +14,8 @@ Object.defineProperty(exports, "createBillingCheckout", { enumerable: true, get:
 Object.defineProperty(exports, "setBillingPlanManual", { enumerable: true, get: function () { return billing_js_1.setBillingPlanManual; } });
 Object.defineProperty(exports, "stripeBillingWebhook", { enumerable: true, get: function () { return billing_js_1.stripeBillingWebhook; } });
 Object.defineProperty(exports, "mercadoPagoBillingWebhook", { enumerable: true, get: function () { return billing_js_1.mercadoPagoBillingWebhook; } });
+var marketingSeo_js_1 = require("./marketingSeo.js");
+Object.defineProperty(exports, "marketingSitemap", { enumerable: true, get: function () { return marketingSeo_js_1.marketingSitemap; } });
+Object.defineProperty(exports, "marketingRss", { enumerable: true, get: function () { return marketingSeo_js_1.marketingRss; } });
+Object.defineProperty(exports, "marketingRobots", { enumerable: true, get: function () { return marketingSeo_js_1.marketingRobots; } });
 //# sourceMappingURL=index.js.map

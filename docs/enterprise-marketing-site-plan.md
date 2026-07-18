@@ -337,9 +337,11 @@ Everything else builds on that vertical slice.
 | Case studies / blog / estimate / resources editors + views | Done (Phase 4) |
 | Sticky CTA / floating contact / Calendly / newsletter teaser | Done (Phase 4) |
 | Service FAQ + Article JSON-LD in template | Done |
-| Publish-time sitemap generation | Not yet (Phase 5) |
-| Migrate LeftSideDev showcase into CMS marketing mode | Not yet (Phase 5) |
-| Functions hard entitlement reject | Soft client gate only for now |
+| Publish-time sitemap / RSS / robots artifacts | Done (Phase 5) |
+| Cloud Functions + template rewrites for SEO feeds | Done (Phase 5) |
+| Migrate LeftSideDev showcase seed to marketing mode | Done (Phase 5) |
+| Docs: point apex at template; sandbox `leftsidedev-site` | Done (`docs/marketing-site-deploy.md`) |
+| Functions hard entitlement reject | Soft client gate only for now (Phase 6) |
 
 ---
 

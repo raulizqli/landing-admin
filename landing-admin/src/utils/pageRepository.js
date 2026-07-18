@@ -12,6 +12,7 @@ import {
   ROUTES_SUBCOLLECTION,
   stripMarketingEditorFields,
 } from '@raulizqli/landing-core/marketingSite';
+import { buildMarketingSeoArtifacts } from '@raulizqli/landing-core/marketingSeo';
 import { getHubDb, getDbForConfig } from './firebaseClients';
 import {
   mergeHubRouteWithExternalContent,
@@ -98,6 +99,15 @@ export async function savePageFromEditor(pageId, formData) {
     dataToUpdate.heroSubtitle = firstSlide.showText ? firstSlide.text || '' : '';
   }
 
+  let seoArtifacts = dataToUpdate.seoArtifacts || null;
+  if (dataToUpdate.siteMode === 'marketing') {
+    seoArtifacts = buildMarketingSeoArtifacts({
+      ...dataToUpdate,
+      marketingRoutes,
+    });
+    dataToUpdate.seoArtifacts = seoArtifacts;
+  }
+
   const hubCollection = primaryPagesCollection();
 
   if (payload.useExternal) {
@@ -108,7 +118,7 @@ export async function savePageFromEditor(pageId, formData) {
       await saveMarketingRoutes(externalDb, pageId, collectionName || 'pages', marketingRoutes);
     }
     await setDoc(pageDocRef(hubDb, pageId, hubCollection), payload.hubData, { merge: true });
-    return { migratedToExternal: true, marketingRoutes };
+    return { migratedToExternal: true, marketingRoutes, seoArtifacts };
   }
 
   const { collectionName } = await getPageSnapshot(hubDb, pageId);
@@ -116,7 +126,7 @@ export async function savePageFromEditor(pageId, formData) {
   if (dataToUpdate.siteMode === 'marketing' || marketingRoutes.length) {
     await saveMarketingRoutes(hubDb, pageId, collectionName || hubCollection, marketingRoutes);
   }
-  return { migratedToExternal: false, marketingRoutes };
+  return { migratedToExternal: false, marketingRoutes, seoArtifacts };
 }
 
 export async function createPageInHub({ pageId, name = '', specialty = '', vertical = 'generic' }) {

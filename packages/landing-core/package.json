@@ -48,6 +48,7 @@
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",
     "./billingPlans": "./src/billingPlans.js",
-    "./marketingSite": "./src/marketingSite.js"
+    "./marketingSite": "./src/marketingSite.js",
+    "./marketingSeo": "./src/marketingSeo.js"
   }
 }

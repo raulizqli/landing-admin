@@ -11,3 +11,8 @@ export {
   stripeBillingWebhook,
   mercadoPagoBillingWebhook,
 } from "./billing.js";
+export {
+  marketingSitemap,
+  marketingRss,
+  marketingRobots,
+} from "./marketingSeo.js";

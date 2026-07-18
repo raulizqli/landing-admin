@@ -320,6 +320,7 @@ export default function App() {
         id: selectedId,
         ...dataToSave,
         marketingRoutes: result?.marketingRoutes || dataToSave.marketingRoutes,
+        seoArtifacts: result?.seoArtifacts || dataToSave.seoArtifacts,
       });
       setFormData(hydrated);
       setLayoutBaseline(hydrated);
@@ -328,10 +329,13 @@ export default function App() {
           ? { id: selectedId, ...hydrated }
           : landing
       )));
+      const seoNote = result?.seoArtifacts?.baseUrl
+        ? `\nSEO: ${result.seoArtifacts.baseUrl}/sitemap.xml · /rss.xml · /robots.txt`
+        : '';
       if (result?.migratedToExternal) {
-        alert(`Contenido publicado en el Firebase externo. El hub solo guarda dominio y credenciales de [${selectedId}].`);
+        alert(`Contenido publicado en el Firebase externo. El hub solo guarda dominio y credenciales de [${selectedId}].${seoNote}`);
       } else {
-        alert(`¡Cambios guardados con éxito en la nube para [${selectedId}]!`);
+        alert(`¡Cambios guardados con éxito en la nube para [${selectedId}]!${seoNote}`);
       }
     } catch (error) {
       console.error(error);

@@ -154,6 +154,13 @@ export const EMPTY_PAGE = {
     canonicalBaseUrl: '',
   },
   marketingRoutes: [],
+  seoArtifacts: {
+    sitemapXml: '',
+    rssXml: '',
+    robotsTxt: '',
+    generatedAt: '',
+    baseUrl: '',
+  },
 };
 
 const LEGACY_ROOT_FIELDS = {
@@ -322,6 +329,13 @@ export function normalizePageData(data = {}) {
   next.marketing = normalizeMarketingSettings(next.marketing);
   next.seo = normalizeMarketingSeo(next.seo);
   next.marketingRoutes = normalizeMarketingRoutes(next.marketingRoutes);
+  next.seoArtifacts = {
+    sitemapXml: String(next.seoArtifacts?.sitemapXml ?? ''),
+    rssXml: String(next.seoArtifacts?.rssXml ?? ''),
+    robotsTxt: String(next.seoArtifacts?.robotsTxt ?? ''),
+    generatedAt: String(next.seoArtifacts?.generatedAt ?? ''),
+    baseUrl: String(next.seoArtifacts?.baseUrl ?? '').trim().replace(/\/$/, ''),
+  };
 
   return next;
 }
