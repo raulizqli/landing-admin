@@ -53,6 +53,7 @@
     "./billingPlans": "./src/billingPlans.js",
     "./marketingSite": "./src/marketingSite.js",
     "./marketingSeo": "./src/marketingSeo.js",
-    "./siteAccess": "./src/siteAccess.js"
+    "./siteAccess": "./src/siteAccess.js",
+    "./aiAssist": "./src/aiAssist.js"
   }
 }

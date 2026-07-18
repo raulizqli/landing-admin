@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncSiteAccessDaily = exports.setBillingMonetization = exports.setBillingAccountAddons = exports.assertMarketingSiteAccess = exports.marketingRobots = exports.marketingRss = exports.marketingSitemap = exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.deleteCmsUser = exports.createCmsUser = void 0;
+exports.getAiAssistUsage = exports.setAiProviderConfig = exports.runAiAssist = exports.syncSiteAccessDaily = exports.setBillingMonetization = exports.setBillingAccountAddons = exports.assertMarketingSiteAccess = exports.marketingRobots = exports.marketingRss = exports.marketingSitemap = exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.deleteCmsUser = exports.createCmsUser = void 0;
 const firebase_functions_1 = require("firebase-functions");
 (0, firebase_functions_1.setGlobalOptions)({ maxInstances: 10 });
 var cmsUsers_js_1 = require("./cmsUsers.js");
@@ -24,4 +24,8 @@ Object.defineProperty(exports, "setBillingAccountAddons", { enumerable: true, ge
 var siteAccessSync_js_1 = require("./siteAccessSync.js");
 Object.defineProperty(exports, "setBillingMonetization", { enumerable: true, get: function () { return siteAccessSync_js_1.setBillingMonetization; } });
 Object.defineProperty(exports, "syncSiteAccessDaily", { enumerable: true, get: function () { return siteAccessSync_js_1.syncSiteAccessDaily; } });
+var aiAssist_js_1 = require("./aiAssist.js");
+Object.defineProperty(exports, "runAiAssist", { enumerable: true, get: function () { return aiAssist_js_1.runAiAssist; } });
+Object.defineProperty(exports, "setAiProviderConfig", { enumerable: true, get: function () { return aiAssist_js_1.setAiProviderConfig; } });
+Object.defineProperty(exports, "getAiAssistUsage", { enumerable: true, get: function () { return aiAssist_js_1.getAiAssistUsage; } });
 //# sourceMappingURL=index.js.map

@@ -400,3 +400,21 @@ Ship **Phase 0 + Phase 1** with:
 - One assist UX, apply-to-`formData` only, quotas per lane.
 
 That is the cheaper path to generate prompts for Starter/free-tier without burning cloud tokens.
+
+---
+
+## Implementation status (shipped)
+
+| Item | Status |
+|---|---|
+| `aiAssistLite` / `aiAssist` / `aiByok` + monthly quotas on plans | Done |
+| `packages/landing-core/src/aiAssist.js` (lane, apply, prompts) | Done |
+| Cloud Functions `runAiAssist`, `getAiAssistUsage`, `setAiProviderConfig` | Done |
+| Providers: Ollama, OpenAI, Gemini, Groq, Anthropic, compatible + mock fallback | Done |
+| Admin `AiAssistButton` + Apply → `formData` (About, Hero, Services, SEO) | Done |
+| Sidebar `AiQuotaBadge` | Done |
+| Local Ollama from browser (Lite) | Done |
+| Agency+ BYOK UI in Billing panel | Done |
+| Unit tests (`npm run test:core`) | Done |
+
+Deploy: `npm run deploy:functions` (and set `OLLAMA_BASE_URL` / `GEMINI_API_KEY` / `OPENAI_API_KEY` as needed).

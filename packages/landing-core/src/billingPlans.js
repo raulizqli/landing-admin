@@ -16,6 +16,8 @@ export const BILLING_PLANS = [
     pageLimit: 1,
     monthlyPriceUsd: 19,
     monthlyPriceMxn: 349,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: 0,
     features: {
       basicSections: true,
       blog: false,
@@ -29,6 +31,9 @@ export const BILLING_PLANS = [
       support247: false,
       unlimitedPages: false,
       marketingSite: false,
+      aiAssistLite: true,
+      aiAssist: false,
+      aiByok: false,
     },
   },
   {
@@ -37,6 +42,8 @@ export const BILLING_PLANS = [
     pageLimit: 1,
     monthlyPriceUsd: 49,
     monthlyPriceMxn: 899,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: 50,
     features: {
       basicSections: true,
       blog: true,
@@ -50,6 +57,9 @@ export const BILLING_PLANS = [
       support247: false,
       unlimitedPages: false,
       marketingSite: false,
+      aiAssistLite: true,
+      aiAssist: true,
+      aiByok: false,
     },
   },
   {
@@ -58,6 +68,8 @@ export const BILLING_PLANS = [
     pageLimit: 5,
     monthlyPriceUsd: 129,
     monthlyPriceMxn: 2499,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: 200,
     features: {
       basicSections: true,
       blog: true,
@@ -71,6 +83,9 @@ export const BILLING_PLANS = [
       support247: false,
       unlimitedPages: false,
       marketingSite: false,
+      aiAssistLite: true,
+      aiAssist: true,
+      aiByok: true,
     },
   },
   {
@@ -79,6 +94,8 @@ export const BILLING_PLANS = [
     pageLimit: null,
     monthlyPriceUsd: null,
     monthlyPriceMxn: null,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: null,
     features: {
       basicSections: true,
       blog: true,
@@ -92,6 +109,9 @@ export const BILLING_PLANS = [
       support247: true,
       unlimitedPages: true,
       marketingSite: true,
+      aiAssistLite: true,
+      aiAssist: true,
+      aiByok: true,
     },
   },
 ];
@@ -211,6 +231,22 @@ export function normalizeBillingAddons(value = {}) {
   return addons;
 }
 
+/** Public AI provider config (never includes raw apiKey in client normalize). */
+export function normalizeAiProviderPublic(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  const mode = String(source.mode ?? 'platform').trim().toLowerCase() === 'byok' ? 'byok' : 'platform';
+  const provider = String(source.provider ?? '').trim().toLowerCase();
+  return {
+    mode,
+    provider: provider || '',
+    model: String(source.model ?? '').trim(),
+    baseUrl: String(source.baseUrl ?? '').trim(),
+    apiKeyLast4: String(source.apiKeyLast4 ?? '').trim(),
+    hasKey: source.hasKey === true || Boolean(source.apiKey),
+    updatedAt: source.updatedAt ? String(source.updatedAt) : null,
+  };
+}
+
 export function createEmptyBillingAccount(overrides = {}) {
   const planId = normalizeBillingPlanId(overrides.plan || DEFAULT_BILLING_PLAN);
   return {
@@ -231,6 +267,7 @@ export function createEmptyBillingAccount(overrides = {}) {
     addons: normalizeBillingAddons(overrides.addons),
     unpaidSince: overrides.unpaidSince ? String(overrides.unpaidSince) : null,
     monetization: normalizeMonetization(overrides.monetization ?? createEmptyMonetization()),
+    aiProvider: normalizeAiProviderPublic(overrides.aiProvider),
     currentPeriodEnd: overrides.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: overrides.cancelAtPeriodEnd === true,
     createdAt: overrides.createdAt ?? null,
@@ -265,11 +302,20 @@ export function accountHasAddon(account, addonKey) {
 export function accountHasFeature(account, featureKey, { bypass = false } = {}) {
   if (bypass) return true;
   if (!isBillingAccountActive(account)) {
-    // Past due: still allow basic edit of existing pages.
-    return featureKey === 'basicSections';
+    // Past due / free tier: basic edit + AI Lite (free/Ollama models only).
+    return featureKey === 'basicSections' || featureKey === 'aiAssistLite';
   }
   if (accountHasAddon(account, featureKey)) return true;
   return planHasFeature(account.plan, featureKey);
+}
+
+export function getAiMonthlyQuota(account, lane = 'lite', { bypass = false } = {}) {
+  if (bypass) return null;
+  const plan = getBillingPlan(account?.plan);
+  if (lane === 'full') {
+    return plan.aiMonthlyGenerations == null ? null : Number(plan.aiMonthlyGenerations) || 0;
+  }
+  return Number(plan.aiMonthlyGenerationsLite ?? 30) || 0;
 }
 
 export function getAccountPageLimit(account, { bypass = false } = {}) {

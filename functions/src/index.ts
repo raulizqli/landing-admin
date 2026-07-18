@@ -24,3 +24,8 @@ export {
   setBillingMonetization,
   syncSiteAccessDaily,
 } from "./siteAccessSync.js";
+export {
+  runAiAssist,
+  setAiProviderConfig,
+  getAiAssistUsage,
+} from "./aiAssist.js";

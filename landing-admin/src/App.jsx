@@ -32,6 +32,7 @@ import VerticalFieldsEditor from './components/VerticalFieldsEditor';
 import BillingPlansPanel from './components/BillingPlansPanel';
 import PlanGate from './components/PlanGate';
 import SubscriptionHealthCard from './components/SubscriptionHealthCard';
+import AiQuotaBadge from './components/AiQuotaBadge';
 import MarketingSiteFieldsEditor from './components/MarketingSiteFieldsEditor';
 import MarketingRoutesEditor from './components/MarketingRoutesEditor';
 import { hydrateFormSocial } from './utils/socialLinks';
@@ -513,6 +514,7 @@ export default function App() {
                   planName={t(`billing.plans.${entitlements.planId}.name`)}
                   onOpenBilling={openBilling}
                 />
+                <AiQuotaBadge />
                 <LanguageSwitcher className="text-gray-300" />
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -666,6 +668,7 @@ export default function App() {
                 onChange={setFormData}
                 canUseMarketingSite={entitlements.canUseMarketingSite}
                 onUpgrade={() => setShowBilling(true)}
+                pageId={selectedId}
               />
               {isMarketingSite(formData) && (
                 <div className="mt-4">
@@ -748,7 +751,12 @@ export default function App() {
                 description="Título, frase, texto descriptivo y colores"
                 onActivate={activatePreviewSection}
               >
-                <AboutFieldsEditor formData={editorData} onChange={handleEditorChange} language={editingLanguage} />
+                <AboutFieldsEditor
+                  formData={editorData}
+                  onChange={handleEditorChange}
+                  language={editingLanguage}
+                  pageId={selectedId}
+                />
               </EditorSection>
             )}
 

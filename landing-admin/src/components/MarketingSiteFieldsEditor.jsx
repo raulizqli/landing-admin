@@ -2,6 +2,7 @@ import {
   createMarketingSiteSkeleton,
   normalizeSiteMode,
 } from '@raulizqli/landing-core/marketingSite';
+import AiAssistButton from './AiAssistButton';
 
 function updateMarketing(formData, patch) {
   return {
@@ -37,6 +38,7 @@ export default function MarketingSiteFieldsEditor({
   onChange,
   canUseMarketingSite = false,
   onUpgrade,
+  pageId = '',
 }) {
   const siteMode = normalizeSiteMode(formData.siteMode);
   const marketing = formData.marketing || {};
@@ -213,7 +215,18 @@ export default function MarketingSiteFieldsEditor({
           </label>
 
           <div className="space-y-2 rounded-lg border border-gray-200 p-3">
-            <p className="text-[11px] font-bold uppercase text-gray-400">Default SEO</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase text-gray-400">Default SEO</p>
+              <AiAssistButton
+                formData={formData}
+                onChange={onChange}
+                pageId={pageId}
+                action="seo_meta"
+                showLiteMenu={false}
+                currentValue={seo.defaultDescription || seo.defaultTitle || ''}
+                fullActions={[{ action: 'seo_meta', tone: 'empathetic', labelKey: 'ai.seoMeta' }]}
+              />
+            </div>
             <input
               type="text"
               placeholder="Default title"

@@ -6,6 +6,8 @@ import {
   setBillingMonetizationRemote,
   setBillingPlanManual,
 } from '../utils/billingFunctions';
+import { setAiProviderConfigRemote } from '../utils/aiAssistFunctions';
+import { useEntitlements } from '../hooks/useEntitlements';
 import {
   getBillingPlan,
   listBillingPlansForDisplay,
@@ -35,11 +37,17 @@ function PlanPrice({ plan, currency, t }) {
 export default function BillingPlansPanel({ open, onClose }) {
   const { t, locale } = useLocale();
   const { profile, billingAccount, refreshBillingAccount, user } = useAuth();
+  const entitlements = useEntitlements();
   const [currency, setCurrency] = useState('usd');
   const [busyKey, setBusyKey] = useState('');
   const [error, setError] = useState('');
   const [banner, setBanner] = useState('');
   const [addonAccountId, setAddonAccountId] = useState('');
+  const [aiMode, setAiMode] = useState('platform');
+  const [aiProvider, setAiProvider] = useState('openai');
+  const [aiModel, setAiModel] = useState('gpt-4o-mini');
+  const [aiBaseUrl, setAiBaseUrl] = useState('');
+  const [aiApiKey, setAiApiKey] = useState('');
   const bypass = isBillingBypass(profile);
   const plans = listBillingPlansForDisplay();
   const currentPlan = getBillingPlan(billingAccount?.plan);
@@ -72,7 +80,12 @@ export default function BillingPlansPanel({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
     setAddonAccountId((current) => current || billingAccount?.id || profile?.accountId || user?.uid || '');
-  }, [open, billingAccount?.id, profile?.accountId, user?.uid]);
+    const conf = billingAccount?.aiProvider || {};
+    setAiMode(conf.mode === 'byok' ? 'byok' : 'platform');
+    setAiProvider(conf.provider || 'openai');
+    setAiModel(conf.model || 'gpt-4o-mini');
+    setAiBaseUrl(conf.baseUrl || '');
+  }, [open, billingAccount?.id, billingAccount?.aiProvider, profile?.accountId, user?.uid]);
 
   if (!open) return null;
 
@@ -132,6 +145,30 @@ export default function BillingPlansPanel({ open, onClose }) {
         addons: { marketingSite: enabled },
       });
       setBanner(t('billing.addonSuccess'));
+      await refreshBillingAccount?.();
+    } catch (err) {
+      setError(err?.message || t('billing.checkoutError'));
+    } finally {
+      setBusyKey('');
+    }
+  };
+
+  const saveAiProvider = async () => {
+    if (!entitlements.canUseAiByok && !canManageUsers(profile)) return;
+    setBusyKey('ai:byok');
+    setError('');
+    setBanner('');
+    try {
+      await setAiProviderConfigRemote({
+        accountId: String(addonAccountId || billingAccount?.id || '').trim(),
+        mode: aiMode,
+        provider: aiProvider,
+        model: aiModel,
+        baseUrl: aiBaseUrl,
+        apiKey: aiApiKey || undefined,
+      });
+      setAiApiKey('');
+      setBanner(t('ai.byokSuccess'));
       await refreshBillingAccount?.();
     } catch (err) {
       setError(err?.message || t('billing.checkoutError'));
@@ -349,6 +386,87 @@ export default function BillingPlansPanel({ open, onClose }) {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {(entitlements.canUseAiByok || canManageUsers(profile)) && (
+            <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-[#2A342D]">{t('ai.byokTitle')}</p>
+                <p className="text-xs text-[#2A342D]/60 mt-1">{t('ai.byokSubtitle')}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAiMode('platform')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${aiMode === 'platform' ? 'bg-[#4A5D4E] text-white' : 'border border-[#2A342D]/20 text-[#2A342D]'}`}
+                >
+                  {t('ai.byokModePlatform')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiMode('byok')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${aiMode === 'byok' ? 'bg-[#4A5D4E] text-white' : 'border border-[#2A342D]/20 text-[#2A342D]'}`}
+                >
+                  {t('ai.byokModeOwn')}
+                </button>
+              </div>
+              {aiMode === 'byok' && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="text-xs text-[#2A342D]/70">
+                    Provider
+                    <select
+                      value={aiProvider}
+                      onChange={(e) => setAiProvider(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                    >
+                      <option value="openai">OpenAI</option>
+                      <option value="gemini">Gemini</option>
+                      <option value="anthropic">Anthropic</option>
+                      <option value="groq">Groq</option>
+                      <option value="openai_compatible">OpenAI-compatible / Ollama remote</option>
+                    </select>
+                  </label>
+                  <label className="text-xs text-[#2A342D]/70">
+                    Model
+                    <input
+                      type="text"
+                      value={aiModel}
+                      onChange={(e) => setAiModel(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-[#2A342D]/70 sm:col-span-2">
+                    Base URL
+                    <input
+                      type="url"
+                      value={aiBaseUrl}
+                      onChange={(e) => setAiBaseUrl(e.target.value)}
+                      placeholder="https://api.groq.com/openai/v1"
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-[#2A342D]/70 sm:col-span-2">
+                    API key {billingAccount?.aiProvider?.apiKeyLast4 ? `(…${billingAccount.aiProvider.apiKeyLast4})` : ''}
+                    <input
+                      type="password"
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      placeholder="Paste key to update"
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={Boolean(busyKey)}
+                onClick={saveAiProvider}
+                className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+              >
+                {busyKey === 'ai:byok' ? t('common.loading') : t('ai.byokSave')}
+              </button>
             </div>
           )}
 

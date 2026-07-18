@@ -10,6 +10,7 @@ import {
 } from '../utils/services';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import AiAssistButton from './AiAssistButton';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function ServicesFieldsEditor({
@@ -221,7 +222,20 @@ export default function ServicesFieldsEditor({
 
                 {meta.fields.description && (
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase">Descripción</label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase">Descripción</label>
+                      <AiAssistButton
+                        formData={formData}
+                        onChange={onChange}
+                        pageId={pageId}
+                        action="service_blurb"
+                        showLiteMenu={false}
+                        currentValue={item.description || item.title || ''}
+                        resultPatch={{ index }}
+                        brief={item.title || ''}
+                        fullActions={[{ action: 'service_blurb', tone: 'empathetic', labelKey: 'ai.serviceBlurb' }]}
+                      />
+                    </div>
                     <textarea
                       rows="3"
                       value={item.description || ''}

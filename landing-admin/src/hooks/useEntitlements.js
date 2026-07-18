@@ -4,10 +4,12 @@ import {
   accountHasFeature,
   canAccountCreatePage,
   getAccountPageLimit,
+  getAiMonthlyQuota,
   getBillingPlan,
   getSubscriptionHealth,
   isBillingAccountActive,
 } from '../utils/billingPlans';
+import { resolveAiAssistLane } from '../utils/aiAssist';
 import { isBillingBypass } from '../utils/permissions';
 
 /**
@@ -28,6 +30,7 @@ export function useEntitlements() {
     const health = getSubscriptionHealth(billingAccount, { bypass });
 
     const has = (featureKey) => accountHasFeature(billingAccount, featureKey, { bypass });
+    const aiLane = resolveAiAssistLane(billingAccount, { bypass });
 
     return {
       bypass,
@@ -51,6 +54,11 @@ export function useEntitlements() {
       canUseContactMapBeside: has('contactMapBeside'),
       canUseMarketingSite: has('marketingSite'),
       hasSupport247: has('support247'),
+      aiLane,
+      canUseAiAssistLite: aiLane === 'lite' || aiLane === 'full',
+      canUseAiAssist: aiLane === 'full',
+      canUseAiByok: has('aiByok'),
+      aiMonthlyQuota: getAiMonthlyQuota(billingAccount, aiLane === 'full' ? 'full' : 'lite', { bypass }),
     };
   }, [profile, billingAccount]);
 }

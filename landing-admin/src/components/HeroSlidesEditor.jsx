@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createEmptySlide, HERO_BUTTON_POSITIONS } from '../utils/heroSlides';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import AiAssistButton from './AiAssistButton';
 
 function SlideEditor({
   slide,
@@ -235,15 +236,28 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
         onChange={onFormChange}
       />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <label className="block text-[11px] font-bold text-gray-400 uppercase">Carrusel Hero</label>
-        <button
-          type="button"
-          onClick={addSlide}
-          className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
-        >
-          + Añadir diapositiva
-        </button>
+        <div className="flex items-center gap-2">
+          {onFormChange && (
+            <AiAssistButton
+              formData={formData}
+              onChange={onFormChange}
+              pageId={pageId}
+              action="hero_suggest"
+              fieldPath="heroSlides[0]"
+              currentValue={items[0]?.text || items[0]?.title || ''}
+              label="✨ Hero IA"
+            />
+          )}
+          <button
+            type="button"
+            onClick={addSlide}
+            className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
+          >
+            + Añadir diapositiva
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2">
