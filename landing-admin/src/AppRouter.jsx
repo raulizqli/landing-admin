@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
+import MirrorPreviewFrame from './components/MirrorPreviewFrame.jsx';
 import { useAuth } from './contexts/AuthContext.jsx';
 import { useLocale } from './i18n/LocaleContext.jsx';
 import { getMarketingUrl, isExternalMarketingUrl } from './utils/marketingUrl.js';
@@ -77,6 +78,14 @@ export default function AppRouter() {
           element={(
             <RequireAuth>
               <App />
+            </RequireAuth>
+          )}
+        />
+        <Route
+          path="/app/preview-frame"
+          element={(
+            <RequireAuth>
+              <MirrorPreviewFrame />
             </RequireAuth>
           )}
         />

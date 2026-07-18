@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { listPageDocuments } from './utils/firestoreAccess';
 import { db } from './firebase';
 import { createEmptySlide } from './utils/heroSlides';
@@ -23,7 +23,7 @@ import LocationFieldsEditor from './components/LocationFieldsEditor';
 import PhoneFieldsEditor from './components/PhoneFieldsEditor';
 import LegalDocumentsFieldsEditor from './components/LegalDocumentsFieldsEditor';
 import EditorSection from './components/EditorSection';
-import LandingMirror from './components/LandingMirror';
+import DevicePreviewPanel from './components/DevicePreviewPanel';
 import { resolvePreviewSectionId } from './utils/sectionAnchors';
 import SiteHostingFieldsEditor from './components/SiteHostingFieldsEditor';
 import UserManagement from './components/UserManagement';
@@ -61,11 +61,6 @@ import {
 } from '@raulizqli/landing-core/pageTranslations';
 import { isMarketingSite, normalizeMarketingRoutes } from '@raulizqli/landing-core/marketingSite';
 
-const TEMPLATE_PREVIEW_URL = (
-  import.meta.env.VITE_TEMPLATE_PREVIEW_URL?.replace(/\/$/, '')
-  || (import.meta.env.DEV ? 'http://localhost:5174' : '')
-);
-
 const DEMO_PREVIEW_ID = 'preview-demo';
 const SIDEBAR_COLLAPSED_KEY = 'landing-admin:pages-sidebar-collapsed';
 
@@ -96,8 +91,6 @@ export default function App() {
   const [layoutBaseline, setLayoutBaseline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deviceView, setDeviceView] = useState('desktop');
-  const [previewSource, setPreviewSource] = useState('mirror');
   const [previewSectionKey, setPreviewSectionKey] = useState('identity');
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showCreatePage, setShowCreatePage] = useState(false);
@@ -106,7 +99,6 @@ export default function App() {
   const [accessError, setAccessError] = useState('');
   const [pagesSidebarCollapsed, setPagesSidebarCollapsed] = useState(readSidebarCollapsedDefault);
   const [activeMarketingRouteId, setActiveMarketingRouteId] = useState('');
-  const previewIframeRef = useRef(null);
 
   const accessibleLandings = profile ? filterAccessiblePages(landings, profile) : [];
   const showPageList = !isSinglePageUser(profile);
@@ -151,46 +143,9 @@ export default function App() {
     canManageLayout || isFlagEnabled(editorData, flag, defaultEnabled)
   );
 
-  const localPreviewUrl = selectedId && TEMPLATE_PREVIEW_URL
-    ? `${TEMPLATE_PREVIEW_URL}?pageId=${encodeURIComponent(selectedId)}&preview=true&lang=${editingLanguage}`
-    : null;
-
   const activatePreviewSection = useCallback((sectionKey) => {
     setPreviewSectionKey(sectionKey);
   }, []);
-
-  const postPreviewUpdate = useCallback(() => {
-    if (!formData || !previewIframeRef.current?.contentWindow || !TEMPLATE_PREVIEW_URL) return;
-
-    previewIframeRef.current.contentWindow.postMessage(
-      {
-        type: 'LANDING_PREVIEW_UPDATE',
-        data: formData,
-        pageId: selectedId,
-        language: editingLanguage,
-        scrollSectionId: previewScrollSectionId,
-      },
-      TEMPLATE_PREVIEW_URL
-    );
-  }, [formData, selectedId, editingLanguage, previewScrollSectionId]);
-
-  useEffect(() => {
-    if (previewSource !== 'local') return;
-    postPreviewUpdate();
-  }, [formData, previewSource, postPreviewUpdate]);
-
-  useEffect(() => {
-    if (previewSource !== 'local' || !previewScrollSectionId) return;
-    if (!previewIframeRef.current?.contentWindow || !TEMPLATE_PREVIEW_URL) return;
-    previewIframeRef.current.contentWindow.postMessage(
-      { type: 'LANDING_PREVIEW_SCROLL', sectionId: previewScrollSectionId },
-      TEMPLATE_PREVIEW_URL
-    );
-  }, [previewScrollSectionId, previewSource]);
-
-  const openLocalPreviewTab = () => {
-    if (localPreviewUrl) window.open(localPreviewUrl, '_blank', 'noopener,noreferrer');
-  };
 
   const selectLanding = async (landing) => {
     if (!canEditPage(profile, landing.id)) {
@@ -991,60 +946,13 @@ export default function App() {
       </div>
 
       {/* 3. SIMULADOR DE VISTA PREVIA */}
-      <div className="flex-1 min-h-0 min-w-0 bg-gray-200 p-6 flex flex-col overflow-hidden">
-        <div className="w-full min-w-0 flex justify-between items-center mb-4 shrink-0 gap-3 overflow-x-auto">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Monitor de Aspecto en Vivo</span>
-          <div className="flex items-center gap-2">
-            <div className="bg-white p-1 rounded-lg shadow-sm border text-[11px] font-medium space-x-1">
-              <button type="button" onClick={() => setPreviewSource('mirror')} className={`px-2.5 py-1 rounded-md transition ${previewSource === 'mirror' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Espejo</button>
-              <button type="button" onClick={() => setPreviewSource('local')} disabled={!TEMPLATE_PREVIEW_URL} className={`px-2.5 py-1 rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${previewSource === 'local' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Local</button>
-            </div>
-            <div className="bg-white p-1 rounded-lg shadow-sm border text-[11px] font-medium space-x-1">
-              <button type="button" onClick={() => setDeviceView('desktop')} className={`px-2.5 py-1 rounded-md transition ${deviceView === 'desktop' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Escritorio</button>
-              <button type="button" onClick={() => setDeviceView('mobile')} className={`px-2.5 py-1 rounded-md transition ${deviceView === 'mobile' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Móvil</button>
-            </div>
-            {previewSource === 'local' && (
-              <button
-                type="button"
-                onClick={openLocalPreviewTab}
-                disabled={!localPreviewUrl}
-                className="bg-white border shadow-sm text-[11px] font-medium px-2.5 py-1.5 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Abrir pestaña ↗
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className={`bg-white shadow-2xl transition-all duration-300 overflow-hidden flex-1 min-h-0 rounded-xl border border-gray-300 ${deviceView === 'mobile' ? 'w-[360px] max-h-[640px] mx-auto' : 'w-full'}`}>
-          {!formData ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white">Ningún sitio seleccionado para previsualización.</div>
-          ) : previewSource === 'mirror' ? (
-            <div className="h-full min-h-0 overflow-y-auto overscroll-contain">
-              <LandingMirror
-                previewData={formData}
-                previewSeed={selectedId}
-                language={editingLanguage}
-                scrollSectionId={previewScrollSectionId}
-                activeMarketingRouteId={activeMarketingRouteId}
-              />
-            </div>
-          ) : !TEMPLATE_PREVIEW_URL ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white p-6 text-center">
-              Configura <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">VITE_TEMPLATE_PREVIEW_URL</code> en <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">.env.local</code> para usar la vista local.
-            </div>
-          ) : (
-            <iframe
-              ref={previewIframeRef}
-              key={localPreviewUrl}
-              title={`Vista previa local de ${selectedId}`}
-              src={localPreviewUrl}
-              onLoad={postPreviewUpdate}
-              className="w-full h-full border-0 bg-white"
-            />
-          )}
-        </div>
-      </div>
+      <DevicePreviewPanel
+        formData={formData}
+        selectedId={selectedId}
+        editingLanguage={editingLanguage}
+        previewScrollSectionId={previewScrollSectionId}
+        activeMarketingRouteId={activeMarketingRouteId}
+      />
 
       {showUserManagement && (
         <UserManagement
