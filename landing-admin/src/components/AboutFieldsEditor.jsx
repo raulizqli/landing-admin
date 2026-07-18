@@ -6,8 +6,8 @@ import {
   setCustomLabelValue,
 } from '../utils/labels';
 
-export default function AboutFieldsEditor({ formData, onChange }) {
-  const language = formData.labelLanguage === 'en' ? 'en' : 'es';
+export default function AboutFieldsEditor({ formData, onChange, language: languageProp }) {
+  const language = languageProp === 'en' || formData.labelLanguage === 'en' ? 'en' : 'es';
   const titleCustom = getCustomLabelValue(formData.customLabels, language, 'about.title');
   const titleDefault = getCatalogLabel(language, 'about.title');
   const showBio = formData.aboutBioEnabled !== false;

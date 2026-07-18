@@ -1,8 +1,8 @@
-export const PAGE_LANGUAGES = ['en', 'es'];
+export const PAGE_LANGUAGES = ['es', 'en'];
 
 export const PAGE_LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English', shortLabel: 'EN' },
   { value: 'es', label: 'Español', shortLabel: 'ES' },
+  { value: 'en', label: 'English', shortLabel: 'EN' },
 ];
 
 const ROOT_TEXT_FIELDS = [
@@ -196,9 +196,15 @@ export function normalizePageLanguage(value, fallback = 'es') {
 export function normalizeEnabledLanguages(value, defaultLanguage = 'es') {
   const fallback = normalizePageLanguage(defaultLanguage);
   const source = Array.isArray(value) ? value : [fallback];
-  const languages = PAGE_LANGUAGES.filter((language) => source.includes(language));
-  if (!languages.includes(fallback)) languages.unshift(fallback);
-  return [...new Set(languages)];
+  const selected = new Set(
+    source
+      .map((language) => normalizePageLanguage(language, fallback))
+      .filter(Boolean),
+  );
+  selected.add(fallback);
+
+  const languages = PAGE_LANGUAGES.filter((language) => selected.has(language));
+  return languages.length > 0 ? languages : [fallback];
 }
 
 export function normalizePageTranslations(value, page = {}, defaultLanguage = 'es') {

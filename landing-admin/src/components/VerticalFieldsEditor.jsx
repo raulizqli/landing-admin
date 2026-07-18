@@ -10,10 +10,10 @@ function hasCustomLabelOverrides(customLabels = {}) {
   return buckets.some((bucket) => Object.keys(bucket).length > 0);
 }
 
-export default function VerticalFieldsEditor({ formData, onChange }) {
+export default function VerticalFieldsEditor({ formData, onChange, language: languageProp }) {
   const selected = normalizeVertical(formData?.vertical);
   const meta = getVerticalMeta(selected);
-  const language = normalizeLabelLanguage(formData?.labelLanguage);
+  const language = normalizeLabelLanguage(languageProp ?? formData?.labelLanguage);
   const warnCustom = hasCustomLabelOverrides(formData?.customLabels);
 
   return (

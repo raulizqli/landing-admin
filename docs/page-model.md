@@ -203,10 +203,15 @@ Solo root puede cambiar la estructura habilitada cuando aplica el bloqueo de lay
 | Campo | Tipo | Descripción |
 |---|---|---|
 | `defaultLanguage` | `es` \| `en` | Idioma predeterminado y fallback |
-| `enabledLanguages` | (`es` \| `en`)[] | Idiomas disponibles en la landing |
+| `enabledLanguages` | (`es` \| `en`)[] | Idiomas públicos (mínimo uno) |
 | `translations` | object | Contenido textual por idioma |
 | `labelLanguage` | `es` \| `en` | Compatibilidad; se sincroniza con `defaultLanguage` al guardar |
-| `customLabels` | object | Overrides por idioma |
+| `customLabels` | object | Overrides por idioma (`{ es: {}, en: {} }`) |
+
+Reglas:
+- Debe haber al menos un idioma público (`es` o `en`).
+- No es obligatorio mantener español si inglés está activo (y viceversa).
+- Al cambiar el idioma activo (admin o landing), las etiquetas del sistema (`resolvePageLabels`) cambian con ese idioma.
 
 La resolución sigue:
 

@@ -409,6 +409,7 @@ export function resolvePageLabels(page = {}) {
   const customOverrides = customByLang[lang] ?? {};
 
   return {
+    __language: lang,
     ...base,
     ...verticalOverrides,
     ...customOverrides,
@@ -416,8 +417,10 @@ export function resolvePageLabels(page = {}) {
 }
 
 export function getLabel(labels, key, vars = {}) {
-  const catalog = LABEL_CATALOGS.es;
-  let text = labels?.[key] ?? catalog[key] ?? key;
+  if (key === '__language') return '';
+  const lang = normalizeLabelLanguage(labels?.__language);
+  const catalog = LABEL_CATALOGS[lang] ?? LABEL_CATALOGS.es;
+  let text = labels?.[key] ?? catalog[key] ?? LABEL_CATALOGS.es[key] ?? key;
   Object.entries(vars).forEach(([name, value]) => {
     text = text.replace(`{${name}}`, String(value));
   });
@@ -431,10 +434,11 @@ export function getCatalogLabel(language, key) {
 
 /** Default label for a page before customLabels (base + vertical). */
 export function getDefaultLabelForPage(page = {}, key) {
-  return resolvePageLabels({
+  const labels = resolvePageLabels({
     ...page,
     customLabels: { es: {}, en: {} },
-  })[key] ?? getCatalogLabel(page.labelLanguage, key);
+  });
+  return labels[key] ?? getCatalogLabel(page.labelLanguage, key);
 }
 
 export function getCustomLabelValue(customLabels, language, key) {

@@ -1,4 +1,3 @@
-
 import {
   getCustomLabelValue,
   getDefaultLabelForPage,
@@ -25,6 +24,7 @@ export default function LabelsFieldsEditor({
     : LABEL_GROUPS;
 
   const handleLanguageChange = (nextLanguage) => {
+    // Legacy picker: keep custom label buckets; page language is managed by PageLanguagesEditor.
     const next = normalizeLabelLanguage(nextLanguage);
     onChange({
       ...formData,
@@ -47,7 +47,7 @@ export default function LabelsFieldsEditor({
   if (groups.length === 0 && !showLanguagePicker) return null;
 
   return (
-    <div className={compact ? 'space-y-3' : 'space-y-4'}>
+    <div key={`labels-editor-${language}`} className={compact ? 'space-y-3' : 'space-y-4'}>
       {showLanguagePicker && (
         <div>
           <label className="block text-[11px] font-bold text-gray-400 uppercase">

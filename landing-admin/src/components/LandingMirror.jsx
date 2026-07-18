@@ -57,6 +57,7 @@ export default function LandingMirror({ previewData, previewSeed, language, scro
   return (
     <div ref={rootRef} className="min-h-full">
       <LandingPage
+        key={`mirror-${language || 'default'}`}
         data={data}
         interactive={false}
         className="pointer-events-none select-none"

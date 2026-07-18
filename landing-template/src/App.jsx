@@ -274,5 +274,11 @@ export default function App() {
       : <ErrorState message="No hay datos disponibles para esta página." />;
   }
 
-  return <LandingPage data={displayData} onLanguageChange={handleLanguageChange} />;
+  return (
+    <LandingPage
+      key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
+      data={displayData}
+      onLanguageChange={handleLanguageChange}
+    />
+  );
 }

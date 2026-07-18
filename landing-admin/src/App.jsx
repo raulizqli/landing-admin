@@ -612,9 +612,10 @@ export default function App() {
                 onEditingLanguageChange={setEditingLanguage}
                 onChange={setFormData}
               />
-              <VerticalFieldsEditor formData={editorData} onChange={handleEditorChange} />
+              <VerticalFieldsEditor formData={editorData} onChange={handleEditorChange} language={editingLanguage} />
               <PageAppearanceEditor formData={editorData} onChange={handleEditorChange} sections={['page']} />
               <LabelsFieldsEditor
+                key={`labels-placeholders-${editingLanguage}`}
                 formData={editorData}
                 onChange={handleEditorChange}
                 groupIds={['placeholders']}
@@ -632,7 +633,7 @@ export default function App() {
               onActivate={activatePreviewSection}
             >
               <NavFieldsEditor formData={editorData} onChange={handleEditorChange} pageId={selectedId} />
-              <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['navigation']} showLanguagePicker={false} compact language={editingLanguage} />
+              <LabelsFieldsEditor key={`labels-navigation-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['navigation']} showLanguagePicker={false} compact language={editingLanguage} />
             </EditorSection>
 
             {canManageLayout && (
@@ -661,7 +662,7 @@ export default function App() {
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                 />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['preHero']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-preHero-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['preHero']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -681,7 +682,7 @@ export default function App() {
                   formData={editorData}
                   onFormChange={handleEditorChange}
                 />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['hero']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-hero-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['hero']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -693,7 +694,7 @@ export default function App() {
                 description="Título, frase, texto descriptivo y colores"
                 onActivate={activatePreviewSection}
               >
-                <AboutFieldsEditor formData={editorData} onChange={handleEditorChange} />
+                <AboutFieldsEditor formData={editorData} onChange={handleEditorChange} language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -714,7 +715,7 @@ export default function App() {
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['services']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-services-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['services']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -732,7 +733,7 @@ export default function App() {
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                 />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['catalog']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-catalog-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['catalog']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -753,7 +754,7 @@ export default function App() {
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['gallery']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-gallery-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['gallery']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -787,7 +788,7 @@ export default function App() {
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                 />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['testimonials']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-testimonials-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['testimonials']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -810,7 +811,7 @@ export default function App() {
                     pageId={selectedId}
                     canToggleSection={canManageLayout}
                   />
-                  <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['blog']} showLanguagePicker={false} compact language={editingLanguage} />
+                  <LabelsFieldsEditor key={`labels-blog-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['blog']} showLanguagePicker={false} compact language={editingLanguage} />
                 </EditorSection>
               </PlanGate>
             )}
@@ -835,7 +836,7 @@ export default function App() {
                   <input type="email" value={editorData.email || ''} onChange={e => handleEditorChange({...editorData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
                 </div>
                 <PhoneFieldsEditor formData={editorData} onChange={handleEditorChange} />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['contact', 'messages']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-contact-messages-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['contact', 'messages']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -848,7 +849,7 @@ export default function App() {
                 onActivate={activatePreviewSection}
               >
                 <SocialFieldsEditor formData={editorData} onChange={handleEditorChange} />
-                <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['social']} showLanguagePicker={false} compact language={editingLanguage} />
+                <LabelsFieldsEditor key={`labels-social-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['social']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 
@@ -906,9 +907,9 @@ export default function App() {
                   className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none font-mono"
                 />
               </div>
-              <LegalDocumentsFieldsEditor formData={editorData} onChange={handleEditorChange} />
+              <LegalDocumentsFieldsEditor formData={editorData} onChange={handleEditorChange} language={editingLanguage} />
               <PageAppearanceEditor formData={editorData} onChange={handleEditorChange} sections={['footer']} />
-              <LabelsFieldsEditor formData={editorData} onChange={handleEditorChange} groupIds={['footer']} showLanguagePicker={false} compact language={editingLanguage} />
+              <LabelsFieldsEditor key={`labels-footer-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['footer']} showLanguagePicker={false} compact language={editingLanguage} />
             </EditorSection>
           </form>
         ) : (

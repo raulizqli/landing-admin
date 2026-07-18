@@ -26,11 +26,31 @@ export default function PageLanguagesEditor({
   };
 
   const toggleLanguage = (language) => {
-    if (language === defaultLanguage) return;
-    const enabled = enabledLanguages.includes(language)
-      ? enabledLanguages.filter((item) => item !== language)
-      : [...enabledLanguages, language];
-    updateConfiguration({ enabledLanguages: enabled });
+    const isEnabled = enabledLanguages.includes(language);
+
+    if (isEnabled) {
+      // Keep at least one public language available.
+      if (enabledLanguages.length <= 1) return;
+
+      const enabled = enabledLanguages.filter((item) => item !== language);
+      const nextDefault = language === defaultLanguage
+        ? (enabled[0] || 'es')
+        : defaultLanguage;
+
+      updateConfiguration({
+        defaultLanguage: nextDefault,
+        enabledLanguages: normalizeEnabledLanguages(enabled, nextDefault),
+      });
+
+      if (editingLanguage === language) {
+        onEditingLanguageChange(nextDefault);
+      }
+      return;
+    }
+
+    updateConfiguration({
+      enabledLanguages: normalizeEnabledLanguages([...enabledLanguages, language], defaultLanguage),
+    });
   };
 
   return (
@@ -38,7 +58,8 @@ export default function PageLanguagesEditor({
       <div>
         <p className="text-[11px] font-bold text-indigo-700 uppercase">Idiomas de la landing</p>
         <p className="text-[10px] text-indigo-500 mt-1">
-          El contenido visual y la configuración se comparten. Los textos se editan por idioma.
+          El contenido visual y la configuración se comparten. Los textos y etiquetas se editan por idioma.
+          Debe quedar al menos un idioma público (ES o EN).
         </p>
       </div>
 
@@ -51,7 +72,13 @@ export default function PageLanguagesEditor({
             value={defaultLanguage}
             onChange={(event) => {
               const nextLanguage = event.target.value;
-              updateConfiguration({ defaultLanguage: nextLanguage });
+              updateConfiguration({
+                defaultLanguage: nextLanguage,
+                enabledLanguages: normalizeEnabledLanguages(
+                  [...enabledLanguages, nextLanguage],
+                  nextLanguage,
+                ),
+              });
               onEditingLanguageChange(nextLanguage);
             }}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white"
@@ -69,13 +96,14 @@ export default function PageLanguagesEditor({
           <div className="flex gap-2">
             {PAGE_LANGUAGE_OPTIONS.map((option) => {
               const enabled = enabledLanguages.includes(option.value);
-              const locked = option.value === defaultLanguage;
+              const locked = enabled && enabledLanguages.length === 1;
               return (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => toggleLanguage(option.value)}
-                  title={locked ? 'El idioma predeterminado siempre está habilitado' : ''}
+                  disabled={locked}
+                  title={locked ? 'Debe quedar al menos un idioma disponible' : ''}
                   className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
                     enabled
                       ? 'border-indigo-600 bg-indigo-600 text-white'
@@ -94,6 +122,9 @@ export default function PageLanguagesEditor({
         <span className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
           Editando ahora
         </span>
+        <p className="text-[10px] text-gray-400 mb-2">
+          Cambia también las etiquetas por defecto (botones, menú, títulos fijos) y el contenido de ese idioma.
+        </p>
         <div className="flex gap-2">
           {PAGE_LANGUAGE_OPTIONS
             .filter((option) => enabledLanguages.includes(option.value))

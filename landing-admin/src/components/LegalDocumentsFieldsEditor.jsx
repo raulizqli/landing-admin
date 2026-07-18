@@ -70,8 +70,8 @@ function LegalDocEditor({
   );
 }
 
-export default function LegalDocumentsFieldsEditor({ formData, onChange }) {
-  const language = formData.labelLanguage === 'en' ? 'en' : 'es';
+export default function LegalDocumentsFieldsEditor({ formData, onChange, language: languageProp }) {
+  const language = languageProp === 'en' || formData.labelLanguage === 'en' ? 'en' : 'es';
   const termsDefault = getDefaultLegalDocument('termsOfUse', language);
   const privacyDefault = getDefaultLegalDocument('privacyPolicy', language);
 

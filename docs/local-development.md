@@ -126,10 +126,11 @@ Los documentos nuevos se guardan en `pages/{pageId}`. No crees campos en españo
 ## Configurar una landing bilingüe
 
 1. En **Identidad y apariencia**, selecciona el idioma predeterminado.
-2. Activa EN y ES en **Idiomas públicos**.
-3. Usa **Editando ahora** para cambiar el idioma del formulario.
+2. Activa ES y/o EN en **Idiomas públicos** (debe quedar al menos uno).
+3. Usa **Editando ahora** para cambiar el idioma del formulario y de las etiquetas.
 4. Completa los textos de cada idioma; imágenes, layout, contacto y colores se comparten.
-5. Revisa cada idioma en el espejo y pulsa **Guardar y Publicar**.
+5. Revisa cada idioma en el espejo: botones y títulos fijos deben cambiar con el idioma.
+6. Pulsa **Guardar y Publicar**.
 
 La landing muestra el selector EN/ES en el navbar cuando hay más de un idioma habilitado. El visitante puede usar `?lang=en` o `?lang=es`; la selección queda guardada localmente por página. Si falta una traducción, se muestra el texto del idioma predeterminado.
 
