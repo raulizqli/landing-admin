@@ -1,7 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { LandingPage } from '@raulizqli/landing-ui';
+import { LandingPage, MarketingSite } from '@raulizqli/landing-ui';
 import { withPreviewContent } from '@raulizqli/landing-core/previewContent';
 import { resolvePageLanguage } from '@raulizqli/landing-core/pageTranslations';
+import {
+  findMarketingRouteByPath,
+  isMarketingSite,
+  normalizeMarketingRoutes,
+} from '@raulizqli/landing-core/marketingSite';
 
 function getScrollParent(node) {
   let current = node?.parentElement;
@@ -27,15 +32,33 @@ function scrollIntoScrollParent(target, behavior = 'smooth') {
   parent.scrollTo({ top: Math.max(0, nextTop), behavior });
 }
 
-export default function LandingMirror({ previewData, previewSeed, language, scrollSectionId }) {
+function resolveMarketingPreviewPath(previewData, activeRouteId) {
+  const routes = normalizeMarketingRoutes(previewData?.marketingRoutes);
+  if (activeRouteId) {
+    const active = routes.find((route) => route.id === activeRouteId);
+    if (active?.path) return active.path;
+  }
+  const home = routes.find((route) => route.type === 'home');
+  return home?.path || findMarketingRouteByPath(routes, '/')?.path || '/';
+}
+
+export default function LandingMirror({
+  previewData,
+  previewSeed,
+  language,
+  scrollSectionId,
+  activeMarketingRouteId,
+}) {
   const rootRef = useRef(null);
   const data = resolvePageLanguage(
     withPreviewContent(previewData, { seed: previewSeed, enabled: true }),
     language,
   );
+  const marketingMode = isMarketingSite(data);
+  const marketingPath = resolveMarketingPreviewPath(data, activeMarketingRouteId);
 
   useEffect(() => {
-    if (!scrollSectionId || !rootRef.current) return undefined;
+    if (!scrollSectionId || !rootRef.current || marketingMode) return undefined;
 
     const timer = window.setTimeout(() => {
       const root = rootRef.current;
@@ -52,16 +75,26 @@ export default function LandingMirror({ previewData, previewSeed, language, scro
     }, 80);
 
     return () => window.clearTimeout(timer);
-  }, [scrollSectionId, data]);
+  }, [scrollSectionId, data, marketingMode]);
 
   return (
     <div ref={rootRef} className="min-h-full">
-      <LandingPage
-        key={`mirror-${language || 'default'}`}
-        data={data}
-        interactive={false}
-        className="pointer-events-none select-none"
-      />
+      {marketingMode ? (
+        <MarketingSite
+          key={`mirror-marketing-${language || 'default'}-${marketingPath}`}
+          data={data}
+          interactive={false}
+          path={marketingPath}
+          className="pointer-events-none select-none"
+        />
+      ) : (
+        <LandingPage
+          key={`mirror-${language || 'default'}`}
+          data={data}
+          interactive={false}
+          className="pointer-events-none select-none"
+        />
+      )}
     </div>
   );
 }

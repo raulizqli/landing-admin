@@ -1,8 +1,8 @@
-# LeftSideDev Site — AI Engineering Studio
+# LeftSideDev Site — AI Engineering Studio (design sandbox)
 
-Corporate marketing site for **LeftSideDev**, positioned as an AI Engineering Studio.
+Corporate marketing **reference UI** for **LeftSideDev**, positioned as an AI Engineering Studio.
 
-This app is separate from the Landing CMS (`landing-admin` / `landing-template`) so multi-tenant psychologist landings stay clean while the company site can grow multi-route SEO, GEO content, blog, and conversion tooling.
+> **Production path (Phase 5):** the live apex domain should be served by `landing-template` with `pages/leftsidedev` in `siteMode: 'marketing'`, edited in `landing-admin`. See [docs/marketing-site-deploy.md](../docs/marketing-site-deploy.md). This Vite app remains useful for design experiments; it is not required for production hosting.
 
 ## Stack
 

@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "description": "Modelo de página y utilidades compartidas para landings del ecosistema",
   "type": "module",
-  "scripts": {
-    "test": "vitest run"
-  },
   "files": [
     "src",
     "README.md"
@@ -17,6 +14,11 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "test": "vitest run && node --test src/*.test.mjs",
+    "test:vitest": "vitest run",
+    "test:node": "node --test src/*.test.mjs"
   },
   "exports": {
     ".": "./src/index.js",
@@ -50,7 +52,11 @@
     "./legalDocuments": "./src/legalDocuments.js",
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",
-    "./billingPlans": "./src/billingPlans.js"
+    "./billingPlans": "./src/billingPlans.js",
+    "./marketingSite": "./src/marketingSite.js",
+    "./marketingSeo": "./src/marketingSeo.js",
+    "./siteAccess": "./src/siteAccess.js",
+    "./aiAssist": "./src/aiAssist.js"
   },
   "devDependencies": {
     "vitest": "^4.1.10"

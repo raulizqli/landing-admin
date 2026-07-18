@@ -1,12 +1,12 @@
-
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import AiAssistButton from './AiAssistButton';
 import {
   getCatalogLabel,
   getCustomLabelValue,
   setCustomLabelValue,
 } from '../utils/labels';
 
-export default function AboutFieldsEditor({ formData, onChange, language: languageProp }) {
+export default function AboutFieldsEditor({ formData, onChange, language: languageProp, pageId = '' }) {
   const language = languageProp === 'en' || formData.labelLanguage === 'en' ? 'en' : 'es';
   const titleCustom = getCustomLabelValue(formData.customLabels, language, 'about.title');
   const titleDefault = getCatalogLabel(language, 'about.title');
@@ -36,7 +36,17 @@ export default function AboutFieldsEditor({ formData, onChange, language: langua
       </div>
 
       <div className="space-y-2">
-        <label className="block text-[10px] font-bold text-gray-400 uppercase">Frase / destacado</label>
+        <div className="flex items-center justify-between gap-2">
+          <label className="block text-[10px] font-bold text-gray-400 uppercase">Frase / destacado</label>
+          <AiAssistButton
+            formData={formData}
+            onChange={onChange}
+            pageId={pageId}
+            fieldPath="aboutTagline"
+            action="polish_tagline"
+            currentValue={formData.aboutTagline || ''}
+          />
+        </div>
         <input
           type="text"
           value={formData.aboutTagline || ''}
@@ -61,7 +71,21 @@ export default function AboutFieldsEditor({ formData, onChange, language: langua
         </p>
         {showBio && (
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto descriptivo</label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto descriptivo</label>
+              <AiAssistButton
+                formData={formData}
+                onChange={onChange}
+                pageId={pageId}
+                fieldPath="aboutBio"
+                action="polish_bio"
+                currentValue={formData.aboutBio || ''}
+                fullActions={[
+                  { action: 'seo_meta', tone: 'empathetic', labelKey: 'ai.seoMeta' },
+                  { action: 'blog_draft', tone: 'empathetic', labelKey: 'ai.blogDraft' },
+                ]}
+              />
+            </div>
             <textarea
               rows="4"
               value={formData.aboutBio || ''}

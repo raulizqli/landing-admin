@@ -11,18 +11,30 @@
     "dev:site": "npm run dev --prefix leftsidedev-site",
     "build:admin": "npm run build --prefix landing-admin",
     "build:template": "npm run build --prefix landing-template",
+    "build:admin:staging": "npm run build:staging --prefix landing-admin",
+    "build:template:staging": "npm run build:staging --prefix landing-template",
     "build:site": "npm run build --prefix leftsidedev-site",
     "build": "npm run build:admin && npm run build:template && npm run build:site",
-    "test": "npm test -w @raulizqli/landing-core && npm test --prefix landing-admin && npm test --prefix landing-template",
+    "build:functions": "npm --prefix functions run build",
+    "check:env": "node scripts/check-env.mjs --mode production",
+    "check:env:staging": "node scripts/check-env.mjs --mode staging --env stage",
+    "use:dev": "firebase use dev",
+    "use:stage": "firebase use stage",
+    "use:prod": "firebase use prod",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "deploy:functions": "cd functions && npm install && cd .. && firebase deploy --only functions",
     "deploy:admin": "npm run build:admin && firebase deploy --only hosting:admin",
     "deploy:template": "npm run deploy --prefix landing-template",
     "deploy:site": "npm run build:site && npm run deploy --prefix leftsidedev-site",
     "deploy:hosting": "npm run deploy:admin && npm run deploy:template",
+    "deploy:stage": "bash scripts/deploy-env.sh stage",
+    "deploy:prod": "bash scripts/deploy-env.sh prod",
     "extract:template-repo": "bash scripts/extract-template-repo.sh",
-    "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui"
+    "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui",
+    "test": "npm test -w @raulizqli/landing-core && npm test --prefix landing-admin && npm test --prefix landing-template",
+    "test:core": "npm run test -w @raulizqli/landing-core"
   },
+
   "devDependencies": {
     "firebase-tools": "^14.0.0"
   }

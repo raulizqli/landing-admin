@@ -11,3 +11,21 @@ export {
   stripeBillingWebhook,
   mercadoPagoBillingWebhook,
 } from "./billing.js";
+export {
+  marketingSitemap,
+  marketingRss,
+  marketingRobots,
+} from "./marketingSeo.js";
+export {
+  assertMarketingSiteAccess,
+  setBillingAccountAddons,
+} from "./marketingEntitlement.js";
+export {
+  setBillingMonetization,
+  syncSiteAccessDaily,
+} from "./siteAccessSync.js";
+export {
+  runAiAssist,
+  setAiProviderConfig,
+  getAiAssistUsage,
+} from "./aiAssist.js";

@@ -1,5 +1,14 @@
 # LeftSideDev implementation changelog
 
+## 2026-07-18 — Enterprise Marketing Site MVP (CMS)
+
+- Entitlement `marketingSite` on Enterprise plans
+- `siteMode` / `marketing` / `seo` + `marketingRoutes` model in `landing-core`
+- Firestore `pages/{pageId}/routes/{routeId}` rules
+- Admin editors + mirror preview for marketing mode
+- Template path-based renderer (`MarketingSite`) for home / services / contact
+- Plan: `docs/enterprise-marketing-site-plan.md`
+
 ## 2026-07-18 — Corporate site foundation
 
 ### Architecture

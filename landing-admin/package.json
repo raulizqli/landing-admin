@@ -8,6 +8,7 @@
     "prepreview": "node scripts/free-port.js 5173",
     "dev": "vite",
     "build": "vite build",
+    "build:staging": "vite build --mode staging",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run"
