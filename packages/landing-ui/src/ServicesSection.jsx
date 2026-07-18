@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   getServiceLayoutMeta,
   getVisibleServices,
@@ -6,7 +6,9 @@ import {
   normalizeServiceListItems,
   normalizeServicesCarouselAutoplay,
   normalizeServicesCarouselPerView,
+  normalizeServicesCarouselTransition,
   normalizeServicesDisplayMode,
+  normalizeServicesVisualStyle,
   SERVICES_CAROUSEL_AUTOPLAY_MS,
   shouldShowServicesSection,
   splitServicesSectionText,
@@ -15,13 +17,36 @@ import {
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
+import {
+  entranceDelayStyle,
+  getGridGapClass,
+  getItemVisualClasses,
+  getStackGapClass,
+} from './sectionVisualStyles.js';
 
-function ServiceMedia({ imageUrl, title, prominent }) {
+const CAROUSEL_TRANSITION_MS = 280;
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduced(media.matches);
+    update();
+    media.addEventListener?.('change', update);
+    return () => media.removeEventListener?.('change', update);
+  }, []);
+
+  return reduced;
+}
+
+function ServiceMedia({ imageUrl, title, prominent, mediaClassName = '' }) {
   if (!imageUrl) return null;
 
   if (prominent) {
     return (
-      <div className="aspect-[4/3] bg-[#E8E4DB]">
+      <div className={`aspect-[4/3] bg-[#E8E4DB] ${mediaClassName}`}>
         <img
           src={imageUrl}
           alt={title || ''}
@@ -32,7 +57,7 @@ function ServiceMedia({ imageUrl, title, prominent }) {
   }
 
   return (
-    <div className="aspect-[16/10] bg-[#E8E4DB]">
+    <div className={`aspect-[16/10] bg-[#E8E4DB] ${mediaClassName}`}>
       <img
         src={imageUrl}
         alt={title || ''}
@@ -53,16 +78,16 @@ function ServiceListBody({ items }) {
   );
 }
 
-function TitleServiceCard({ item }) {
+function TitleServiceCard({ item, visualClasses, entranceStyle }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
 
   return (
-    <article className="bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm overflow-hidden h-full flex flex-col">
-      <ServiceMedia imageUrl={imageUrl} title={title} prominent />
+    <article className={`${visualClasses.article} ${visualClasses.entrance}`} style={entranceStyle}>
+      <ServiceMedia imageUrl={imageUrl} title={title} prominent mediaClassName={visualClasses.media} />
       {title && (
-        <div className="p-5 sm:p-6">
-          <h3 className={`font-serif text-lg sm:text-xl text-[#2A342D] leading-snug ${imageUrl ? 'text-center' : ''}`}>
+        <div className={visualClasses.body}>
+          <h3 className={`${visualClasses.title} ${imageUrl ? 'text-center' : ''}`}>
             {title}
           </h3>
         </div>
@@ -76,6 +101,8 @@ function DescriptionServiceCard({
   interactive,
   viewMoreLabel,
   viewLessLabel,
+  visualClasses,
+  entranceStyle,
 }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
@@ -89,11 +116,11 @@ function DescriptionServiceCard({
   const shownText = expanded || !truncated ? full : preview;
 
   return (
-    <article className="bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm overflow-hidden h-full flex flex-col">
-      <ServiceMedia imageUrl={imageUrl} title={title} />
-      <div className="p-6 flex flex-col flex-1">
+    <article className={`${visualClasses.article} ${visualClasses.entrance}`} style={entranceStyle}>
+      <ServiceMedia imageUrl={imageUrl} title={title} mediaClassName={visualClasses.media} />
+      <div className={visualClasses.body}>
         {title && (
-          <h3 className="font-serif text-lg sm:text-xl text-[#2A342D] mb-2 leading-snug">
+          <h3 className={`${visualClasses.title} mb-2`}>
             {title}
           </h3>
         )}
@@ -123,17 +150,17 @@ function DescriptionServiceCard({
   );
 }
 
-function ListServiceCard({ item }) {
+function ListServiceCard({ item, visualClasses, entranceStyle }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
   const listItems = normalizeServiceListItems(item.listItems);
 
   return (
-    <article className="bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm overflow-hidden h-full flex flex-col">
-      <ServiceMedia imageUrl={imageUrl} title={title} />
-      <div className="p-6 flex flex-col flex-1">
+    <article className={`${visualClasses.article} ${visualClasses.entrance}`} style={entranceStyle}>
+      <ServiceMedia imageUrl={imageUrl} title={title} mediaClassName={visualClasses.media} />
+      <div className={visualClasses.body}>
         {title && (
-          <h3 className="font-serif text-lg sm:text-xl text-[#2A342D] mb-3 leading-snug">
+          <h3 className={`${visualClasses.title} mb-3`}>
             {title}
           </h3>
         )}
@@ -148,16 +175,32 @@ export function ServiceCard({
   interactive = true,
   viewMoreLabel = 'Ver más',
   viewLessLabel = 'Ver menos',
+  visualStyle = 'cards',
+  entranceIndex = 0,
 }) {
   const layout = normalizeServiceLayout(item?.layout);
   const meta = getServiceLayoutMeta(layout);
+  const visualClasses = getItemVisualClasses(visualStyle);
+  const entranceStyle = entranceDelayStyle(entranceIndex);
 
   if (layout === 'title') {
-    return <TitleServiceCard item={item} />;
+    return (
+      <TitleServiceCard
+        item={item}
+        visualClasses={visualClasses}
+        entranceStyle={entranceStyle}
+      />
+    );
   }
 
   if (meta.fields.list) {
-    return <ListServiceCard item={item} />;
+    return (
+      <ListServiceCard
+        item={item}
+        visualClasses={visualClasses}
+        entranceStyle={entranceStyle}
+      />
+    );
   }
 
   return (
@@ -166,6 +209,8 @@ export function ServiceCard({
       interactive={interactive}
       viewMoreLabel={viewMoreLabel}
       viewLessLabel={viewLessLabel}
+      visualClasses={visualClasses}
+      entranceStyle={entranceStyle}
     />
   );
 }
@@ -184,11 +229,30 @@ function perViewGridClass(perView) {
   }
 }
 
+function carouselPanelClass(transition, phase, reducedMotion) {
+  if (reducedMotion || transition === 'none') {
+    return 'opacity-100 translate-x-0';
+  }
+
+  if (transition === 'slide') {
+    if (phase === 'out') return 'opacity-0 -translate-x-4 transition-all duration-300 ease-out';
+    if (phase === 'enter') return 'opacity-0 translate-x-4';
+    return 'opacity-100 translate-x-0 transition-all duration-300 ease-out';
+  }
+
+  // fade
+  if (phase === 'out') return 'opacity-0 transition-opacity duration-300 ease-out';
+  if (phase === 'enter') return 'opacity-0';
+  return 'opacity-100 transition-opacity duration-300 ease-out';
+}
+
 export function ServicesItemsLayout({
   items,
   displayMode = 'stack',
   carouselPerView = 3,
   carouselAutoplay = false,
+  carouselTransition = 'fade',
+  visualStyle = 'cards',
   interactive = true,
   previousLabel = 'Anterior',
   nextLabel = 'Siguiente',
@@ -198,8 +262,14 @@ export function ServicesItemsLayout({
   const mode = normalizeServicesDisplayMode(displayMode);
   const perView = normalizeServicesCarouselPerView(carouselPerView);
   const autoplay = normalizeServicesCarouselAutoplay(carouselAutoplay);
+  const transition = normalizeServicesCarouselTransition(carouselTransition);
+  const style = normalizeServicesVisualStyle(visualStyle);
+  const reducedMotion = usePrefersReducedMotion();
   const [page, setPage] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [renderPage, setRenderPage] = useState(0);
+  const [phase, setPhase] = useState('idle');
+  const animTimer = useRef(null);
   const totalPages = Math.max(1, Math.ceil(items.length / perView));
 
   useEffect(() => {
@@ -216,9 +286,34 @@ export function ServicesItemsLayout({
     return () => window.clearInterval(timer);
   }, [mode, autoplay, totalPages, paused]);
 
+  useEffect(() => {
+    if (page === renderPage) return undefined;
+
+    if (reducedMotion || transition === 'none') {
+      setRenderPage(page);
+      setPhase('idle');
+      return undefined;
+    }
+
+    setPhase('out');
+    if (animTimer.current) window.clearTimeout(animTimer.current);
+
+    animTimer.current = window.setTimeout(() => {
+      setRenderPage(page);
+      setPhase('enter');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setPhase('idle'));
+      });
+    }, CAROUSEL_TRANSITION_MS);
+
+    return () => {
+      if (animTimer.current) window.clearTimeout(animTimer.current);
+    };
+  }, [page, renderPage, transition, reducedMotion]);
+
   if (mode !== 'carousel') {
     return (
-      <div className="flex flex-col gap-5 sm:gap-6 max-w-2xl mx-auto">
+      <div className={`flex flex-col ${getStackGapClass(style)} max-w-2xl mx-auto`}>
         {items.map((item, index) => (
           <ServiceCard
             key={`service-${index}`}
@@ -226,13 +321,15 @@ export function ServicesItemsLayout({
             interactive={interactive}
             viewMoreLabel={viewMoreLabel}
             viewLessLabel={viewLessLabel}
+            visualStyle={style}
+            entranceIndex={index}
           />
         ))}
       </div>
     );
   }
 
-  const start = page * perView;
+  const start = renderPage * perView;
   const visible = items.slice(start, start + perView);
   const goPrev = () => {
     if (autoplay) {
@@ -257,7 +354,9 @@ export function ServicesItemsLayout({
       onMouseEnter={autoplay && interactive ? () => setPaused(true) : undefined}
       onMouseLeave={autoplay && interactive ? () => setPaused(false) : undefined}
     >
-      <div className={`grid gap-5 sm:gap-6 ${perViewGridClass(perView)}`}>
+      <div
+        className={`grid ${getGridGapClass(style)} ${perViewGridClass(perView)} ${carouselPanelClass(transition, phase, reducedMotion)}`}
+      >
         {visible.map((item, index) => (
           <ServiceCard
             key={`service-slide-${start + index}`}
@@ -265,6 +364,8 @@ export function ServicesItemsLayout({
             interactive={interactive}
             viewMoreLabel={viewMoreLabel}
             viewLessLabel={viewLessLabel}
+            visualStyle={style}
+            entranceIndex={index}
           />
         ))}
       </div>
@@ -330,6 +431,8 @@ export default function ServicesSection({ data, interactive = true }) {
           displayMode={data.servicesDisplayMode}
           carouselPerView={data.servicesCarouselPerView}
           carouselAutoplay={data.servicesCarouselAutoplay}
+          carouselTransition={data.servicesCarouselTransition}
+          visualStyle={data.servicesVisualStyle}
           interactive={interactive}
           previousLabel={getLabel(labels, 'services.carouselPrevious')}
           nextLabel={getLabel(labels, 'services.carouselNext')}

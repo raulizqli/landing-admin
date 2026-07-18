@@ -2,15 +2,24 @@ import {
   createEmptyService,
   getServiceLayoutMeta,
   normalizeServiceLayout,
+  normalizeServicesCarouselTransition,
+  normalizeServicesVisualStyle,
   SERVICE_ITEM_LAYOUTS,
   SERVICES_CAROUSEL_MOTION_MODES,
   SERVICES_CAROUSEL_PER_VIEW_OPTIONS,
+  SERVICES_CAROUSEL_TRANSITIONS,
   SERVICES_DISPLAY_MODES,
+  SERVICES_VISUAL_STYLES,
   serviceListItemsToText,
 } from '../utils/services';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 import AiAssistButton from './AiAssistButton';
+import VisualOptionPicker, {
+  CAROUSEL_TRANSITION_PREVIEW_MAP,
+  SERVICE_LAYOUT_PREVIEW_MAP,
+  VISUAL_STYLE_PREVIEW_MAP,
+} from './VisualOptionPicker';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function ServicesFieldsEditor({
@@ -27,6 +36,8 @@ export default function ServicesFieldsEditor({
     ? formData.services
     : [createEmptyService()];
   const displayMode = formData.servicesDisplayMode === 'carousel' ? 'carousel' : 'stack';
+  const visualStyle = normalizeServicesVisualStyle(formData.servicesVisualStyle);
+  const carouselTransition = normalizeServicesCarouselTransition(formData.servicesCarouselTransition);
   const titlePlaceholder = getDefaultLabelForPage(formData, 'services.defaultTitle');
   const introPlaceholder = getDefaultLabelForPage(formData, 'services.defaultIntro');
 
@@ -88,7 +99,19 @@ export default function ServicesFieldsEditor({
               rows="3"
               value={formData.servicesSectionText || ''}
               onChange={(e) => onChange({ ...formData, servicesSectionText: e.target.value })}
-              placeholder={introPlaceholder}              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              placeholder={introPlaceholder}
+              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">Estilo visual</label>
+            <VisualOptionPicker
+              name="services-visual-style"
+              options={SERVICES_VISUAL_STYLES}
+              value={visualStyle}
+              onChange={(next) => onChange({ ...formData, servicesVisualStyle: next })}
+              previewMap={VISUAL_STYLE_PREVIEW_MAP}
             />
           </div>
 
@@ -160,6 +183,19 @@ export default function ServicesFieldsEditor({
                   </label>
                 ))}
               </fieldset>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">
+                  Transición del carrusel
+                </label>
+                <VisualOptionPicker
+                  name="services-carousel-transition"
+                  options={SERVICES_CAROUSEL_TRANSITIONS}
+                  value={carouselTransition}
+                  onChange={(next) => onChange({ ...formData, servicesCarouselTransition: next })}
+                  previewMap={CAROUSEL_TRANSITION_PREVIEW_MAP}
+                />
+              </div>
             </>
           )}
 
@@ -193,21 +229,23 @@ export default function ServicesFieldsEditor({
                   </button>
                 </div>
 
-                <fieldset className="space-y-2">
-                  <legend className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo de ítem</legend>
-                  {SERVICE_ITEM_LAYOUTS.map((option) => (
-                    <label key={option.value} className="flex items-center gap-2 text-xs text-gray-600">
-                      <input
-                        type="radio"
-                        name={`service-layout-${index}`}
-                        checked={layout === option.value}
-                        onChange={() => updateItem(index, 'layout', option.value)}
-                        className="border-gray-300"
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </fieldset>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase">Tipo de ítem</label>
+                  <VisualOptionPicker
+                    name={`service-layout-${index}`}
+                    options={SERVICE_ITEM_LAYOUTS.map((option) => ({
+                      ...option,
+                      description: option.value === 'title'
+                        ? 'Solo el título (imagen opcional)'
+                        : option.value === 'title_list'
+                          ? 'Título con lista de puntos'
+                          : 'Título con texto descriptivo',
+                    }))}
+                    value={layout}
+                    onChange={(next) => updateItem(index, 'layout', next)}
+                    previewMap={SERVICE_LAYOUT_PREVIEW_MAP}
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase">Título</label>

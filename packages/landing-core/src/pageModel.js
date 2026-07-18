@@ -5,9 +5,11 @@ import {
   normalizeServices,
   normalizeServicesCarouselAutoplay,
   normalizeServicesCarouselPerView,
+  normalizeServicesCarouselTransition,
   normalizeServicesDisplayMode,
+  normalizeServicesVisualStyle,
 } from './services.js';
-import { normalizeCatalogItems } from './catalog';
+import { normalizeCatalogItems, normalizeCatalogVisualStyle } from './catalog';
 import { normalizeGalleryItems } from './gallery';
 import { normalizeBlogPosts } from './blog';
 import { normalizeSectionThemes, parseColorToHex } from './sectionBackground';
@@ -74,10 +76,13 @@ export const EMPTY_PAGE = {
   servicesDisplayMode: 'stack',
   servicesCarouselPerView: 3,
   servicesCarouselAutoplay: false,
+  servicesVisualStyle: 'cards',
+  servicesCarouselTransition: 'fade',
   services: [],
   catalogSectionEnabled: false,
   catalogSectionTitle: '',
   catalogSectionText: '',
+  catalogVisualStyle: 'cards',
   catalogItems: [],
   gallerySectionEnabled: false,
   gallerySectionTitle: '',
@@ -253,6 +258,9 @@ export function normalizePageData(data = {}) {
   next.servicesDisplayMode = normalizeServicesDisplayMode(next.servicesDisplayMode);
   next.servicesCarouselPerView = normalizeServicesCarouselPerView(next.servicesCarouselPerView);
   next.servicesCarouselAutoplay = normalizeServicesCarouselAutoplay(next.servicesCarouselAutoplay);
+  next.servicesVisualStyle = normalizeServicesVisualStyle(next.servicesVisualStyle);
+  next.servicesCarouselTransition = normalizeServicesCarouselTransition(next.servicesCarouselTransition);
+  next.catalogVisualStyle = normalizeCatalogVisualStyle(next.catalogVisualStyle);
   if (next.navCtaTarget !== undefined) {
     next.navCtaTarget = normalizeNavCtaTarget(next.navCtaTarget);
   }

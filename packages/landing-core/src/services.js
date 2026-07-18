@@ -142,6 +142,21 @@ export const SERVICES_CAROUSEL_PER_VIEW_OPTIONS = [1, 2, 3, 4];
 /** Default interval for automatic carousel advance (ms). */
 export const SERVICES_CAROUSEL_AUTOPLAY_MS = 5000;
 
+export const SERVICES_VISUAL_STYLES = [
+  { value: 'cards', label: 'Tarjetas', description: 'Tarjetas con borde y sombra suave' },
+  { value: 'minimal', label: 'Minimal', description: 'Sin borde ni sombra, más aire' },
+  { value: 'editorial', label: 'Editorial', description: 'Separadores y tipografía abierta' },
+];
+
+export const SERVICES_CAROUSEL_TRANSITIONS = [
+  { value: 'none', label: 'Sin transición', description: 'Cambio instantáneo' },
+  { value: 'fade', label: 'Fundido', description: 'Suave cambio de opacidad' },
+  { value: 'slide', label: 'Deslizamiento', description: 'Desplaza horizontalmente' },
+];
+
+const SERVICES_VISUAL_STYLE_VALUES = new Set(SERVICES_VISUAL_STYLES.map((item) => item.value));
+const SERVICES_CAROUSEL_TRANSITION_VALUES = new Set(SERVICES_CAROUSEL_TRANSITIONS.map((item) => item.value));
+
 export function normalizeServicesDisplayMode(value) {
   return value === 'carousel' ? 'carousel' : 'stack';
 }
@@ -154,6 +169,16 @@ export function normalizeServicesCarouselPerView(value) {
 
 export function normalizeServicesCarouselAutoplay(value) {
   return value === true || value === 'auto';
+}
+
+export function normalizeServicesVisualStyle(value) {
+  const style = String(value ?? '').trim();
+  return SERVICES_VISUAL_STYLE_VALUES.has(style) ? style : 'cards';
+}
+
+export function normalizeServicesCarouselTransition(value) {
+  const transition = String(value ?? '').trim();
+  return SERVICES_CAROUSEL_TRANSITION_VALUES.has(transition) ? transition : 'fade';
 }
 
 

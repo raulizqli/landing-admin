@@ -1,6 +1,11 @@
-import { createEmptyCatalogItem } from '../utils/catalog';
+import {
+  CATALOG_VISUAL_STYLES,
+  createEmptyCatalogItem,
+  normalizeCatalogVisualStyle,
+} from '../utils/catalog';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import VisualOptionPicker, { VISUAL_STYLE_PREVIEW_MAP } from './VisualOptionPicker';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function CatalogFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
@@ -8,6 +13,7 @@ export default function CatalogFieldsEditor({ formData, onChange, pageId, canTog
   const items = Array.isArray(formData.catalogItems) && formData.catalogItems.length > 0
     ? formData.catalogItems
     : [createEmptyCatalogItem()];
+  const visualStyle = normalizeCatalogVisualStyle(formData.catalogVisualStyle);
   const titlePlaceholder = getDefaultLabelForPage(formData, 'catalog.defaultTitle');
   const introPlaceholder = getDefaultLabelForPage(formData, 'catalog.defaultIntro');
 
@@ -73,7 +79,19 @@ export default function CatalogFieldsEditor({ formData, onChange, pageId, canTog
               rows="3"
               value={formData.catalogSectionText || ''}
               onChange={(e) => onChange({ ...formData, catalogSectionText: e.target.value })}
-              placeholder={introPlaceholder}              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              placeholder={introPlaceholder}
+              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">Estilo visual</label>
+            <VisualOptionPicker
+              name="catalog-visual-style"
+              options={CATALOG_VISUAL_STYLES}
+              value={visualStyle}
+              onChange={(next) => onChange({ ...formData, catalogVisualStyle: next })}
+              previewMap={VISUAL_STYLE_PREVIEW_MAP}
             />
           </div>
 
