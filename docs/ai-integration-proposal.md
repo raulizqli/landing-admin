@@ -18,9 +18,9 @@ AI should feel like a **co-pilot for psychologists / studios**, not a separate p
 | Plan | AI access | Monthly AI budget (suggested) | Capabilities |
 |---|---|---|---|
 | **Starter** | None (or 5 trial generations once) | — | Upgrade wall |
-| **Pro** | **AI Assist** included | ~50 generations / mo | Section rewrite, bio polish, blog draft, SEO meta |
-| **Agency** | **AI Studio** | ~200 generations / mo · multi-page | Everything in Pro + batch per page + tone presets per brand |
-| **Enterprise** | **AI Studio +** | Custom / higher limits | Marketing Site routes, case-study drafts, GEO FAQ, optional BYO API key |
+| **Pro** | **AI Assist** included | ~50 generations / mo (platform key) | Section rewrite, bio polish, blog draft, SEO meta |
+| **Agency** | **AI Studio** | ~200 gens / mo **or BYOK** | Everything in Pro + batch + tone presets + **own API token** |
+| **Enterprise** | **AI Studio +** | Custom / BYOK | Marketing Site generators + BYOK + optional higher platform quota |
 
 Optional later: sell `features.aiAssist` as an **add-on** on Starter (same pattern as `addons.marketingSite`).
 
@@ -140,17 +140,69 @@ Limits by plan in `billingPlans.js` (e.g. `aiMonthlyGenerations: 50 | 200 | null
 
 Soft warn at 80%; hard reject at 100% with upgrade CTA.
 
-### Secrets
+### Which AI (provider) — recommendation
 
-Functions only:
+**Platform default (included quota on Pro+):**
+
+| Setting | Default | Why |
+|---|---|---|
+| Provider | **OpenAI** | Best tooling for structured JSON field fills; easy swap later |
+| Model | **`gpt-4.1-mini`** (or current mini/fast tier) | Low cost for short landing copy |
+| Fallback (optional) | **Google Gemini** (`gemini-2.0-flash`) | Strong LATAM pricing / latency alternative via `AI_PROVIDER=gemini` |
+
+Anthropic Claude can be a third adapter later; not required for v1.
+
+All calls go through Cloud Functions — the browser never sees the platform key.
+
+### Bring your own API key (BYOK) — yes
+
+Paid subscribers (recommended **Agency + Enterprise**; optional Pro add-on) can choose:
+
+1. **Platform AI** — uses our key + monthly generation quota (simpler).  
+2. **Your own token** — subscriber pastes their OpenAI / Gemini / Anthropic key; we call *their* provider; **quota soft-limit only** (abuse cap), no platform token billing.
+
+Admin UX (Billing or page AI settings):
+
+```text
+AI provider:  ( ) Platform included   (•) Use my API key
+Provider:     [ OpenAI ▾ ]
+API key:      [ sk-•••••••••••• ]
+Model:        [ gpt-4.1-mini    ]
+Test connection  ·  Remove key
+```
+
+Storage (Functions / Admin SDK only):
+
+```js
+// billingAccounts/{accountId}.aiProvider
+{
+  mode: 'platform' | 'byok',
+  provider: 'openai' | 'gemini' | 'anthropic',
+  // NEVER return full key to the client after save — only last4 + status
+  apiKeyEncrypted: '…',      // Secret Manager or KMS-wrapped
+  apiKeyLast4: 'ab12',
+  model: 'gpt-4.1-mini',
+  updatedAt: '…'
+}
+```
+
+Rules:
+
+- Key is sent once over HTTPS to `setAiProviderConfig` (root/admin of that account).
+- Callable `runAiAssist` decrypts server-side; responses never echo the key.
+- If BYOK key fails (invalid/billing), show a clear error and offer fallback to platform mode if the plan still has quota.
+- Free-tier / unpaid accounts: AI disabled entirely (no platform, no BYOK).
+
+Platform secrets (default mode only):
 
 ```bash
 AI_PROVIDER=openai
 OPENAI_API_KEY=…
-AI_MODEL=gpt-4.1-mini   # cost-efficient default
+AI_MODEL=gpt-4.1-mini
+# optional fallbacks
+GEMINI_API_KEY=…
+ANTHROPIC_API_KEY=…
 ```
-
-Enterprise optional: `externalAi.apiKey` encrypted or “bring your own key” stored on the billing account (Phase C+).
 
 ---
 
@@ -227,11 +279,12 @@ Cost control: default small model; cache repeated SEO meta; charge overage later
 
 ## Open decisions
 
-1. **Provider** — OpenAI vs Gemini (price/latency in MX/LATAM) vs Anthropic.  
-2. **Starter trial** — 5 free gens vs hard paywall.  
-3. **Overage** — hard stop vs metered add-on.  
-4. **Public chatbot** — out of scope for v1; revisit as separate entitlement `aiChatWidget`.  
-5. **Default language of prompts** — follow page `defaultLanguage` (recommended).
+1. **Default platform provider** — OpenAI mini (recommended) vs Gemini Flash for LATAM cost.  
+2. **BYOK from which plan?** — Agency+ (recommended) vs Pro add-on.  
+3. **Starter trial** — 5 free gens vs hard paywall.  
+4. **Overage on platform mode** — hard stop vs metered add-on.  
+5. **Public chatbot** — out of scope for v1; revisit as separate entitlement `aiChatWidget`.  
+6. **Default language of prompts** — follow page `defaultLanguage` (recommended).
 
 ---
 
