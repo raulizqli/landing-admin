@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Modelo de página y utilidades compartidas para landings del ecosistema",
   "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
   "files": [
     "src",
     "README.md"
@@ -48,5 +51,8 @@
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",
     "./billingPlans": "./src/billingPlans.js"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
   }
 }

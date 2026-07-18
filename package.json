@@ -13,6 +13,7 @@
     "build:template": "npm run build --prefix landing-template",
     "build:site": "npm run build --prefix leftsidedev-site",
     "build": "npm run build:admin && npm run build:template && npm run build:site",
+    "test": "npm test -w @raulizqli/landing-core && npm test --prefix landing-admin && npm test --prefix landing-template",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "deploy:functions": "cd functions && npm install && cd .. && firebase deploy --only functions",
     "deploy:admin": "npm run build:admin && firebase deploy --only hosting:admin",
