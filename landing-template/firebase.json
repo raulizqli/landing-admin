@@ -23,6 +23,18 @@
     ],
     "rewrites": [
       {
+        "source": "/sitemap.xml",
+        "function": "marketingSitemap"
+      },
+      {
+        "source": "/rss.xml",
+        "function": "marketingRss"
+      },
+      {
+        "source": "/robots.txt",
+        "function": "marketingRobots"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

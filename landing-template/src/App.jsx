@@ -1,4 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { MarketingSite, SiteAccessGate } from '@raulizqli/landing-ui';
+import {
+  findMarketingRouteByPath,
+  isMarketingSite,
+} from '@raulizqli/landing-core/marketingSite';
 import LandingPage from './components/LandingPage';
 import { generateRandomPreviewContent, withPreviewContent } from './utils/previewContent';
 import { normalizePageData } from './utils/pageModel';
@@ -29,19 +34,116 @@ function isAllowedPreviewSender(origin) {
   return adminOrigin ? origin === adminOrigin : false;
 }
 
-function resolveDocumentTitle(data, { preview = false, labelSuffix = '' } = {}) {
+function getLocationPathname() {
+  const path = window.location.pathname || '/';
+  return path.length > 1 ? path.replace(/\/$/, '') : path;
+}
+
+function resolveDocumentTitle(data, { preview = false, labelSuffix = '', path = '/' } = {}) {
   const name = String(data?.name ?? '').trim();
   const specialty = String(data?.specialty ?? '').trim();
+  const seoDefault = String(data?.seo?.defaultTitle ?? '').trim();
 
-  let title = '';
-  if (name && specialty) title = `${name} — ${specialty}`;
-  else if (name) title = name;
-  else if (specialty) title = specialty;
-  else title = 'Landing';
+  let title;
+  if (isMarketingSite(data)) {
+    const route = findMarketingRouteByPath(data.marketingRoutes, path);
+    const routeTitle = String(route?.seo?.title || route?.title || seoDefault || '').trim();
+    if (routeTitle) title = routeTitle;
+    else if (name && specialty) title = `${name} — ${specialty}`;
+    else title = name || specialty || 'Marketing Site';
+  } else if (name && specialty) {
+    title = `${name} — ${specialty}`;
+  } else if (name) {
+    title = name;
+  } else if (specialty) {
+    title = specialty;
+  } else {
+    title = 'Landing';
+  }
 
   if (!preview) return title;
   if (labelSuffix) return `Vista previa — ${title} (${labelSuffix})`;
   return `Vista previa — ${title}`;
+}
+
+function upsertJsonLd(id, payload) {
+  const existing = document.getElementById(id);
+  if (!payload) {
+    existing?.remove();
+    return;
+  }
+  const script = existing || document.createElement('script');
+  script.id = id;
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify(payload);
+  if (!existing) document.head.appendChild(script);
+}
+
+function applyMarketingMeta(data, path = '/') {
+  if (!isMarketingSite(data)) {
+    upsertJsonLd('marketing-faq-schema', null);
+    upsertJsonLd('marketing-service-schema', null);
+    upsertJsonLd('marketing-article-schema', null);
+    return;
+  }
+  const route = findMarketingRouteByPath(data.marketingRoutes, path);
+  const description = String(
+    route?.seo?.description
+      || route?.content?.metaDescription
+      || route?.content?.excerpt
+      || data?.seo?.defaultDescription
+      || '',
+  ).trim();
+  if (description) {
+    let meta = document.head.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', description);
+  }
+
+  if (route?.type === 'service') {
+    const faqs = (route.content?.faqs || []).filter((item) => item.question && item.answer);
+    upsertJsonLd('marketing-service-schema', {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: route.title,
+      description: route.content?.summary || description,
+      provider: { '@type': 'Organization', name: data.name },
+    });
+    upsertJsonLd(
+      'marketing-faq-schema',
+      faqs.length
+        ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: { '@type': 'Answer', text: item.answer },
+          })),
+        }
+        : null,
+    );
+    upsertJsonLd('marketing-article-schema', null);
+  } else if (route?.type === 'blog_post') {
+    upsertJsonLd('marketing-article-schema', {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: route.title,
+      datePublished: route.content?.date || undefined,
+      description: route.content?.excerpt || description,
+      author: { '@type': 'Organization', name: data.name },
+    });
+    upsertJsonLd('marketing-faq-schema', null);
+    upsertJsonLd('marketing-service-schema', null);
+  } else {
+    upsertJsonLd('marketing-faq-schema', null);
+    upsertJsonLd('marketing-service-schema', null);
+    upsertJsonLd('marketing-article-schema', null);
+  }
 }
 
 function createDemoContent(pageId, labelSuffix = '') {
@@ -84,6 +186,13 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [usingDemoFallback, setUsingDemoFallback] = useState(false);
+  const [marketingPath, setMarketingPath] = useState(() => getLocationPathname());
+
+  useEffect(() => {
+    const syncPath = () => setMarketingPath(getLocationPathname());
+    window.addEventListener('popstate', syncPath);
+    return () => window.removeEventListener('popstate', syncPath);
+  }, []);
 
   useEffect(() => {
     if (!previewMode) return undefined;
@@ -253,10 +362,14 @@ export default function App() {
 
   useEffect(() => {
     if (!displayData) return;
-    document.title = resolveDocumentTitle(displayData, { preview: previewMode });
+    document.title = resolveDocumentTitle(displayData, {
+      preview: previewMode,
+      path: marketingPath,
+    });
     document.documentElement.lang = displayData.activeLanguage || displayData.labelLanguage || 'es';
     setDocumentFavicon(resolvePageFaviconUrl(displayData));
-  }, [displayData, previewMode]);
+    applyMarketingMeta(displayData, marketingPath);
+  }, [displayData, previewMode, marketingPath]);
 
   useEffect(() => {
     if (!displayData || previewMode || loading || error || !pageId || usingDemoFallback) return;
@@ -274,11 +387,28 @@ export default function App() {
       : <ErrorState message="No hay datos disponibles para esta página." />;
   }
 
+  const enforceSiteAccess = !previewMode && !usingDemoFallback;
+
+  if (isMarketingSite(displayData)) {
+    return (
+      <SiteAccessGate data={displayData} enforce={enforceSiteAccess}>
+        <MarketingSite
+          key={`${displayData.activeLanguage || displayData.labelLanguage || 'default'}-${marketingPath}`}
+          data={displayData}
+          path={marketingPath}
+          interactive={!previewMode}
+        />
+      </SiteAccessGate>
+    );
+  }
+
   return (
-    <LandingPage
-      key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
-      data={displayData}
-      onLanguageChange={handleLanguageChange}
-    />
+    <SiteAccessGate data={displayData} enforce={enforceSiteAccess}>
+      <LandingPage
+        key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
+        data={displayData}
+        onLanguageChange={handleLanguageChange}
+      />
+    </SiteAccessGate>
   );
 }

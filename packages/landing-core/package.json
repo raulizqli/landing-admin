@@ -15,6 +15,9 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
+  "scripts": {
+    "test": "node --test src/*.test.mjs"
+  },
   "exports": {
     ".": "./src/index.js",
     "./firebaseConfig": "./src/firebaseConfig.js",
@@ -47,6 +50,10 @@
     "./legalDocuments": "./src/legalDocuments.js",
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",
-    "./billingPlans": "./src/billingPlans.js"
+    "./billingPlans": "./src/billingPlans.js",
+    "./marketingSite": "./src/marketingSite.js",
+    "./marketingSeo": "./src/marketingSeo.js",
+    "./siteAccess": "./src/siteAccess.js",
+    "./aiAssist": "./src/aiAssist.js"
   }
 }

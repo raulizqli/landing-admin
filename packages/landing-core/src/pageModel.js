@@ -27,6 +27,14 @@ import {
   normalizePageLanguage,
   normalizePageTranslations,
 } from './pageTranslations';
+import {
+  createEmptyMarketingSettings,
+  normalizeMarketingRoutes,
+  normalizeMarketingSeo,
+  normalizeMarketingSettings,
+  normalizeSiteMode,
+} from './marketingSite.js';
+import { normalizeSiteAccess } from './siteAccess.js';
 
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
@@ -138,6 +146,29 @@ export const EMPTY_PAGE = {
   translations: { es: {}, en: {} },
   customLabels: { es: {}, en: {} },
   customEmbeds: [],
+  siteMode: 'landing',
+  marketing: createEmptyMarketingSettings(),
+  seo: {
+    defaultTitle: '',
+    defaultDescription: '',
+    ogImageUrl: '',
+    canonicalBaseUrl: '',
+  },
+  marketingRoutes: [],
+  seoArtifacts: {
+    sitemapXml: '',
+    rssXml: '',
+    robotsTxt: '',
+    generatedAt: '',
+    baseUrl: '',
+  },
+  siteAccess: {
+    stage: 'paid',
+    unpaidSince: null,
+    adsEnabled: false,
+    offline: false,
+    updatedAt: null,
+  },
 };
 
 const LEGACY_ROOT_FIELDS = {
@@ -301,6 +332,19 @@ export function normalizePageData(data = {}) {
   Object.assign(next, normalizeLegalDocuments(next));
   next.translations = normalizePageTranslations(next.translations, next, next.defaultLanguage);
   delete next.activeLanguage;
+
+  next.siteMode = normalizeSiteMode(next.siteMode);
+  next.marketing = normalizeMarketingSettings(next.marketing);
+  next.seo = normalizeMarketingSeo(next.seo);
+  next.marketingRoutes = normalizeMarketingRoutes(next.marketingRoutes);
+  next.seoArtifacts = {
+    sitemapXml: String(next.seoArtifacts?.sitemapXml ?? ''),
+    rssXml: String(next.seoArtifacts?.rssXml ?? ''),
+    robotsTxt: String(next.seoArtifacts?.robotsTxt ?? ''),
+    generatedAt: String(next.seoArtifacts?.generatedAt ?? ''),
+    baseUrl: String(next.seoArtifacts?.baseUrl ?? '').trim().replace(/\/$/, ''),
+  };
+  next.siteAccess = normalizeSiteAccess(next.siteAccess);
 
   return next;
 }

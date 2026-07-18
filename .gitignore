@@ -9,8 +9,15 @@ dist/
 dist-ssr/
 
 *.local
+.env
+.env.development
+.env.staging
 .env.production
 functions/.env
+!.env.example
+!.env.*.example
+!functions/.env.example
+!functions/.env.*.example
 
 .cursor/
 

@@ -24,6 +24,7 @@ export function getHubRoutingFields(pageData = {}) {
   return {
     name: pageData.name || '',
     customDomain: pageData.customDomain || '',
+    siteMode: pageData.siteMode === 'marketing' ? 'marketing' : 'landing',
     useExternalFirebase: pageData.useExternalFirebase === true,
     externalFirebase: normalizeExternalFirebase(pageData.externalFirebase),
     ...getHostingDeployRoutingFields(pageData),

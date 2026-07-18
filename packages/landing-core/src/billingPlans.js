@@ -3,6 +3,12 @@
  * Keep in sync with Cloud Functions checkout price mapping (env).
  */
 
+import {
+  createEmptyMonetization,
+  normalizeMonetization,
+  resolveSiteAccessFromAccount,
+} from './siteAccess.js';
+
 export const BILLING_PLANS = [
   {
     id: 'starter',
@@ -10,6 +16,8 @@ export const BILLING_PLANS = [
     pageLimit: 1,
     monthlyPriceUsd: 19,
     monthlyPriceMxn: 349,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: 0,
     features: {
       basicSections: true,
       blog: false,
@@ -22,6 +30,10 @@ export const BILLING_PLANS = [
       prioritySupport: false,
       support247: false,
       unlimitedPages: false,
+      marketingSite: false,
+      aiAssistLite: true,
+      aiAssist: false,
+      aiByok: false,
     },
   },
   {
@@ -30,6 +42,8 @@ export const BILLING_PLANS = [
     pageLimit: 1,
     monthlyPriceUsd: 49,
     monthlyPriceMxn: 899,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: 50,
     features: {
       basicSections: true,
       blog: true,
@@ -42,6 +56,10 @@ export const BILLING_PLANS = [
       prioritySupport: false,
       support247: false,
       unlimitedPages: false,
+      marketingSite: false,
+      aiAssistLite: true,
+      aiAssist: true,
+      aiByok: false,
     },
   },
   {
@@ -50,6 +68,8 @@ export const BILLING_PLANS = [
     pageLimit: 5,
     monthlyPriceUsd: 129,
     monthlyPriceMxn: 2499,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: 200,
     features: {
       basicSections: true,
       blog: true,
@@ -62,6 +82,10 @@ export const BILLING_PLANS = [
       prioritySupport: true,
       support247: false,
       unlimitedPages: false,
+      marketingSite: false,
+      aiAssistLite: true,
+      aiAssist: true,
+      aiByok: true,
     },
   },
   {
@@ -70,6 +94,8 @@ export const BILLING_PLANS = [
     pageLimit: null,
     monthlyPriceUsd: null,
     monthlyPriceMxn: null,
+    aiMonthlyGenerationsLite: 30,
+    aiMonthlyGenerations: null,
     features: {
       basicSections: true,
       blog: true,
@@ -82,6 +108,10 @@ export const BILLING_PLANS = [
       prioritySupport: true,
       support247: true,
       unlimitedPages: true,
+      marketingSite: true,
+      aiAssistLite: true,
+      aiAssist: true,
+      aiByok: true,
     },
   },
 ];
@@ -111,6 +141,112 @@ export function isBillingAccountActive(account) {
   return status === 'active' || status === 'trialing';
 }
 
+/**
+ * Admin-facing subscription health for banners / confirmation UI.
+ * When payment lapses: existing pages are kept (public sites stay up),
+ * but the account falls to free-tier CMS access (basic edit only, no new pages).
+ */
+export function getSubscriptionHealth(account, { bypass = false } = {}) {
+  const plan = getBillingPlan(account?.plan);
+  const status = normalizeBillingStatus(account?.status);
+  const pageCount = Array.isArray(account?.pageIds) ? account.pageIds.length : 0;
+  const pageLimit = getAccountPageLimit(account, { bypass });
+  const periodEnd = account?.currentPeriodEnd
+    ? String(account.currentPeriodEnd)
+    : null;
+
+  if (bypass) {
+    return {
+      state: 'bypass',
+      paid: true,
+      freeTier: false,
+      status: 'active',
+      planId: plan.id,
+      pageCount,
+      pageLimit: null,
+      currentPeriodEnd: periodEnd,
+      canCreatePages: true,
+      canEditExistingBasics: true,
+      siteAccess: resolveSiteAccessFromAccount({ ...account, status: 'active' }),
+    };
+  }
+
+  if (status === 'active') {
+    return {
+      state: 'ok',
+      paid: true,
+      freeTier: false,
+      status,
+      planId: plan.id,
+      pageCount,
+      pageLimit,
+      currentPeriodEnd: periodEnd,
+      canCreatePages: canAccountCreatePage(account, pageCount, { bypass: false }),
+      canEditExistingBasics: true,
+      siteAccess: resolveSiteAccessFromAccount(account),
+    };
+  }
+
+  if (status === 'trialing') {
+    return {
+      state: 'trialing',
+      paid: true,
+      freeTier: false,
+      status,
+      planId: plan.id,
+      pageCount,
+      pageLimit,
+      currentPeriodEnd: periodEnd,
+      canCreatePages: canAccountCreatePage(account, pageCount, { bypass: false }),
+      canEditExistingBasics: true,
+      siteAccess: resolveSiteAccessFromAccount(account),
+    };
+  }
+
+  // past_due | canceled | incomplete — keep pages, free-tier CMS
+  return {
+    state: status === 'past_due' ? 'past_due' : status === 'canceled' ? 'canceled' : 'incomplete',
+    paid: false,
+    freeTier: true,
+    status,
+    planId: plan.id,
+    pageCount,
+    pageLimit,
+    currentPeriodEnd: periodEnd,
+    canCreatePages: false,
+    canEditExistingBasics: true,
+    siteAccess: resolveSiteAccessFromAccount(account),
+  };
+}
+
+/** Known paid add-ons that can unlock plan features (e.g. Agency + marketingSite). */
+export const BILLING_ADDON_KEYS = ['marketingSite'];
+
+export function normalizeBillingAddons(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  const addons = {};
+  for (const key of BILLING_ADDON_KEYS) {
+    if (source[key] === true) addons[key] = true;
+  }
+  return addons;
+}
+
+/** Public AI provider config (never includes raw apiKey in client normalize). */
+export function normalizeAiProviderPublic(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  const mode = String(source.mode ?? 'platform').trim().toLowerCase() === 'byok' ? 'byok' : 'platform';
+  const provider = String(source.provider ?? '').trim().toLowerCase();
+  return {
+    mode,
+    provider: provider || '',
+    model: String(source.model ?? '').trim(),
+    baseUrl: String(source.baseUrl ?? '').trim(),
+    apiKeyLast4: String(source.apiKeyLast4 ?? '').trim(),
+    hasKey: source.hasKey === true || Boolean(source.apiKey),
+    updatedAt: source.updatedAt ? String(source.updatedAt) : null,
+  };
+}
+
 export function createEmptyBillingAccount(overrides = {}) {
   const planId = normalizeBillingPlanId(overrides.plan || DEFAULT_BILLING_PLAN);
   return {
@@ -128,6 +264,10 @@ export function createEmptyBillingAccount(overrides = {}) {
     pageIds: Array.isArray(overrides.pageIds)
       ? [...new Set(overrides.pageIds.map((id) => String(id ?? '').trim()).filter(Boolean))]
       : [],
+    addons: normalizeBillingAddons(overrides.addons),
+    unpaidSince: overrides.unpaidSince ? String(overrides.unpaidSince) : null,
+    monetization: normalizeMonetization(overrides.monetization ?? createEmptyMonetization()),
+    aiProvider: normalizeAiProviderPublic(overrides.aiProvider),
     currentPeriodEnd: overrides.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: overrides.cancelAtPeriodEnd === true,
     createdAt: overrides.createdAt ?? null,
@@ -155,13 +295,27 @@ export function planHasFeature(planId, featureKey) {
   return Boolean(plan?.features?.[featureKey]);
 }
 
+export function accountHasAddon(account, addonKey) {
+  return account?.addons?.[addonKey] === true;
+}
+
 export function accountHasFeature(account, featureKey, { bypass = false } = {}) {
   if (bypass) return true;
   if (!isBillingAccountActive(account)) {
-    // Past due: still allow basic edit of existing pages.
-    return featureKey === 'basicSections';
+    // Past due / free tier: basic edit + AI Lite (free/Ollama models only).
+    return featureKey === 'basicSections' || featureKey === 'aiAssistLite';
   }
+  if (accountHasAddon(account, featureKey)) return true;
   return planHasFeature(account.plan, featureKey);
+}
+
+export function getAiMonthlyQuota(account, lane = 'lite', { bypass = false } = {}) {
+  if (bypass) return null;
+  const plan = getBillingPlan(account?.plan);
+  if (lane === 'full') {
+    return plan.aiMonthlyGenerations == null ? null : Number(plan.aiMonthlyGenerations) || 0;
+  }
+  return Number(plan.aiMonthlyGenerationsLite ?? 30) || 0;
 }
 
 export function getAccountPageLimit(account, { bypass = false } = {}) {

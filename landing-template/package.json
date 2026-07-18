@@ -8,7 +8,9 @@
     "prepreview": "node scripts/free-port.js 5174",
     "dev": "vite",
     "build": "vite build",
+    "build:staging": "vite build --mode staging",
     "deploy": "npm run build && firebase deploy --only hosting:template",
+    "deploy:staging": "npm run build:staging && firebase deploy --only hosting:template",
     "lint": "eslint .",
     "preview": "vite preview"
   },

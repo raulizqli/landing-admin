@@ -8,6 +8,7 @@ const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const app_1 = require("firebase-admin/app");
 const stripe_1 = __importDefault(require("stripe"));
+const siteAccessSync_js_1 = require("./siteAccessSync.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
@@ -102,11 +103,7 @@ async function loadOrCreateAccountForUser(profile) {
     return Object.assign({ id: accountId }, ((_c = snap.data()) !== null && _c !== void 0 ? _c : {}));
 }
 async function applyPlanToAccount(accountId, patch) {
-    var _a;
-    const ref = (0, firestore_1.getFirestore)().collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
-    await ref.set(Object.assign(Object.assign({}, patch), { updatedAt: new Date().toISOString() }), { merge: true });
-    const snap = await ref.get();
-    return Object.assign({ id: accountId }, ((_a = snap.data()) !== null && _a !== void 0 ? _a : {}));
+    return (0, siteAccessSync_js_1.applyBillingPatchWithSiteAccess)(accountId, patch);
 }
 exports.ensureBillingAccount = (0, https_1.onCall)(async (request) => {
     var _a;

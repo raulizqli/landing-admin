@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import {
   createBillingCheckout,
   ensureBillingAccountRemote,
+  setBillingAccountAddonsRemote,
+  setBillingMonetizationRemote,
   setBillingPlanManual,
 } from '../utils/billingFunctions';
+import { setAiProviderConfigRemote } from '../utils/aiAssistFunctions';
+import { useEntitlements } from '../hooks/useEntitlements';
 import {
   getBillingPlan,
   listBillingPlansForDisplay,
@@ -33,13 +37,21 @@ function PlanPrice({ plan, currency, t }) {
 export default function BillingPlansPanel({ open, onClose }) {
   const { t, locale } = useLocale();
   const { profile, billingAccount, refreshBillingAccount, user } = useAuth();
+  const entitlements = useEntitlements();
   const [currency, setCurrency] = useState('usd');
   const [busyKey, setBusyKey] = useState('');
   const [error, setError] = useState('');
   const [banner, setBanner] = useState('');
+  const [addonAccountId, setAddonAccountId] = useState('');
+  const [aiMode, setAiMode] = useState('platform');
+  const [aiProvider, setAiProvider] = useState('openai');
+  const [aiModel, setAiModel] = useState('gpt-4o-mini');
+  const [aiBaseUrl, setAiBaseUrl] = useState('');
+  const [aiApiKey, setAiApiKey] = useState('');
   const bypass = isBillingBypass(profile);
   const plans = listBillingPlansForDisplay();
   const currentPlan = getBillingPlan(billingAccount?.plan);
+  const marketingAddonOn = billingAccount?.addons?.marketingSite === true;
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +76,16 @@ export default function BillingPlansPanel({ open, onClose }) {
       .then(() => refreshBillingAccount?.())
       .catch(() => {});
   }, [open, bypass, billingAccount, refreshBillingAccount]);
+
+  useEffect(() => {
+    if (!open) return;
+    setAddonAccountId((current) => current || billingAccount?.id || profile?.accountId || user?.uid || '');
+    const conf = billingAccount?.aiProvider || {};
+    setAiMode(conf.mode === 'byok' ? 'byok' : 'platform');
+    setAiProvider(conf.provider || 'openai');
+    setAiModel(conf.model || 'gpt-4o-mini');
+    setAiBaseUrl(conf.baseUrl || '');
+  }, [open, billingAccount?.id, billingAccount?.aiProvider, profile?.accountId, user?.uid]);
 
   if (!open) return null;
 
@@ -107,6 +129,75 @@ export default function BillingPlansPanel({ open, onClose }) {
     }
   };
 
+  const toggleMarketingSiteAddon = async (enabled) => {
+    if (!canManageUsers(profile)) return;
+    const accountId = String(addonAccountId || '').trim();
+    if (!accountId) {
+      setError(t('billing.addonAccountId'));
+      return;
+    }
+    setBusyKey('addon:marketingSite');
+    setError('');
+    setBanner('');
+    try {
+      await setBillingAccountAddonsRemote({
+        accountId,
+        addons: { marketingSite: enabled },
+      });
+      setBanner(t('billing.addonSuccess'));
+      await refreshBillingAccount?.();
+    } catch (err) {
+      setError(err?.message || t('billing.checkoutError'));
+    } finally {
+      setBusyKey('');
+    }
+  };
+
+  const saveAiProvider = async () => {
+    if (!entitlements.canUseAiByok && !canManageUsers(profile)) return;
+    setBusyKey('ai:byok');
+    setError('');
+    setBanner('');
+    try {
+      await setAiProviderConfigRemote({
+        accountId: String(addonAccountId || billingAccount?.id || '').trim(),
+        mode: aiMode,
+        provider: aiProvider,
+        model: aiModel,
+        baseUrl: aiBaseUrl,
+        apiKey: aiApiKey || undefined,
+      });
+      setAiApiKey('');
+      setBanner(t('ai.byokSuccess'));
+      await refreshBillingAccount?.();
+    } catch (err) {
+      setError(err?.message || t('billing.checkoutError'));
+    } finally {
+      setBusyKey('');
+    }
+  };
+
+  const updateMonetization = async (monetization) => {
+    if (!canManageUsers(profile)) return;
+    const accountId = String(addonAccountId || '').trim();
+    if (!accountId) {
+      setError(t('billing.addonAccountId'));
+      return;
+    }
+    setBusyKey('monetization');
+    setError('');
+    setBanner('');
+    try {
+      await setBillingMonetizationRemote({ accountId, monetization });
+      setBanner(t('billing.monetizationSuccess'));
+      await refreshBillingAccount?.();
+    } catch (err) {
+      setError(err?.message || t('billing.checkoutError'));
+    } finally {
+      setBusyKey('');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[80] bg-black/50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="w-full max-w-5xl bg-[#F4F1EA] rounded-2xl shadow-2xl border border-[#2A342D]/10 my-4">
@@ -138,32 +229,43 @@ export default function BillingPlansPanel({ open, onClose }) {
           {bypass ? (
             <p className="text-sm text-[#4A5D4E] font-medium">{t('billing.rootBypass')}</p>
           ) : (
-            <div className="grid sm:grid-cols-4 gap-3 text-sm bg-white/70 rounded-xl border border-[#2A342D]/10 p-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.currentPlan')}</p>
-                <p className="font-semibold text-[#2A342D]">{t(`billing.plans.${currentPlan.id}.name`)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.status')}</p>
-                <p className="font-semibold text-[#2A342D]">
-                  {t(`billing.statuses.${billingAccount?.status || 'incomplete'}`)}
+            <>
+              {(billingAccount?.status === 'active' || billingAccount?.status === 'trialing') ? (
+                <p className="text-sm rounded-lg bg-[#4A5D4E]/12 text-[#2A342D] border border-[#4A5D4E]/25 px-3 py-2 font-medium">
+                  {t('billing.health.paidBadge')} — {t(`billing.health.${billingAccount.status === 'trialing' ? 'trialing' : 'ok'}.title`)}
                 </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.pages')}</p>
-                <p className="font-semibold text-[#2A342D]">
-                  {currentPlan.features.unlimitedPages
-                    ? t('billing.unlimited')
-                    : `${billingAccount?.pageIds?.length ?? 0} / ${currentPlan.pageLimit}`}
+              ) : (
+                <p className="text-sm rounded-lg bg-amber-50 text-amber-900 border border-amber-200 px-3 py-2">
+                  {t('billing.health.freeTierBadge')} — {t(`billing.health.${billingAccount?.status === 'past_due' ? 'past_due' : billingAccount?.status === 'canceled' ? 'canceled' : 'incomplete'}.body`)}
                 </p>
+              )}
+              <div className="grid sm:grid-cols-4 gap-3 text-sm bg-white/70 rounded-xl border border-[#2A342D]/10 p-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.currentPlan')}</p>
+                  <p className="font-semibold text-[#2A342D]">{t(`billing.plans.${currentPlan.id}.name`)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.status')}</p>
+                  <p className="font-semibold text-[#2A342D]">
+                    {t(`billing.statuses.${billingAccount?.status || 'incomplete'}`)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.pages')}</p>
+                  <p className="font-semibold text-[#2A342D]">
+                    {currentPlan.features.unlimitedPages
+                      ? t('billing.unlimited')
+                      : `${billingAccount?.pageIds?.length ?? 0} / ${currentPlan.pageLimit}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.provider')}</p>
+                  <p className="font-semibold text-[#2A342D] capitalize">
+                    {billingAccount?.provider || '—'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.provider')}</p>
-                <p className="font-semibold text-[#2A342D] capitalize">
-                  {billingAccount?.provider || '—'}
-                </p>
-              </div>
-            </div>
+            </>
           )}
 
           <div className="flex flex-wrap items-center gap-3">
@@ -190,6 +292,183 @@ export default function BillingPlansPanel({ open, onClose }) {
               </p>
             )}
           </div>
+
+          {canManageUsers(profile) && (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#2A342D]">{t('billing.addonTitle')}</p>
+                  <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.addonSubtitle')}</p>
+                </div>
+                <label className="block text-xs text-[#2A342D]/70">
+                  {t('billing.addonAccountId')}
+                  <input
+                    type="text"
+                    value={addonAccountId}
+                    onChange={(event) => setAddonAccountId(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-[#2A342D]/15 bg-white px-3 py-2 text-sm text-[#2A342D]"
+                  />
+                </label>
+                <p className="text-xs font-medium text-[#4A5D4E]">
+                  {marketingAddonOn && addonAccountId === billingAccount?.id
+                    ? t('billing.addonEnabled')
+                    : t('billing.addonDisabled')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => toggleMarketingSiteAddon(true)}
+                    className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+                  >
+                    {busyKey === 'addon:marketingSite' ? t('common.loading') : t('billing.addonEnable')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => toggleMarketingSiteAddon(false)}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.addonDisable')}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#2A342D]">{t('billing.monetizationTitle')}</p>
+                  <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.monetizationSubtitle')}</p>
+                </div>
+                <p className="text-xs text-[#2A342D]/80">
+                  {t(`billing.health.siteAccess.${billingAccount?.siteAccess?.stage || 'paid'}`)}
+                  {billingAccount?.monetization?.adsRevenueOk ? ' · adsRevenueOk' : ''}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ adsRevenueOk: true })}
+                    className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+                  >
+                    {busyKey === 'monetization' ? t('common.loading') : t('billing.monetizationRevenueOn')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ adsRevenueOk: false })}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.monetizationRevenueOff')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ forceStage: 'ads' })}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.monetizationForceAds')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ forceStage: 'offline' })}
+                    className="rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    {t('billing.monetizationForceOffline')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ forceStage: '' })}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.monetizationForceClear')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(entitlements.canUseAiByok || canManageUsers(profile)) && (
+            <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-[#2A342D]">{t('ai.byokTitle')}</p>
+                <p className="text-xs text-[#2A342D]/60 mt-1">{t('ai.byokSubtitle')}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAiMode('platform')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${aiMode === 'platform' ? 'bg-[#4A5D4E] text-white' : 'border border-[#2A342D]/20 text-[#2A342D]'}`}
+                >
+                  {t('ai.byokModePlatform')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiMode('byok')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${aiMode === 'byok' ? 'bg-[#4A5D4E] text-white' : 'border border-[#2A342D]/20 text-[#2A342D]'}`}
+                >
+                  {t('ai.byokModeOwn')}
+                </button>
+              </div>
+              {aiMode === 'byok' && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="text-xs text-[#2A342D]/70">
+                    Provider
+                    <select
+                      value={aiProvider}
+                      onChange={(e) => setAiProvider(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                    >
+                      <option value="openai">OpenAI</option>
+                      <option value="gemini">Gemini</option>
+                      <option value="anthropic">Anthropic</option>
+                      <option value="groq">Groq</option>
+                      <option value="openai_compatible">OpenAI-compatible / Ollama remote</option>
+                    </select>
+                  </label>
+                  <label className="text-xs text-[#2A342D]/70">
+                    Model
+                    <input
+                      type="text"
+                      value={aiModel}
+                      onChange={(e) => setAiModel(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-[#2A342D]/70 sm:col-span-2">
+                    Base URL
+                    <input
+                      type="url"
+                      value={aiBaseUrl}
+                      onChange={(e) => setAiBaseUrl(e.target.value)}
+                      placeholder="https://api.groq.com/openai/v1"
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-[#2A342D]/70 sm:col-span-2">
+                    API key {billingAccount?.aiProvider?.apiKeyLast4 ? `(…${billingAccount.aiProvider.apiKeyLast4})` : ''}
+                    <input
+                      type="password"
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      placeholder="Paste key to update"
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 px-3 py-2 text-sm"
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={Boolean(busyKey)}
+                onClick={saveAiProvider}
+                className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+              >
+                {busyKey === 'ai:byok' ? t('common.loading') : t('ai.byokSave')}
+              </button>
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
             {plans.map((plan) => {

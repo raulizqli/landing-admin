@@ -2,6 +2,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { onCall, onRequest, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { initializeApp, getApps } from "firebase-admin/app";
 import Stripe from "stripe";
+import { applyBillingPatchWithSiteAccess } from "./siteAccessSync.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -150,16 +151,7 @@ async function applyPlanToAccount(
   accountId: string,
   patch: Record<string, unknown>,
 ) {
-  const ref = getFirestore().collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
-  await ref.set(
-    {
-      ...patch,
-      updatedAt: new Date().toISOString(),
-    },
-    { merge: true },
-  );
-  const snap = await ref.get();
-  return { id: accountId, ...(snap.data() ?? {}) };
+  return applyBillingPatchWithSiteAccess(accountId, patch);
 }
 
 export const ensureBillingAccount = onCall(async (request: CallableRequest) => {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.deleteCmsUser = exports.createCmsUser = void 0;
+exports.getAiAssistUsage = exports.setAiProviderConfig = exports.runAiAssist = exports.syncSiteAccessDaily = exports.setBillingMonetization = exports.setBillingAccountAddons = exports.assertMarketingSiteAccess = exports.marketingRobots = exports.marketingRss = exports.marketingSitemap = exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.deleteCmsUser = exports.createCmsUser = void 0;
 const firebase_functions_1 = require("firebase-functions");
 (0, firebase_functions_1.setGlobalOptions)({ maxInstances: 10 });
 var cmsUsers_js_1 = require("./cmsUsers.js");
@@ -14,4 +14,18 @@ Object.defineProperty(exports, "createBillingCheckout", { enumerable: true, get:
 Object.defineProperty(exports, "setBillingPlanManual", { enumerable: true, get: function () { return billing_js_1.setBillingPlanManual; } });
 Object.defineProperty(exports, "stripeBillingWebhook", { enumerable: true, get: function () { return billing_js_1.stripeBillingWebhook; } });
 Object.defineProperty(exports, "mercadoPagoBillingWebhook", { enumerable: true, get: function () { return billing_js_1.mercadoPagoBillingWebhook; } });
+var marketingSeo_js_1 = require("./marketingSeo.js");
+Object.defineProperty(exports, "marketingSitemap", { enumerable: true, get: function () { return marketingSeo_js_1.marketingSitemap; } });
+Object.defineProperty(exports, "marketingRss", { enumerable: true, get: function () { return marketingSeo_js_1.marketingRss; } });
+Object.defineProperty(exports, "marketingRobots", { enumerable: true, get: function () { return marketingSeo_js_1.marketingRobots; } });
+var marketingEntitlement_js_1 = require("./marketingEntitlement.js");
+Object.defineProperty(exports, "assertMarketingSiteAccess", { enumerable: true, get: function () { return marketingEntitlement_js_1.assertMarketingSiteAccess; } });
+Object.defineProperty(exports, "setBillingAccountAddons", { enumerable: true, get: function () { return marketingEntitlement_js_1.setBillingAccountAddons; } });
+var siteAccessSync_js_1 = require("./siteAccessSync.js");
+Object.defineProperty(exports, "setBillingMonetization", { enumerable: true, get: function () { return siteAccessSync_js_1.setBillingMonetization; } });
+Object.defineProperty(exports, "syncSiteAccessDaily", { enumerable: true, get: function () { return siteAccessSync_js_1.syncSiteAccessDaily; } });
+var aiAssist_js_1 = require("./aiAssist.js");
+Object.defineProperty(exports, "runAiAssist", { enumerable: true, get: function () { return aiAssist_js_1.runAiAssist; } });
+Object.defineProperty(exports, "setAiProviderConfig", { enumerable: true, get: function () { return aiAssist_js_1.setAiProviderConfig; } });
+Object.defineProperty(exports, "getAiAssistUsage", { enumerable: true, get: function () { return aiAssist_js_1.getAiAssistUsage; } });
 //# sourceMappingURL=index.js.map
