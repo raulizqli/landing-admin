@@ -73,6 +73,40 @@ export default {
     inactiveHint: 'Tu suscripción no está activa. Actualiza el plan para desbloquear funciones.',
     enterpriseCta: 'Enterprise incluye Marketing Site, páginas ilimitadas y soporte 24/7. Te contactamos para onboarding.',
     manualNote: 'Root puede activar Enterprise de forma manual sin checkout.',
+    health: {
+      paidBadge: 'Pagado · al día',
+      freeTierBadge: 'Free tier · requiere pago',
+      nextRenewal: 'Fin del periodo actual',
+      pagesKept: 'páginas conservadas',
+      freeKeepPages: 'Tus landings existentes se quedan en la cuenta',
+      freeEditBasics: 'Puedes seguir editando campos básicos de esas páginas',
+      freeNoCreate: 'No puedes crear landings nuevas hasta renovar',
+      freeSitesStayUp: 'Los sitios públicos siguen online; funciones de pago del CMS quedan bloqueadas',
+      ok: {
+        title: 'Suscripción activa',
+        body: 'El pago está al día. Las funciones y límites de tu plan aplican con normalidad.',
+      },
+      trialing: {
+        title: 'Prueba activa',
+        body: 'Tu periodo de prueba está en orden. Las funciones de pago están desbloqueadas durante la prueba.',
+      },
+      past_due: {
+        title: 'Pago pendiente',
+        body: 'No pudimos confirmar el pago de este mes. Conservas tus páginas en free tier hasta renovar.',
+      },
+      canceled: {
+        title: 'Suscripción cancelada',
+        body: 'Conservas las landings que ya creaste. El CMS queda en free tier hasta que vuelvas a suscribirte.',
+      },
+      incomplete: {
+        title: 'Sin suscripción activa',
+        body: 'Elige un plan para desbloquear funciones de pago. Las páginas asignadas siguen en free tier.',
+      },
+      bypass: {
+        title: 'Acceso ops (root)',
+        body: 'Root omite las comprobaciones de billing. Las cuentas de clientes sí necesitan suscripción activa.',
+      },
+    },
     addonTitle: 'Ops: Add-on Marketing Site',
     addonSubtitle: 'Activa Marketing Site multi-página en una cuenta Agency sin pasar a Enterprise.',
     addonAccountId: 'ID de cuenta de billing',

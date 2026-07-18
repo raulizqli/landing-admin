@@ -31,6 +31,7 @@ import CreatePageModal from './components/CreatePageModal';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
 import BillingPlansPanel from './components/BillingPlansPanel';
 import PlanGate from './components/PlanGate';
+import SubscriptionHealthCard from './components/SubscriptionHealthCard';
 import MarketingSiteFieldsEditor from './components/MarketingSiteFieldsEditor';
 import MarketingRoutesEditor from './components/MarketingRoutesEditor';
 import { hydrateFormSocial } from './utils/socialLinks';
@@ -507,17 +508,21 @@ export default function App() {
               <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
                 <p className="text-[10px] text-gray-400 truncate" title={user.email}>{user.email}</p>
                 <p className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wide">{getRoleLabel(profile.role)}</p>
-                {!entitlements.bypass && (
-                  <p className="text-[10px] text-emerald-300/90 truncate">
-                    {t('common.plan')}: {t(`billing.plans.${entitlements.planId}.name`)}
-                  </p>
-                )}
+                <SubscriptionHealthCard
+                  health={entitlements.health}
+                  planName={t(`billing.plans.${entitlements.planId}.name`)}
+                  onOpenBilling={openBilling}
+                />
                 <LanguageSwitcher className="text-gray-300" />
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={openBilling}
-                    className="flex-1 text-[10px] px-2 py-1.5 rounded bg-emerald-700/80 text-white hover:bg-emerald-600 border border-emerald-600 font-semibold"
+                    className={`flex-1 text-[10px] px-2 py-1.5 rounded text-white border font-semibold ${
+                      entitlements.freeTier
+                        ? 'bg-amber-700/90 hover:bg-amber-600 border-amber-600'
+                        : 'bg-emerald-700/80 hover:bg-emerald-600 border-emerald-600'
+                    }`}
                   >
                     {t('common.billing')}
                   </button>

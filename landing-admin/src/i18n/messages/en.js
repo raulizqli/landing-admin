@@ -73,6 +73,40 @@ export default {
     inactiveHint: 'Your subscription is not active. Upgrade to unlock features.',
     enterpriseCta: 'Enterprise includes Marketing Site, unlimited pages, and 24/7 support. We will reach out for onboarding.',
     manualNote: 'Root can activate Enterprise manually without checkout.',
+    health: {
+      paidBadge: 'Paid · in good standing',
+      freeTierBadge: 'Free tier · payment required',
+      nextRenewal: 'Current period ends',
+      pagesKept: 'pages kept',
+      freeKeepPages: 'Your existing landings stay in the account',
+      freeEditBasics: 'You can still edit basic fields on those pages',
+      freeNoCreate: 'You cannot create new landings until you renew',
+      freeSitesStayUp: 'Public sites stay online; paid CMS features are locked',
+      ok: {
+        title: 'Subscription active',
+        body: 'Payment is current. Agency/Pro features and page limits apply normally.',
+      },
+      trialing: {
+        title: 'Trial active',
+        body: 'Your trial is in good standing. Paid features are unlocked for the trial period.',
+      },
+      past_due: {
+        title: 'Payment past due',
+        body: 'We could not confirm this month’s payment. You keep your pages on free tier until you renew.',
+      },
+      canceled: {
+        title: 'Subscription canceled',
+        body: 'You keep the landings you already created. CMS access is free tier until you subscribe again.',
+      },
+      incomplete: {
+        title: 'No active subscription',
+        body: 'Choose a plan to unlock paid features. Existing assigned pages remain available on free tier.',
+      },
+      bypass: {
+        title: 'Ops access (root)',
+        body: 'Root bypasses billing checks. Client accounts still need an active subscription.',
+      },
+    },
     addonTitle: 'Ops: Marketing Site add-on',
     addonSubtitle: 'Enable multi-page Marketing Site on an Agency account without full Enterprise.',
     addonAccountId: 'Billing account ID',

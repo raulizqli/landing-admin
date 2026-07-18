@@ -170,32 +170,43 @@ export default function BillingPlansPanel({ open, onClose }) {
           {bypass ? (
             <p className="text-sm text-[#4A5D4E] font-medium">{t('billing.rootBypass')}</p>
           ) : (
-            <div className="grid sm:grid-cols-4 gap-3 text-sm bg-white/70 rounded-xl border border-[#2A342D]/10 p-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.currentPlan')}</p>
-                <p className="font-semibold text-[#2A342D]">{t(`billing.plans.${currentPlan.id}.name`)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.status')}</p>
-                <p className="font-semibold text-[#2A342D]">
-                  {t(`billing.statuses.${billingAccount?.status || 'incomplete'}`)}
+            <>
+              {(billingAccount?.status === 'active' || billingAccount?.status === 'trialing') ? (
+                <p className="text-sm rounded-lg bg-[#4A5D4E]/12 text-[#2A342D] border border-[#4A5D4E]/25 px-3 py-2 font-medium">
+                  {t('billing.health.paidBadge')} — {t(`billing.health.${billingAccount.status === 'trialing' ? 'trialing' : 'ok'}.title`)}
                 </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.pages')}</p>
-                <p className="font-semibold text-[#2A342D]">
-                  {currentPlan.features.unlimitedPages
-                    ? t('billing.unlimited')
-                    : `${billingAccount?.pageIds?.length ?? 0} / ${currentPlan.pageLimit}`}
+              ) : (
+                <p className="text-sm rounded-lg bg-amber-50 text-amber-900 border border-amber-200 px-3 py-2">
+                  {t('billing.health.freeTierBadge')} — {t(`billing.health.${billingAccount?.status === 'past_due' ? 'past_due' : billingAccount?.status === 'canceled' ? 'canceled' : 'incomplete'}.body`)}
                 </p>
+              )}
+              <div className="grid sm:grid-cols-4 gap-3 text-sm bg-white/70 rounded-xl border border-[#2A342D]/10 p-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.currentPlan')}</p>
+                  <p className="font-semibold text-[#2A342D]">{t(`billing.plans.${currentPlan.id}.name`)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.status')}</p>
+                  <p className="font-semibold text-[#2A342D]">
+                    {t(`billing.statuses.${billingAccount?.status || 'incomplete'}`)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.pages')}</p>
+                  <p className="font-semibold text-[#2A342D]">
+                    {currentPlan.features.unlimitedPages
+                      ? t('billing.unlimited')
+                      : `${billingAccount?.pageIds?.length ?? 0} / ${currentPlan.pageLimit}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.provider')}</p>
+                  <p className="font-semibold text-[#2A342D] capitalize">
+                    {billingAccount?.provider || '—'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.provider')}</p>
-                <p className="font-semibold text-[#2A342D] capitalize">
-                  {billingAccount?.provider || '—'}
-                </p>
-              </div>
-            </div>
+            </>
           )}
 
           <div className="flex flex-wrap items-center gap-3">

@@ -2,6 +2,21 @@
 
 Use this checklist when activating a **Marketing Site** for an Enterprise client (or Agency with the paid add-on).
 
+## 0. Subscription health (admin)
+
+The admin sidebar shows a **subscription health card**:
+
+| State | Meaning |
+|---|---|
+| Paid · in good standing | `active` / `trialing` — full plan features |
+| Free tier · payment required | `past_due` / `canceled` / `incomplete` |
+
+**After a missed Agency renewal (example):** you paid Agency, created 3 landings, then stopped paying.
+
+- Those **3 pages stay** on the account (you are not forced down to Starter’s 1-page limit by deleting them).
+- Public sites **stay online**.
+- CMS falls to **free tier**: edit basic fields on existing pages; **no new landings**; paid features (embeds, external Firebase, Marketing Site, etc.) locked until renew.
+
 ## 1. Commercial activation
 
 | Path | Action |

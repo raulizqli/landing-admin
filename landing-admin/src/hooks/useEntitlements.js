@@ -5,6 +5,7 @@ import {
   canAccountCreatePage,
   getAccountPageLimit,
   getBillingPlan,
+  getSubscriptionHealth,
   isBillingAccountActive,
 } from '../utils/billingPlans';
 import { isBillingBypass } from '../utils/permissions';
@@ -24,6 +25,7 @@ export function useEntitlements() {
     const pageCount = Array.isArray(billingAccount?.pageIds)
       ? billingAccount.pageIds.length
       : 0;
+    const health = getSubscriptionHealth(billingAccount, { bypass });
 
     const has = (featureKey) => accountHasFeature(billingAccount, featureKey, { bypass });
 
@@ -35,6 +37,9 @@ export function useEntitlements() {
       active,
       pageLimit,
       pageCount,
+      health,
+      paid: health.paid,
+      freeTier: health.freeTier,
       has,
       canCreateMorePages: canAccountCreatePage(billingAccount, pageCount, { bypass }),
       canUseBlog: has('blog'),

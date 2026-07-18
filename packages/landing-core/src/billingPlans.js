@@ -115,6 +115,80 @@ export function isBillingAccountActive(account) {
   return status === 'active' || status === 'trialing';
 }
 
+/**
+ * Admin-facing subscription health for banners / confirmation UI.
+ * When payment lapses: existing pages are kept (public sites stay up),
+ * but the account falls to free-tier CMS access (basic edit only, no new pages).
+ */
+export function getSubscriptionHealth(account, { bypass = false } = {}) {
+  const plan = getBillingPlan(account?.plan);
+  const status = normalizeBillingStatus(account?.status);
+  const pageCount = Array.isArray(account?.pageIds) ? account.pageIds.length : 0;
+  const pageLimit = getAccountPageLimit(account, { bypass });
+  const periodEnd = account?.currentPeriodEnd
+    ? String(account.currentPeriodEnd)
+    : null;
+
+  if (bypass) {
+    return {
+      state: 'bypass',
+      paid: true,
+      freeTier: false,
+      status: 'active',
+      planId: plan.id,
+      pageCount,
+      pageLimit: null,
+      currentPeriodEnd: periodEnd,
+      canCreatePages: true,
+      canEditExistingBasics: true,
+    };
+  }
+
+  if (status === 'active') {
+    return {
+      state: 'ok',
+      paid: true,
+      freeTier: false,
+      status,
+      planId: plan.id,
+      pageCount,
+      pageLimit,
+      currentPeriodEnd: periodEnd,
+      canCreatePages: canAccountCreatePage(account, pageCount, { bypass: false }),
+      canEditExistingBasics: true,
+    };
+  }
+
+  if (status === 'trialing') {
+    return {
+      state: 'trialing',
+      paid: true,
+      freeTier: false,
+      status,
+      planId: plan.id,
+      pageCount,
+      pageLimit,
+      currentPeriodEnd: periodEnd,
+      canCreatePages: canAccountCreatePage(account, pageCount, { bypass: false }),
+      canEditExistingBasics: true,
+    };
+  }
+
+  // past_due | canceled | incomplete — keep pages, free-tier CMS
+  return {
+    state: status === 'past_due' ? 'past_due' : status === 'canceled' ? 'canceled' : 'incomplete',
+    paid: false,
+    freeTier: true,
+    status,
+    planId: plan.id,
+    pageCount,
+    pageLimit,
+    currentPeriodEnd: periodEnd,
+    canCreatePages: false,
+    canEditExistingBasics: true,
+  };
+}
+
 /** Known paid add-ons that can unlock plan features (e.g. Agency + marketingSite). */
 export const BILLING_ADDON_KEYS = ['marketingSite'];
 
