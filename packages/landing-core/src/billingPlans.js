@@ -22,6 +22,7 @@ export const BILLING_PLANS = [
       prioritySupport: false,
       support247: false,
       unlimitedPages: false,
+      marketingSite: false,
     },
   },
   {
@@ -42,6 +43,7 @@ export const BILLING_PLANS = [
       prioritySupport: false,
       support247: false,
       unlimitedPages: false,
+      marketingSite: false,
     },
   },
   {
@@ -62,6 +64,7 @@ export const BILLING_PLANS = [
       prioritySupport: true,
       support247: false,
       unlimitedPages: false,
+      marketingSite: false,
     },
   },
   {
@@ -82,6 +85,7 @@ export const BILLING_PLANS = [
       prioritySupport: true,
       support247: true,
       unlimitedPages: true,
+      marketingSite: true,
     },
   },
 ];

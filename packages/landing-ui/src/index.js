@@ -1,4 +1,5 @@
 export { default as LandingPage } from './LandingPage.jsx';
+export { default as MarketingSite } from './marketing/MarketingSite.jsx';
 export { default as LandingMainContent } from './LandingMainContent.jsx';
 export { default as Navbar } from './Navbar.jsx';
 export { default as HeroCarousel } from './HeroCarousel.jsx';

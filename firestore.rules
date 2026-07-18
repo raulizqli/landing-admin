@@ -60,6 +60,12 @@ service cloud.firestore {
       allow create: if isRoot();
       allow update: if canEditPage(pageId);
       allow delete: if isRoot();
+
+      match /routes/{routeId} {
+        allow read: if true;
+        allow create, update: if canEditPage(pageId);
+        allow delete: if canEditPage(pageId) || isRoot();
+      }
     }
 
     match /paginas/{pageId} {
@@ -67,6 +73,12 @@ service cloud.firestore {
       allow create: if isRoot();
       allow update: if canEditPage(pageId);
       allow delete: if isRoot();
+
+      match /routes/{routeId} {
+        allow read: if true;
+        allow create, update: if canEditPage(pageId);
+        allow delete: if canEditPage(pageId) || isRoot();
+      }
     }
     match /billingAccounts/{accountId} {
       allow read: if isSignedIn()

@@ -44,6 +44,7 @@ export function useEntitlements() {
       canUseHostingDeploy: has('hostingDeploy'),
       canUseServicesCarouselAutoplay: has('servicesCarouselAutoplay'),
       canUseContactMapBeside: has('contactMapBeside'),
+      canUseMarketingSite: has('marketingSite'),
       hasSupport247: has('support247'),
     };
   }, [profile, billingAccount]);

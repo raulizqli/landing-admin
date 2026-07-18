@@ -60,6 +60,24 @@ beauty, fitness, education, ecommerce
 | `hostingGithubRef` | string | Branch o ref |
 | `analyticsMeasurementId` | string | ID de GA4 |
 
+## Marketing Site (Enterprise)
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `siteMode` | `landing` \| `marketing` | `landing` = página única clásica; `marketing` = multi-ruta |
+| `marketing` | object | CTAs, stats, specializations, tech stack, process, Calendly, sticky/floating flags |
+| `seo` | object | `defaultTitle`, `defaultDescription`, `ogImageUrl`, `canonicalBaseUrl` |
+
+Rutas (subcolección, no se guardan en el documento raíz):
+
+```text
+pages/{pageId}/routes/{routeId}
+```
+
+En el editor viven en memoria como `marketingRoutes[]`. Requiere plan Enterprise (`features.marketingSite`). Helpers en `packages/landing-core/src/marketingSite.js`.
+
+MVP de tipos de ruta: `home`, `services_index`, `service`, `contact`.
+
 ## Navegación
 
 | Campo | Tipo | Descripción |

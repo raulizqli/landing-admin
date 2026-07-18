@@ -31,6 +31,8 @@ import CreatePageModal from './components/CreatePageModal';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
 import BillingPlansPanel from './components/BillingPlansPanel';
 import PlanGate from './components/PlanGate';
+import MarketingSiteFieldsEditor from './components/MarketingSiteFieldsEditor';
+import MarketingRoutesEditor from './components/MarketingRoutesEditor';
 import { hydrateFormSocial } from './utils/socialLinks';
 import { createPageInHub, loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
 import { useAuth } from './contexts/AuthContext';
@@ -55,6 +57,7 @@ import {
   resolvePageLanguage,
   updatePageTranslation,
 } from '@raulizqli/landing-core/pageTranslations';
+import { isMarketingSite, normalizeMarketingRoutes } from '@raulizqli/landing-core/marketingSite';
 
 const TEMPLATE_PREVIEW_URL = (
   import.meta.env.VITE_TEMPLATE_PREVIEW_URL?.replace(/\/$/, '')
@@ -100,6 +103,7 @@ export default function App() {
   const [creatingPage, setCreatingPage] = useState(false);
   const [accessError, setAccessError] = useState('');
   const [pagesSidebarCollapsed, setPagesSidebarCollapsed] = useState(readSidebarCollapsedDefault);
+  const [activeMarketingRouteId, setActiveMarketingRouteId] = useState('');
   const previewIframeRef = useRef(null);
 
   const accessibleLandings = profile ? filterAccessiblePages(landings, profile) : [];
@@ -198,6 +202,7 @@ export default function App() {
       setFormData(hydrated);
       setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
+      setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
       return;
     }
     try {
@@ -206,12 +211,14 @@ export default function App() {
       setFormData(hydrated);
       setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
+      setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
     } catch (error) {
       console.error('Error al cargar la landing:', error);
       const hydrated = hydrateForm(landing);
       setFormData(hydrated);
       setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
+      setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
     }
   };
 
@@ -240,6 +247,7 @@ export default function App() {
           setFormData(hydrated);
           setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
           setLayoutBaseline(hydrated);
+          setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
         } else if (canCreatePages(profile)) {
           // Root with an empty hub: stay in the editor shell and create the first landing.
           setSelectedId(null);
@@ -300,11 +308,19 @@ export default function App() {
     }
     setSaving(true);
     try {
-      const dataToSave = canManageLayout || !layoutBaseline
+      let dataToSave = canManageLayout || !layoutBaseline
         ? formData
         : applyLockedPageLayout(formData, layoutBaseline);
+      if (isMarketingSite(dataToSave) && !entitlements.canUseMarketingSite) {
+        alert('Marketing Site requiere plan Enterprise. Se guardará como landing clásica.');
+        dataToSave = { ...dataToSave, siteMode: 'landing' };
+      }
       const result = await savePageFromEditor(selectedId, dataToSave);
-      const hydrated = hydrateForm({ id: selectedId, ...dataToSave });
+      const hydrated = hydrateForm({
+        id: selectedId,
+        ...dataToSave,
+        marketingRoutes: result?.marketingRoutes || dataToSave.marketingRoutes,
+      });
       setFormData(hydrated);
       setLayoutBaseline(hydrated);
       setLandings((current) => current.map((landing) => (
@@ -562,8 +578,11 @@ export default function App() {
                   onClick={() => handleSelectLanding(landing)}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${selectedId === landing.id ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
                 >
-                  <span>👤 {landing.name || landing.id}</span>
-                  <span className="text-[9px] bg-black/40 px-1 rounded font-mono">{landing.id}</span>
+                  <span className="min-w-0 truncate">
+                    {isMarketingSite(landing) ? '◈ ' : '👤 '}
+                    {landing.name || landing.id}
+                  </span>
+                  <span className="text-[9px] bg-black/40 px-1 rounded font-mono shrink-0">{landing.id}</span>
                 </button>
               )) : accessibleLandings[0] && (
                 <div className="px-3 py-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30">
@@ -623,6 +642,32 @@ export default function App() {
                 compact
                 language={editingLanguage}
               />
+            </EditorSection>
+
+            <EditorSection
+              sectionKey="marketing-site"
+              fillStatus={isMarketingSite(editorData) ? 'complete' : 'empty'}
+              title="Marketing Site (Enterprise)"
+              description="Multi-page mode: home, services, contact — configured here, previewed in the mirror"
+              defaultOpen={isMarketingSite(editorData)}
+              onActivate={activatePreviewSection}
+            >
+              <MarketingSiteFieldsEditor
+                formData={formData}
+                onChange={setFormData}
+                canUseMarketingSite={entitlements.canUseMarketingSite}
+                onUpgrade={() => setShowBilling(true)}
+              />
+              {isMarketingSite(formData) && (
+                <div className="mt-4">
+                  <MarketingRoutesEditor
+                    formData={formData}
+                    onChange={setFormData}
+                    activeRouteId={activeMarketingRouteId}
+                    onSelectRoute={setActiveMarketingRouteId}
+                  />
+                </div>
+              )}
             </EditorSection>
 
             <EditorSection
@@ -964,6 +1009,7 @@ export default function App() {
                 previewSeed={selectedId}
                 language={editingLanguage}
                 scrollSectionId={previewScrollSectionId}
+                activeMarketingRouteId={activeMarketingRouteId}
               />
             </div>
           ) : !TEMPLATE_PREVIEW_URL ? (

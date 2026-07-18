@@ -26,6 +26,7 @@
     ".": "./src/index.js",
     "./trackInteraction": "./src/trackInteraction.js",
     "./LandingPage": "./src/LandingPage.jsx",
+    "./MarketingSite": "./src/marketing/MarketingSite.jsx",
     "./LandingMainContent": "./src/LandingMainContent.jsx",
     "./Navbar": "./src/Navbar.jsx",
     "./HeroCarousel": "./src/HeroCarousel.jsx",

@@ -27,6 +27,13 @@ import {
   normalizePageLanguage,
   normalizePageTranslations,
 } from './pageTranslations';
+import {
+  createEmptyMarketingSettings,
+  normalizeMarketingRoutes,
+  normalizeMarketingSeo,
+  normalizeMarketingSettings,
+  normalizeSiteMode,
+} from './marketingSite.js';
 
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
@@ -138,6 +145,15 @@ export const EMPTY_PAGE = {
   translations: { es: {}, en: {} },
   customLabels: { es: {}, en: {} },
   customEmbeds: [],
+  siteMode: 'landing',
+  marketing: createEmptyMarketingSettings(),
+  seo: {
+    defaultTitle: '',
+    defaultDescription: '',
+    ogImageUrl: '',
+    canonicalBaseUrl: '',
+  },
+  marketingRoutes: [],
 };
 
 const LEGACY_ROOT_FIELDS = {
@@ -301,6 +317,11 @@ export function normalizePageData(data = {}) {
   Object.assign(next, normalizeLegalDocuments(next));
   next.translations = normalizePageTranslations(next.translations, next, next.defaultLanguage);
   delete next.activeLanguage;
+
+  next.siteMode = normalizeSiteMode(next.siteMode);
+  next.marketing = normalizeMarketingSettings(next.marketing);
+  next.seo = normalizeMarketingSeo(next.seo);
+  next.marketingRoutes = normalizeMarketingRoutes(next.marketingRoutes);
 
   return next;
 }

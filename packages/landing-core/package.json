@@ -47,6 +47,7 @@
     "./legalDocuments": "./src/legalDocuments.js",
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",
-    "./billingPlans": "./src/billingPlans.js"
+    "./billingPlans": "./src/billingPlans.js",
+    "./marketingSite": "./src/marketingSite.js"
   }
 }

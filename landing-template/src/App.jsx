@@ -1,4 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { MarketingSite } from '@raulizqli/landing-ui';
+import {
+  findMarketingRouteByPath,
+  isMarketingSite,
+} from '@raulizqli/landing-core/marketingSite';
 import LandingPage from './components/LandingPage';
 import { generateRandomPreviewContent, withPreviewContent } from './utils/previewContent';
 import { normalizePageData } from './utils/pageModel';
@@ -29,19 +34,56 @@ function isAllowedPreviewSender(origin) {
   return adminOrigin ? origin === adminOrigin : false;
 }
 
-function resolveDocumentTitle(data, { preview = false, labelSuffix = '' } = {}) {
+function getLocationPathname() {
+  const path = window.location.pathname || '/';
+  return path.length > 1 ? path.replace(/\/$/, '') : path;
+}
+
+function resolveDocumentTitle(data, { preview = false, labelSuffix = '', path = '/' } = {}) {
   const name = String(data?.name ?? '').trim();
   const specialty = String(data?.specialty ?? '').trim();
+  const seoDefault = String(data?.seo?.defaultTitle ?? '').trim();
 
-  let title = '';
-  if (name && specialty) title = `${name} — ${specialty}`;
-  else if (name) title = name;
-  else if (specialty) title = specialty;
-  else title = 'Landing';
+  let title;
+  if (isMarketingSite(data)) {
+    const route = findMarketingRouteByPath(data.marketingRoutes, path);
+    const routeTitle = String(route?.seo?.title || route?.title || seoDefault || '').trim();
+    if (routeTitle) title = routeTitle;
+    else if (name && specialty) title = `${name} — ${specialty}`;
+    else title = name || specialty || 'Marketing Site';
+  } else if (name && specialty) {
+    title = `${name} — ${specialty}`;
+  } else if (name) {
+    title = name;
+  } else if (specialty) {
+    title = specialty;
+  } else {
+    title = 'Landing';
+  }
 
   if (!preview) return title;
   if (labelSuffix) return `Vista previa — ${title} (${labelSuffix})`;
   return `Vista previa — ${title}`;
+}
+
+function applyMarketingMeta(data, path = '/') {
+  if (!isMarketingSite(data)) return;
+  const route = findMarketingRouteByPath(data.marketingRoutes, path);
+  const description = String(
+    route?.seo?.description
+      || route?.content?.metaDescription
+      || data?.seo?.defaultDescription
+      || data?.marketing?.primaryCta?.label
+      || '',
+  ).trim();
+  if (!description) return;
+  let meta = document.head.querySelector('meta[name="description"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'description');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', description);
 }
 
 function createDemoContent(pageId, labelSuffix = '') {
@@ -84,6 +126,13 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [usingDemoFallback, setUsingDemoFallback] = useState(false);
+  const [marketingPath, setMarketingPath] = useState(() => getLocationPathname());
+
+  useEffect(() => {
+    const syncPath = () => setMarketingPath(getLocationPathname());
+    window.addEventListener('popstate', syncPath);
+    return () => window.removeEventListener('popstate', syncPath);
+  }, []);
 
   useEffect(() => {
     if (!previewMode) return undefined;
@@ -253,10 +302,14 @@ export default function App() {
 
   useEffect(() => {
     if (!displayData) return;
-    document.title = resolveDocumentTitle(displayData, { preview: previewMode });
+    document.title = resolveDocumentTitle(displayData, {
+      preview: previewMode,
+      path: marketingPath,
+    });
     document.documentElement.lang = displayData.activeLanguage || displayData.labelLanguage || 'es';
     setDocumentFavicon(resolvePageFaviconUrl(displayData));
-  }, [displayData, previewMode]);
+    applyMarketingMeta(displayData, marketingPath);
+  }, [displayData, previewMode, marketingPath]);
 
   useEffect(() => {
     if (!displayData || previewMode || loading || error || !pageId || usingDemoFallback) return;
@@ -272,6 +325,17 @@ export default function App() {
     return previewMode && pageId
       ? <LandingPage data={generateRandomPreviewContent(pageId)} />
       : <ErrorState message="No hay datos disponibles para esta página." />;
+  }
+
+  if (isMarketingSite(displayData)) {
+    return (
+      <MarketingSite
+        key={`${displayData.activeLanguage || displayData.labelLanguage || 'default'}-${marketingPath}`}
+        data={displayData}
+        path={marketingPath}
+        interactive={!previewMode}
+      />
+    );
   }
 
   return (

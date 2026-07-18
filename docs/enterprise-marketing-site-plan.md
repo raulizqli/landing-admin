@@ -322,6 +322,24 @@ Everything else builds on that vertical slice.
 
 ---
 
+## Implementation status (shipped MVP)
+
+| Item | Status |
+|---|---|
+| `marketingSite` entitlement on Enterprise | Done |
+| `siteMode` / `marketing` / `seo` in `pageModel` | Done |
+| `marketingSite.js` route helpers + skeleton | Done |
+| `pages/{pageId}/routes/{routeId}` rules | Done |
+| Admin load/save routes batch | Done |
+| Admin Marketing Site + Routes editors | Done |
+| Mirror preview via `MarketingSite` | Done |
+| Template path-based marketing renderer | Done (home, services index, service detail, contact) |
+| Case studies / blog / estimate / resources editors | Not yet (Phase 4) |
+| Publish-time sitemap generation | Not yet (Phase 5) |
+| Functions hard entitlement reject | Soft client gate only for now |
+
+---
+
 ## Relationship to current work
 
 | Asset | Role in this plan |
