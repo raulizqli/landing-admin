@@ -33,6 +33,7 @@
     "./sectionVisibility": "./src/sectionVisibility.js",
     "./navDisplay": "./src/navDisplay.js",
     "./sectionBackground": "./src/sectionBackground.js",
+    "./sectionCustomStyle": "./src/sectionCustomStyle.js",
     "./previewContent": "./src/previewContent.js",
     "./catalog": "./src/catalog.js",
     "./gallery": "./src/gallery.js",

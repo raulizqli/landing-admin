@@ -10,6 +10,7 @@ import {
   normalizeServicesVisualStyle,
 } from './services.js';
 import { normalizeCatalogItems, normalizeCatalogVisualStyle } from './catalog';
+import { createEmptySectionCustomStyle, normalizeSectionCustomStyle } from './sectionCustomStyle.js';
 import { normalizeGalleryItems } from './gallery';
 import { normalizeBlogPosts } from './blog';
 import { normalizeSectionThemes, parseColorToHex } from './sectionBackground';
@@ -78,11 +79,13 @@ export const EMPTY_PAGE = {
   servicesCarouselAutoplay: false,
   servicesVisualStyle: 'cards',
   servicesCarouselTransition: 'fade',
+  servicesCustomStyle: createEmptySectionCustomStyle(),
   services: [],
   catalogSectionEnabled: false,
   catalogSectionTitle: '',
   catalogSectionText: '',
   catalogVisualStyle: 'cards',
+  catalogCustomStyle: createEmptySectionCustomStyle(),
   catalogItems: [],
   gallerySectionEnabled: false,
   gallerySectionTitle: '',
@@ -260,7 +263,9 @@ export function normalizePageData(data = {}) {
   next.servicesCarouselAutoplay = normalizeServicesCarouselAutoplay(next.servicesCarouselAutoplay);
   next.servicesVisualStyle = normalizeServicesVisualStyle(next.servicesVisualStyle);
   next.servicesCarouselTransition = normalizeServicesCarouselTransition(next.servicesCarouselTransition);
+  next.servicesCustomStyle = normalizeSectionCustomStyle(next.servicesCustomStyle);
   next.catalogVisualStyle = normalizeCatalogVisualStyle(next.catalogVisualStyle);
+  next.catalogCustomStyle = normalizeSectionCustomStyle(next.catalogCustomStyle);
   if (next.navCtaTarget !== undefined) {
     next.navCtaTarget = normalizeNavCtaTarget(next.navCtaTarget);
   }

@@ -6,9 +6,18 @@ import {
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 import VisualOptionPicker, { VISUAL_STYLE_PREVIEW_MAP } from './VisualOptionPicker';
+import SectionCustomStyleEditor from './SectionCustomStyleEditor';
 import { getDefaultLabelForPage } from '../utils/labels';
 
-export default function CatalogFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
+export default function CatalogFieldsEditor({
+  formData,
+  onChange,
+  pageId,
+  canToggleSection = true,
+  canUseCustomVisualStyle = false,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const enabled = Boolean(formData.catalogSectionEnabled);
   const items = Array.isArray(formData.catalogItems) && formData.catalogItems.length > 0
     ? formData.catalogItems
@@ -86,13 +95,31 @@ export default function CatalogFieldsEditor({ formData, onChange, pageId, canTog
 
           <div className="space-y-2">
             <label className="block text-[10px] font-bold text-gray-400 uppercase">Estilo visual</label>
+            {!canUseCustomVisualStyle && (
+              <button
+                type="button"
+                onClick={onUpgradePlan}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                {upgradeLabel} · Personalizado en Pro+
+              </button>
+            )}
             <VisualOptionPicker
               name="catalog-visual-style"
               options={CATALOG_VISUAL_STYLES}
               value={visualStyle}
               onChange={(next) => onChange({ ...formData, catalogVisualStyle: next })}
               previewMap={VISUAL_STYLE_PREVIEW_MAP}
+              lockedValues={canUseCustomVisualStyle ? [] : ['custom']}
+              onLockedSelect={() => onUpgradePlan?.()}
             />
+            {visualStyle === 'custom' && canUseCustomVisualStyle && (
+              <SectionCustomStyleEditor
+                label="CSS del catálogo"
+                value={formData.catalogCustomStyle}
+                onChange={(catalogCustomStyle) => onChange({ ...formData, catalogCustomStyle })}
+              />
+            )}
           </div>
 
           <div className="flex items-center justify-between">

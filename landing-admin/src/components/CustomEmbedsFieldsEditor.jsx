@@ -30,6 +30,7 @@ import VisualOptionPicker, {
   SERVICE_LAYOUT_PREVIEW_MAP,
   VISUAL_STYLE_PREVIEW_MAP,
 } from './VisualOptionPicker';
+import SectionCustomStyleEditor from './SectionCustomStyleEditor';
 
 function FaqItemsEditor({ items, onChange }) {
   const list = items.length > 0 ? items : [createEmptyFaqItem()];
@@ -133,7 +134,15 @@ function StepsEditor({ items, onChange }) {
   );
 }
 
-function TypeFields({ item, onChange, pageId, pageData }) {
+function TypeFields({
+  item,
+  onChange,
+  pageId,
+  pageData,
+  canUseCustomVisualStyle = false,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const type = normalizeSectionType(item.type);
 
   if (type === 'pre_hero') {
@@ -249,13 +258,31 @@ function TypeFields({ item, onChange, pageId, pageData }) {
 
         <div className="space-y-2">
           <label className="block text-[10px] font-bold text-gray-400 uppercase">Estilo visual</label>
+          {!canUseCustomVisualStyle && (
+            <button
+              type="button"
+              onClick={onUpgradePlan}
+              className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+            >
+              {upgradeLabel} · Personalizado en Pro+
+            </button>
+          )}
           <VisualOptionPicker
             name={`services-visual-style-${item.id}`}
             options={SERVICES_VISUAL_STYLES}
             value={visualStyle}
             onChange={(next) => onChange('servicesVisualStyle', next)}
             previewMap={VISUAL_STYLE_PREVIEW_MAP}
+            lockedValues={canUseCustomVisualStyle ? [] : ['custom']}
+            onLockedSelect={() => onUpgradePlan?.()}
           />
+          {visualStyle === 'custom' && canUseCustomVisualStyle && (
+            <SectionCustomStyleEditor
+              label="CSS del bloque"
+              value={item.servicesCustomStyle}
+              onChange={(servicesCustomStyle) => onChange('servicesCustomStyle', servicesCustomStyle)}
+            />
+          )}
         </div>
 
         <fieldset className="space-y-2">
@@ -596,7 +623,15 @@ function TypeFields({ item, onChange, pageId, pageData }) {
   );
 }
 
-export default function CustomEmbedsFieldsEditor({ formData, onChange, canManageLayout = true, pageId }) {
+export default function CustomEmbedsFieldsEditor({
+  formData,
+  onChange,
+  canManageLayout = true,
+  pageId,
+  canUseCustomVisualStyle = false,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   // Do not normalize/trim on every render — that strips trailing spaces while typing.
   const items = Array.isArray(formData.customEmbeds) ? formData.customEmbeds : [];
   const visibleItems = canManageLayout
@@ -772,6 +807,9 @@ export default function CustomEmbedsFieldsEditor({ formData, onChange, canManage
                   onChange={(field, value) => updateItemById(item.id, field, value)}
                   pageId={pageId}
                   pageData={formData}
+                  canUseCustomVisualStyle={canUseCustomVisualStyle}
+                  onUpgradePlan={onUpgradePlan}
+                  upgradeLabel={upgradeLabel}
                 />
 
                 {canManageLayout && (

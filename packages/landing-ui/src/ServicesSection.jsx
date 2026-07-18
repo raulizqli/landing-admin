@@ -78,12 +78,19 @@ function ServiceListBody({ items }) {
   );
 }
 
+function mergeStyles(...styles) {
+  return Object.assign({}, ...styles.filter(Boolean));
+}
+
 function TitleServiceCard({ item, visualClasses, entranceStyle }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
 
   return (
-    <article className={`${visualClasses.article} ${visualClasses.entrance}`} style={entranceStyle}>
+    <article
+      className={`${visualClasses.article} ${visualClasses.entrance}`}
+      style={mergeStyles(visualClasses.articleStyle, entranceStyle)}
+    >
       <ServiceMedia imageUrl={imageUrl} title={title} prominent mediaClassName={visualClasses.media} />
       {title && (
         <div className={visualClasses.body}>
@@ -116,7 +123,10 @@ function DescriptionServiceCard({
   const shownText = expanded || !truncated ? full : preview;
 
   return (
-    <article className={`${visualClasses.article} ${visualClasses.entrance}`} style={entranceStyle}>
+    <article
+      className={`${visualClasses.article} ${visualClasses.entrance}`}
+      style={mergeStyles(visualClasses.articleStyle, entranceStyle)}
+    >
       <ServiceMedia imageUrl={imageUrl} title={title} mediaClassName={visualClasses.media} />
       <div className={visualClasses.body}>
         {title && (
@@ -156,7 +166,10 @@ function ListServiceCard({ item, visualClasses, entranceStyle }) {
   const listItems = normalizeServiceListItems(item.listItems);
 
   return (
-    <article className={`${visualClasses.article} ${visualClasses.entrance}`} style={entranceStyle}>
+    <article
+      className={`${visualClasses.article} ${visualClasses.entrance}`}
+      style={mergeStyles(visualClasses.articleStyle, entranceStyle)}
+    >
       <ServiceMedia imageUrl={imageUrl} title={title} mediaClassName={visualClasses.media} />
       <div className={visualClasses.body}>
         {title && (
@@ -176,11 +189,12 @@ export function ServiceCard({
   viewMoreLabel = 'Ver más',
   viewLessLabel = 'Ver menos',
   visualStyle = 'cards',
+  customStyle,
   entranceIndex = 0,
 }) {
   const layout = normalizeServiceLayout(item?.layout);
   const meta = getServiceLayoutMeta(layout);
-  const visualClasses = getItemVisualClasses(visualStyle);
+  const visualClasses = getItemVisualClasses(visualStyle, customStyle);
   const entranceStyle = entranceDelayStyle(entranceIndex);
 
   if (layout === 'title') {
@@ -253,6 +267,7 @@ export function ServicesItemsLayout({
   carouselAutoplay = false,
   carouselTransition = 'fade',
   visualStyle = 'cards',
+  customStyle,
   interactive = true,
   previousLabel = 'Anterior',
   nextLabel = 'Siguiente',
@@ -313,7 +328,7 @@ export function ServicesItemsLayout({
 
   if (mode !== 'carousel') {
     return (
-      <div className={`flex flex-col ${getStackGapClass(style)} max-w-2xl mx-auto`}>
+      <div className={`flex flex-col ${getStackGapClass(style, customStyle)} max-w-2xl mx-auto`}>
         {items.map((item, index) => (
           <ServiceCard
             key={`service-${index}`}
@@ -322,6 +337,7 @@ export function ServicesItemsLayout({
             viewMoreLabel={viewMoreLabel}
             viewLessLabel={viewLessLabel}
             visualStyle={style}
+            customStyle={customStyle}
             entranceIndex={index}
           />
         ))}
@@ -355,7 +371,7 @@ export function ServicesItemsLayout({
       onMouseLeave={autoplay && interactive ? () => setPaused(false) : undefined}
     >
       <div
-        className={`grid ${getGridGapClass(style)} ${perViewGridClass(perView)} ${carouselPanelClass(transition, phase, reducedMotion)}`}
+        className={`grid ${getGridGapClass(style, customStyle)} ${perViewGridClass(perView)} ${carouselPanelClass(transition, phase, reducedMotion)}`}
       >
         {visible.map((item, index) => (
           <ServiceCard
@@ -365,6 +381,7 @@ export function ServicesItemsLayout({
             viewMoreLabel={viewMoreLabel}
             viewLessLabel={viewLessLabel}
             visualStyle={style}
+            customStyle={customStyle}
             entranceIndex={index}
           />
         ))}
@@ -433,6 +450,7 @@ export default function ServicesSection({ data, interactive = true }) {
           carouselAutoplay={data.servicesCarouselAutoplay}
           carouselTransition={data.servicesCarouselTransition}
           visualStyle={data.servicesVisualStyle}
+          customStyle={data.servicesCustomStyle}
           interactive={interactive}
           previousLabel={getLabel(labels, 'services.carouselPrevious')}
           nextLabel={getLabel(labels, 'services.carouselNext')}

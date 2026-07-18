@@ -20,6 +20,7 @@ import VisualOptionPicker, {
   SERVICE_LAYOUT_PREVIEW_MAP,
   VISUAL_STYLE_PREVIEW_MAP,
 } from './VisualOptionPicker';
+import SectionCustomStyleEditor from './SectionCustomStyleEditor';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function ServicesFieldsEditor({
@@ -28,6 +29,7 @@ export default function ServicesFieldsEditor({
   pageId,
   canToggleSection = true,
   canUseCarouselAutoplay = true,
+  canUseCustomVisualStyle = false,
   onUpgradePlan,
   upgradeLabel = 'Upgrade',
 }) {
@@ -106,13 +108,31 @@ export default function ServicesFieldsEditor({
 
           <div className="space-y-2">
             <label className="block text-[10px] font-bold text-gray-400 uppercase">Estilo visual</label>
+            {!canUseCustomVisualStyle && (
+              <button
+                type="button"
+                onClick={onUpgradePlan}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                {upgradeLabel} · Personalizado en Pro+
+              </button>
+            )}
             <VisualOptionPicker
               name="services-visual-style"
               options={SERVICES_VISUAL_STYLES}
               value={visualStyle}
               onChange={(next) => onChange({ ...formData, servicesVisualStyle: next })}
               previewMap={VISUAL_STYLE_PREVIEW_MAP}
+              lockedValues={canUseCustomVisualStyle ? [] : ['custom']}
+              onLockedSelect={() => onUpgradePlan?.()}
             />
+            {visualStyle === 'custom' && canUseCustomVisualStyle && (
+              <SectionCustomStyleEditor
+                label="CSS de servicios"
+                value={formData.servicesCustomStyle}
+                onChange={(servicesCustomStyle) => onChange({ ...formData, servicesCustomStyle })}
+              />
+            )}
           </div>
 
           <fieldset className="space-y-2">

@@ -14,6 +14,10 @@ import {
   getGridGapClass,
 } from './sectionVisualStyles.js';
 
+function mergeStyles(...styles) {
+  return Object.assign({}, ...styles.filter(Boolean));
+}
+
 function CatalogCard({ item, interactive = true, labels, visualClasses, entranceStyle }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
@@ -22,7 +26,10 @@ function CatalogCard({ item, interactive = true, labels, visualClasses, entrance
   const itemLink = resolveCatalogItemLink(item);
 
   return (
-    <article className={`${visualClasses.article} ${visualClasses.entrance}`} style={entranceStyle}>
+    <article
+      className={`${visualClasses.article} ${visualClasses.entrance}`}
+      style={mergeStyles(visualClasses.articleStyle, entranceStyle)}
+    >
       {imageUrl ? (
         <div className={`aspect-[4/3] bg-[#E8E4DB] overflow-hidden ${visualClasses.media}`}>
           <img
@@ -85,8 +92,8 @@ export default function CatalogSection({ data, interactive = true }) {
   const sectionTitle = String(data.catalogSectionTitle ?? '').trim() || getLabel(labels, 'catalog.defaultTitle');
   const introParagraphs = splitCatalogSectionText(data.catalogSectionText);
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'catalog'), { sectionKey: 'catalog' });
-  const visualClasses = getCatalogVisualClasses(data.catalogVisualStyle);
-  const gapClass = getGridGapClass(data.catalogVisualStyle);
+  const visualClasses = getCatalogVisualClasses(data.catalogVisualStyle, data.catalogCustomStyle);
+  const gapClass = getGridGapClass(data.catalogVisualStyle, data.catalogCustomStyle);
 
   return (
     <section id={SECTION_IDS.catalog} className="border-y border-[#2A342D]/10" style={sectionStyle}>

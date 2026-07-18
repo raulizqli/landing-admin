@@ -80,20 +80,29 @@ describe('services and catalog visual styles', () => {
     expect(normalized.servicesVisualStyle).toBe('cards');
     expect(normalized.servicesCarouselTransition).toBe('fade');
     expect(normalized.catalogVisualStyle).toBe('cards');
+    expect(normalized.servicesCustomStyle.shadow).toBe('soft');
+    expect(normalized.catalogCustomStyle.shadow).toBe('soft');
     expect(EMPTY_PAGE.servicesVisualStyle).toBe('cards');
     expect(EMPTY_PAGE.servicesCarouselTransition).toBe('fade');
     expect(EMPTY_PAGE.catalogVisualStyle).toBe('cards');
   });
 
-  it('keeps valid visual style and transition values', () => {
+  it('keeps valid visual style, custom style, and transition values', () => {
     const normalized = normalizePageData({
-      servicesVisualStyle: 'editorial',
+      servicesVisualStyle: 'custom',
       servicesCarouselTransition: 'slide',
-      catalogVisualStyle: 'minimal',
+      catalogVisualStyle: 'custom',
+      servicesCustomStyle: { backgroundColor: '#112233', borderRadius: 8, hover: 'opacity' },
+      catalogCustomStyle: { shadow: 'none', entrance: 'slideUp' },
     });
-    expect(normalized.servicesVisualStyle).toBe('editorial');
+    expect(normalized.servicesVisualStyle).toBe('custom');
     expect(normalized.servicesCarouselTransition).toBe('slide');
-    expect(normalized.catalogVisualStyle).toBe('minimal');
+    expect(normalized.catalogVisualStyle).toBe('custom');
+    expect(normalized.servicesCustomStyle.backgroundColor).toBe('#112233');
+    expect(normalized.servicesCustomStyle.borderRadius).toBe(8);
+    expect(normalized.servicesCustomStyle.hover).toBe('opacity');
+    expect(normalized.catalogCustomStyle.shadow).toBe('none');
+    expect(normalized.catalogCustomStyle.entrance).toBe('slideUp');
   });
 
   it('falls back safely for invalid visual style and transition values', () => {

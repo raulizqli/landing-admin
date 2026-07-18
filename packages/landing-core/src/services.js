@@ -146,6 +146,7 @@ export const SERVICES_VISUAL_STYLES = [
   { value: 'cards', label: 'Tarjetas', description: 'Tarjetas con borde y sombra suave' },
   { value: 'minimal', label: 'Minimal', description: 'Sin borde ni sombra, más aire' },
   { value: 'editorial', label: 'Editorial', description: 'Separadores y tipografía abierta' },
+  { value: 'custom', label: 'Personalizado', description: 'Define CSS propio (Pro+)' },
 ];
 
 export const SERVICES_CAROUSEL_TRANSITIONS = [

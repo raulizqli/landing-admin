@@ -9,6 +9,7 @@ export * from './sectionAnchors.js';
 export * from './sectionVisibility.js';
 export * from './navDisplay.js';
 export * from './sectionBackground.js';
+export * from './sectionCustomStyle.js';
 export * from './previewContent.js';
 export * from './catalog.js';
 export * from './gallery.js';

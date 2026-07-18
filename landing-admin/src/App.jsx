@@ -774,6 +774,7 @@ export default function App() {
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
                   canUseCarouselAutoplay={entitlements.canUseServicesCarouselAutoplay}
+                  canUseCustomVisualStyle={entitlements.canUseCustomSectionVisualStyle}
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
@@ -794,6 +795,9 @@ export default function App() {
                   onChange={handleEditorChange}
                   pageId={selectedId}
                   canToggleSection={canManageLayout}
+                  canUseCustomVisualStyle={entitlements.canUseCustomSectionVisualStyle}
+                  onUpgradePlan={openBilling}
+                  upgradeLabel={upgradeLabel}
                 />
                 <LabelsFieldsEditor key={`labels-catalog-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['catalog']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
@@ -933,6 +937,9 @@ export default function App() {
                     onChange={handleEditorChange}
                     canManageLayout={canManageLayout}
                     pageId={selectedId}
+                    canUseCustomVisualStyle={entitlements.canUseCustomSectionVisualStyle}
+                    onUpgradePlan={openBilling}
+                    upgradeLabel={upgradeLabel}
                   />
                 </EditorSection>
               </PlanGate>

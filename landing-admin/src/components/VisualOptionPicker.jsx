@@ -60,6 +60,15 @@ function PreviewGlyph({ kind }) {
     );
   }
 
+  if (kind === 'style-custom') {
+    return (
+      <div className="relative h-full flex items-center justify-center">
+        <div className="h-7 w-8 rounded-md border-2 border-dashed border-[#4A5D4E]/50 bg-white" />
+        <span className="absolute text-[10px] font-bold text-[#4A5D4E]">CSS</span>
+      </div>
+    );
+  }
+
   if (kind === 'transition-none') {
     return (
       <div className="flex items-center justify-center gap-1 h-full">
@@ -102,6 +111,7 @@ const STYLE_PREVIEW = {
   cards: 'style-cards',
   minimal: 'style-minimal',
   editorial: 'style-editorial',
+  custom: 'style-custom',
 };
 
 const TRANSITION_PREVIEW = {
@@ -117,8 +127,7 @@ export function resolvePreviewKind(option, previewMap) {
 }
 
 /**
- * Compact 3-option visual radio group for admin editors.
- * @param {{ options: Array<{ value: string, label: string, description?: string, preview?: string }>, value: string, onChange: (value: string) => void, name: string, previewMap?: Record<string, string> }} props
+ * Compact visual radio group for admin editors.
  */
 export default function VisualOptionPicker({
   options = [],
@@ -126,11 +135,22 @@ export default function VisualOptionPicker({
   onChange,
   name,
   previewMap,
+  lockedValues = [],
+  onLockedSelect,
+  columns,
 }) {
+  const lockedSet = new Set(lockedValues);
+  const colClass = columns === 2
+    ? 'grid-cols-2'
+    : columns === 4 || options.length >= 4
+      ? 'grid-cols-2'
+      : 'grid-cols-3';
+
   return (
-    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={name}>
+    <div className={`grid ${colClass} gap-2`} role="radiogroup" aria-label={name}>
       {options.map((option) => {
         const selected = value === option.value;
+        const locked = lockedSet.has(option.value);
         const previewKind = resolvePreviewKind(option, previewMap);
 
         return (
@@ -139,15 +159,29 @@ export default function VisualOptionPicker({
             type="button"
             role="radio"
             aria-checked={selected}
-            onClick={() => onChange(option.value)}
+            aria-disabled={locked}
+            onClick={() => {
+              if (locked) {
+                onLockedSelect?.(option.value);
+                return;
+              }
+              onChange(option.value);
+            }}
             className={`rounded-lg border p-2 text-left transition-colors ${
               selected
                 ? 'border-[#4A5D4E] bg-[#4A5D4E]/5 ring-1 ring-[#4A5D4E]/30'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                : locked
+                  ? 'border-gray-200 bg-gray-50 opacity-80'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
           >
-            <div className="h-12 mb-2 rounded-md bg-[#F4F1EA]/70 p-1.5">
+            <div className="h-12 mb-2 rounded-md bg-[#F4F1EA]/70 p-1.5 relative">
               <PreviewGlyph kind={previewKind} />
+              {locked && (
+                <span className="absolute top-0.5 right-0.5 text-[8px] font-bold uppercase tracking-wide text-[#4A5D4E] bg-white/90 px-1 rounded">
+                  Pro+
+                </span>
+              )}
             </div>
             <p className={`text-[11px] font-semibold leading-tight ${selected ? 'text-[#2A342D]' : 'text-gray-700'}`}>
               {option.label}

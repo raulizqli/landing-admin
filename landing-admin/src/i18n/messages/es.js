@@ -155,7 +155,7 @@ export default {
         tagline: 'Contenido avanzado y embeds para marcas en crecimiento.',
         f1: '1 página',
         f2: 'Blog, galería y embeds',
-        f3: 'Carrusel de servicios y mapa lateral',
+        f3: 'Carrusel, estilos CSS personalizados y mapa lateral',
         f4: 'Soporte estándar',
       },
       agency: {
@@ -182,6 +182,7 @@ export default {
       externalFirebase: 'Firebase externo',
       hostingDeploy: 'Deploy de hosting',
       servicesCarouselAutoplay: 'Autoplay del carrusel',
+      customSectionVisualStyle: 'Estilo CSS personalizado (servicios/catálogo)',
       contactMapBeside: 'Mapa al lado del contacto',
       support247: 'Soporte 24/7',
       marketingSite: 'Marketing Site',
