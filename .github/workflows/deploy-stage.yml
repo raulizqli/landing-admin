@@ -1,0 +1,145 @@
+# Deploy Stage Firebase project on merge to main/master.
+# Requires GitHub Environment "stage" with Stage Vite + Firebase SA secrets.
+# Create landings-stage first; until then this job will fail on missing secrets
+# (prod continues via firebase-hosting-merge.yml).
+# See docs/environments-dev-stage-prod.md.
+
+name: Deploy Stage
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-stage
+  cancel-in-progress: false
+
+jobs:
+  deploy_stage:
+    runs-on: ubuntu-latest
+    environment: stage
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Require Stage Firebase Vite secrets
+        run: |
+          missing=0
+          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
+            if [ -z "${!key}" ]; then
+              echo "::error::$key is empty. Configure GitHub Environment \"stage\" secrets for landings-stage."
+              missing=1
+            fi
+          done
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_STAGE" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT_STAGE is empty."
+            missing=1
+          fi
+          exit "$missing"
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT_STAGE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGE }}
+
+      - name: Write Stage .firebaserc
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const admin = process.env.STAGE_ADMIN_SITE || 'landings-stage-admin';
+          const template = process.env.STAGE_TEMPLATE_SITE || 'landings-stage-template';
+          fs.writeFileSync('.firebaserc', JSON.stringify({
+            projects: { default: 'landings-stage', stage: 'landings-stage' },
+            targets: {
+              'landings-stage': {
+                hosting: { admin: [admin], template: [template] },
+              },
+            },
+          }, null, 2) + '\n');
+          NODE
+        env:
+          STAGE_ADMIN_SITE: ${{ vars.STAGE_ADMIN_SITE }}
+          STAGE_TEMPLATE_SITE: ${{ vars.STAGE_TEMPLATE_SITE }}
+
+      - name: Env guardrails (staging)
+        run: npm run check:env:staging
+        env:
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}
+
+      - name: Build admin (staging mode)
+        run: npm run build:admin:staging
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+          VITE_TEMPLATE_PREVIEW_URL: ${{ vars.VITE_TEMPLATE_PREVIEW_URL }}
+          VITE_MARKETING_URL: ${{ vars.VITE_MARKETING_URL }}
+          VITE_ADMIN_ORIGIN: ${{ vars.VITE_ADMIN_ORIGIN }}
+          VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
+
+      - name: Build template (staging mode)
+        run: npm run build:template:staging
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+          VITE_PAGINA_ID: ${{ secrets.VITE_PAGINA_ID }}
+          VITE_ADMIN_PUBLIC_URL: ${{ vars.VITE_ADMIN_ORIGIN }}
+
+      - name: Authenticate Firebase
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT_STAGE" > "$RUNNER_TEMP/firebase-sa-stage.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa-stage.json" >> "$GITHUB_ENV"
+        env:
+          FIREBASE_SERVICE_ACCOUNT_STAGE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGE }}
+
+      - name: Deploy rules, storage, functions
+        run: |
+          npx firebase use stage
+          npx firebase deploy --only firestore:rules,firestore:indexes,storage --non-interactive
+          npm --prefix functions ci
+          npx firebase deploy --only functions --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.GOOGLE_APPLICATION_CREDENTIALS }}
+
+      - name: Deploy hosting (admin)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGE }}
+          channelId: live
+          projectId: landings-stage
+          entryPoint: .
+          target: admin
+
+      - name: Deploy hosting (template)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGE }}
+          channelId: live
+          projectId: landings-stage
+          entryPoint: landing-template
+          target: template

@@ -274,19 +274,36 @@ Update `ADMIN_PUBLIC_URL` and Stripe redirect URLs when domains change.
 
 ---
 
-## npm scripts to add (implementation follow-up)
+## Implementation status (scaffolding)
 
-```json
-{
-  "deploy:stage": "firebase use stage && npm run deploy:rules && npm run deploy:functions && npm run deploy:hosting",
-  "deploy:prod": "firebase use prod && npm run deploy:rules && npm run deploy:functions && npm run deploy:hosting",
-  "use:dev": "firebase use dev",
-  "use:stage": "firebase use stage",
-  "use:prod": "firebase use prod"
-}
+| Item | Status |
+|---|---|
+| `.firebaserc.example` with `dev` / `stage` / `prod` | Done (`prod` → current `landing-admin-9452e`) |
+| `landing-admin/.env.staging.example` (+ template / functions) | Done |
+| `scripts/check-env.mjs` heuristics | Done (`npm run check:env` / `check:env:staging`) |
+| `scripts/deploy-env.sh` + `npm run deploy:stage` / `deploy:prod` | Done |
+| Vite `build:staging` (`--mode staging`) | Done |
+| GitHub Actions `ci.yml` | Done |
+| GitHub Actions `deploy-stage.yml` (Environment `stage`) | Done — needs real `landings-stage` + secrets |
+| GitHub Actions `promote-prod.yml` (Environment `prod`) | Done — manual `workflow_dispatch` |
+| Auto Prod on merge (`firebase-hosting-merge.yml`) | Still active until Phase C |
+| Real Firebase projects `landings-dev` / `landings-stage` | **Ops** — create outside this repo |
+
+### npm scripts
+
+```bash
+npm run use:dev|use:stage|use:prod
+npm run build:admin:staging
+npm run build:template:staging
+npm run check:env
+npm run check:env:staging
+npm run deploy:stage   # bash scripts/deploy-env.sh stage
+npm run deploy:prod    # bash scripts/deploy-env.sh prod
 ```
 
-Optional: `scripts/check-env.mjs` that fails CI if Prod build contains `VITE_APP_CHECK_DEBUG_TOKEN` or Stripe `sk_test_` in Functions secrets (heuristic).
+Copy `.firebaserc.example` → `.firebaserc` (gitignored) and fill Stage Vite files from `*.env.staging.example`.
+
+`check-env`: with `--env prod`, fails on debug App Check, emulator host, Stripe `sk_test_`, Mercado Pago `TEST-`. Stage warns on live Stripe keys.
 
 ---
 
@@ -295,9 +312,9 @@ Optional: `scripts/check-env.mjs` that fails CI if Prod build contains `VITE_APP
 ### Phase A — Foundations (no client impact)
 
 1. Create `landings-dev` + `landings-stage` projects (keep current hub as Prod).  
-2. Commit `.firebaserc` aliases + `.env.*.example` for staging.  
+2. ~~Commit `.firebaserc` aliases + `.env.*.example` for staging.~~  
 3. Document secrets checklist in this file / password manager.  
-4. Wire CI build + Stage auto-deploy.
+4. ~~Wire CI build + Stage auto-deploy.~~ (enable Environment `stage` secrets next)
 
 ### Phase B — Stage parity
 
@@ -344,6 +361,16 @@ Optional: `scripts/check-env.mjs` that fails CI if Prod build contains `VITE_APP
 |---|---|
 | Mostly one Firebase hub (see `.firebaserc.example`) | Explicit `dev` / `stage` / `prod` aliases |
 | Local `.env` + production examples | + staging examples and CI secrets |
-| Manual deploys | Stage on merge; Prod on approval |
+| Manual / merge deploys to Prod | Stage on merge; Prod on approval (`promote-prod.yml`) |
 
-Implementation of scripts/CI can follow this document without changing the product model (`pageModel`, entitlements, etc.).
+Scaffolding is in-repo. Creating Firebase projects and GitHub Environment secrets remains an ops step. Product model (`pageModel`, entitlements) is unchanged.
+
+### GitHub Environment secrets (Stage)
+
+| Secret / var | Notes |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT_STAGE` | JSON SA for `landings-stage` |
+| `VITE_FIREBASE_*` | Stage web app config |
+| `STRIPE_SECRET_KEY` | **test** mode only |
+| `vars.VITE_TEMPLATE_PREVIEW_URL` / `VITE_MARKETING_URL` / `VITE_ADMIN_ORIGIN` | Stage URLs |
+| `vars.STAGE_ADMIN_SITE` / `STAGE_TEMPLATE_SITE` | Hosting site IDs (defaults `landings-stage-admin` / `landings-stage-template`) |
