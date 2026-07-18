@@ -3,6 +3,7 @@ import {
   createBillingCheckout,
   ensureBillingAccountRemote,
   setBillingAccountAddonsRemote,
+  setBillingMonetizationRemote,
   setBillingPlanManual,
 } from '../utils/billingFunctions';
 import {
@@ -139,6 +140,27 @@ export default function BillingPlansPanel({ open, onClose }) {
     }
   };
 
+  const updateMonetization = async (monetization) => {
+    if (!canManageUsers(profile)) return;
+    const accountId = String(addonAccountId || '').trim();
+    if (!accountId) {
+      setError(t('billing.addonAccountId'));
+      return;
+    }
+    setBusyKey('monetization');
+    setError('');
+    setBanner('');
+    try {
+      await setBillingMonetizationRemote({ accountId, monetization });
+      setBanner(t('billing.monetizationSuccess'));
+      await refreshBillingAccount?.();
+    } catch (err) {
+      setError(err?.message || t('billing.checkoutError'));
+    } finally {
+      setBusyKey('');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[80] bg-black/50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="w-full max-w-5xl bg-[#F4F1EA] rounded-2xl shadow-2xl border border-[#2A342D]/10 my-4">
@@ -235,42 +257,97 @@ export default function BillingPlansPanel({ open, onClose }) {
           </div>
 
           {canManageUsers(profile) && (
-            <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
-              <div>
-                <p className="text-sm font-semibold text-[#2A342D]">{t('billing.addonTitle')}</p>
-                <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.addonSubtitle')}</p>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#2A342D]">{t('billing.addonTitle')}</p>
+                  <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.addonSubtitle')}</p>
+                </div>
+                <label className="block text-xs text-[#2A342D]/70">
+                  {t('billing.addonAccountId')}
+                  <input
+                    type="text"
+                    value={addonAccountId}
+                    onChange={(event) => setAddonAccountId(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-[#2A342D]/15 bg-white px-3 py-2 text-sm text-[#2A342D]"
+                  />
+                </label>
+                <p className="text-xs font-medium text-[#4A5D4E]">
+                  {marketingAddonOn && addonAccountId === billingAccount?.id
+                    ? t('billing.addonEnabled')
+                    : t('billing.addonDisabled')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => toggleMarketingSiteAddon(true)}
+                    className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+                  >
+                    {busyKey === 'addon:marketingSite' ? t('common.loading') : t('billing.addonEnable')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => toggleMarketingSiteAddon(false)}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.addonDisable')}
+                  </button>
+                </div>
               </div>
-              <label className="block text-xs text-[#2A342D]/70">
-                {t('billing.addonAccountId')}
-                <input
-                  type="text"
-                  value={addonAccountId}
-                  onChange={(event) => setAddonAccountId(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[#2A342D]/15 bg-white px-3 py-2 text-sm text-[#2A342D]"
-                />
-              </label>
-              <p className="text-xs font-medium text-[#4A5D4E]">
-                {marketingAddonOn && addonAccountId === billingAccount?.id
-                  ? t('billing.addonEnabled')
-                  : t('billing.addonDisabled')}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={Boolean(busyKey)}
-                  onClick={() => toggleMarketingSiteAddon(true)}
-                  className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
-                >
-                  {busyKey === 'addon:marketingSite' ? t('common.loading') : t('billing.addonEnable')}
-                </button>
-                <button
-                  type="button"
-                  disabled={Boolean(busyKey)}
-                  onClick={() => toggleMarketingSiteAddon(false)}
-                  className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
-                >
-                  {t('billing.addonDisable')}
-                </button>
+
+              <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#2A342D]">{t('billing.monetizationTitle')}</p>
+                  <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.monetizationSubtitle')}</p>
+                </div>
+                <p className="text-xs text-[#2A342D]/80">
+                  {t(`billing.health.siteAccess.${billingAccount?.siteAccess?.stage || 'paid'}`)}
+                  {billingAccount?.monetization?.adsRevenueOk ? ' · adsRevenueOk' : ''}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ adsRevenueOk: true })}
+                    className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+                  >
+                    {busyKey === 'monetization' ? t('common.loading') : t('billing.monetizationRevenueOn')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ adsRevenueOk: false })}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.monetizationRevenueOff')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ forceStage: 'ads' })}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.monetizationForceAds')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ forceStage: 'offline' })}
+                    className="rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    {t('billing.monetizationForceOffline')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => updateMonetization({ forceStage: '' })}
+                    className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                  >
+                    {t('billing.monetizationForceClear')}
+                  </button>
+                </div>
               </div>
             </div>
           )}

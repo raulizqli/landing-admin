@@ -20,3 +20,7 @@ export {
   assertMarketingSiteAccess,
   setBillingAccountAddons,
 } from "./marketingEntitlement.js";
+export {
+  setBillingMonetization,
+  syncSiteAccessDaily,
+} from "./siteAccessSync.js";

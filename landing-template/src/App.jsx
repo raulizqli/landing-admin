@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { MarketingSite } from '@raulizqli/landing-ui';
+import { MarketingSite, SiteAccessGate } from '@raulizqli/landing-ui';
 import {
   findMarketingRouteByPath,
   isMarketingSite,
@@ -387,22 +387,28 @@ export default function App() {
       : <ErrorState message="No hay datos disponibles para esta página." />;
   }
 
+  const enforceSiteAccess = !previewMode && !usingDemoFallback;
+
   if (isMarketingSite(displayData)) {
     return (
-      <MarketingSite
-        key={`${displayData.activeLanguage || displayData.labelLanguage || 'default'}-${marketingPath}`}
-        data={displayData}
-        path={marketingPath}
-        interactive={!previewMode}
-      />
+      <SiteAccessGate data={displayData} enforce={enforceSiteAccess}>
+        <MarketingSite
+          key={`${displayData.activeLanguage || displayData.labelLanguage || 'default'}-${marketingPath}`}
+          data={displayData}
+          path={marketingPath}
+          interactive={!previewMode}
+        />
+      </SiteAccessGate>
     );
   }
 
   return (
-    <LandingPage
-      key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
-      data={displayData}
-      onLanguageChange={handleLanguageChange}
-    />
+    <SiteAccessGate data={displayData} enforce={enforceSiteAccess}>
+      <LandingPage
+        key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
+        data={displayData}
+        onLanguageChange={handleLanguageChange}
+      />
+    </SiteAccessGate>
   );
 }

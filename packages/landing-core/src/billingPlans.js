@@ -3,6 +3,12 @@
  * Keep in sync with Cloud Functions checkout price mapping (env).
  */
 
+import {
+  createEmptyMonetization,
+  normalizeMonetization,
+  resolveSiteAccessFromAccount,
+} from './siteAccess.js';
+
 export const BILLING_PLANS = [
   {
     id: 'starter',
@@ -141,6 +147,7 @@ export function getSubscriptionHealth(account, { bypass = false } = {}) {
       currentPeriodEnd: periodEnd,
       canCreatePages: true,
       canEditExistingBasics: true,
+      siteAccess: resolveSiteAccessFromAccount({ ...account, status: 'active' }),
     };
   }
 
@@ -156,6 +163,7 @@ export function getSubscriptionHealth(account, { bypass = false } = {}) {
       currentPeriodEnd: periodEnd,
       canCreatePages: canAccountCreatePage(account, pageCount, { bypass: false }),
       canEditExistingBasics: true,
+      siteAccess: resolveSiteAccessFromAccount(account),
     };
   }
 
@@ -171,6 +179,7 @@ export function getSubscriptionHealth(account, { bypass = false } = {}) {
       currentPeriodEnd: periodEnd,
       canCreatePages: canAccountCreatePage(account, pageCount, { bypass: false }),
       canEditExistingBasics: true,
+      siteAccess: resolveSiteAccessFromAccount(account),
     };
   }
 
@@ -186,6 +195,7 @@ export function getSubscriptionHealth(account, { bypass = false } = {}) {
     currentPeriodEnd: periodEnd,
     canCreatePages: false,
     canEditExistingBasics: true,
+    siteAccess: resolveSiteAccessFromAccount(account),
   };
 }
 
@@ -219,6 +229,8 @@ export function createEmptyBillingAccount(overrides = {}) {
       ? [...new Set(overrides.pageIds.map((id) => String(id ?? '').trim()).filter(Boolean))]
       : [],
     addons: normalizeBillingAddons(overrides.addons),
+    unpaidSince: overrides.unpaidSince ? String(overrides.unpaidSince) : null,
+    monetization: normalizeMonetization(overrides.monetization ?? createEmptyMonetization()),
     currentPeriodEnd: overrides.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: overrides.cancelAtPeriodEnd === true,
     createdAt: overrides.createdAt ?? null,

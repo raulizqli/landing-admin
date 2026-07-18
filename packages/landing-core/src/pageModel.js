@@ -34,6 +34,7 @@ import {
   normalizeMarketingSettings,
   normalizeSiteMode,
 } from './marketingSite.js';
+import { normalizeSiteAccess } from './siteAccess.js';
 
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
@@ -160,6 +161,13 @@ export const EMPTY_PAGE = {
     robotsTxt: '',
     generatedAt: '',
     baseUrl: '',
+  },
+  siteAccess: {
+    stage: 'paid',
+    unpaidSince: null,
+    adsEnabled: false,
+    offline: false,
+    updatedAt: null,
   },
 };
 
@@ -336,6 +344,7 @@ export function normalizePageData(data = {}) {
     generatedAt: String(next.seoArtifacts?.generatedAt ?? ''),
     baseUrl: String(next.seoArtifacts?.baseUrl ?? '').trim().replace(/\/$/, ''),
   };
+  next.siteAccess = normalizeSiteAccess(next.siteAccess);
 
   return next;
 }

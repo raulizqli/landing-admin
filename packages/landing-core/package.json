@@ -52,6 +52,7 @@
     "./hostingDeploy": "./src/hostingDeploy.js",
     "./billingPlans": "./src/billingPlans.js",
     "./marketingSite": "./src/marketingSite.js",
-    "./marketingSeo": "./src/marketingSeo.js"
+    "./marketingSeo": "./src/marketingSeo.js",
+    "./siteAccess": "./src/siteAccess.js"
   }
 }

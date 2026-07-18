@@ -88,3 +88,14 @@ export async function setBillingAccountAddonsRemote({ accountId, addons } = {}) 
     throw new Error(mapBillingCallableError(error));
   }
 }
+
+/** Root-only: confirm ad revenue or force grace/ads/offline stage. */
+export async function setBillingMonetizationRemote({ accountId, monetization } = {}) {
+  try {
+    const callable = httpsCallable(getHubFunctions(), 'setBillingMonetization');
+    const result = await callable({ accountId, monetization });
+    return result.data?.account ?? null;
+  } catch (error) {
+    throw new Error(mapBillingCallableError(error));
+  }
+}

@@ -14,8 +14,8 @@ The admin sidebar shows a **subscription health card**:
 **After a missed Agency renewal (example):** you paid Agency, created 3 landings, then stopped paying.
 
 - Those **3 pages stay** on the account (you are not forced down to Starter’s 1-page limit by deleting them).
-- Public sites **stay online**.
-- CMS falls to **free tier**: edit basic fields on existing pages; **no new landings**; paid features (embeds, external Firebase, Marketing Site, etc.) locked until renew.
+- CMS falls to **free tier**: edit basic fields on existing pages; **no new landings**; paid features locked until renew.
+- Public sites: **6 months** online without ads → then **Google Ads / publicity** → if ads don’t earn (and ops doesn’t mark revenue OK) → **offline**. Details: `docs/unpaid-site-publicity.md`.
 
 ## 1. Commercial activation
 

@@ -89,12 +89,20 @@ export default function SubscriptionHealthCard({
         )}
       </dl>
 
+      {health.siteAccess?.stage && health.siteAccess.stage !== 'paid' && (
+        <p className="mt-2 rounded border border-current/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide">
+          {t(`billing.health.siteAccess.${health.siteAccess.stage}`)}
+        </p>
+      )}
+
       {health.freeTier && (
         <ul className="mt-2 space-y-0.5 border-t border-current/20 pt-2 text-[10px] leading-snug opacity-90">
           <li>· {t('billing.health.freeKeepPages')}</li>
           <li>· {t('billing.health.freeEditBasics')}</li>
           <li>· {t('billing.health.freeNoCreate')}</li>
-          <li>· {t('billing.health.freeSitesStayUp')}</li>
+          <li>· {t('billing.health.freeGrace')}</li>
+          <li>· {t('billing.health.freeAds')}</li>
+          <li>· {t('billing.health.freeOffline')}</li>
         </ul>
       )}
     </div>
