@@ -19,10 +19,7 @@ function useScaledPhoneFrame(enabled) {
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
-    if (!enabled) {
-      setScale(1);
-      return undefined;
-    }
+    if (!enabled) return undefined;
 
     const host = hostRef.current;
     if (!host || typeof ResizeObserver === 'undefined') return undefined;
@@ -38,13 +35,13 @@ function useScaledPhoneFrame(enabled) {
       setScale(Number.isFinite(next) && next > 0 ? next : 1);
     };
 
-    update();
     const observer = new ResizeObserver(update);
     observer.observe(host);
     return () => observer.disconnect();
   }, [enabled]);
 
-  return { hostRef, scale };
+  const resolvedScale = enabled ? scale : 1;
+  return { hostRef, scale: resolvedScale };
 }
 
 export default function DevicePreviewPanel({
@@ -138,27 +135,29 @@ export default function DevicePreviewPanel({
     ? `mirror:${mirrorPreviewUrl}`
     : `local:${localPreviewUrl}`;
 
-  let previewSurface = null;
-  if (!formData) {
-    previewSurface = (
-      <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white">
-        Ningún sitio seleccionado para previsualización.
-      </div>
-    );
-  } else if (previewSource === 'local' && !TEMPLATE_PREVIEW_URL) {
-    previewSurface = (
-      <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white p-6 text-center">
-        Configura <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">VITE_TEMPLATE_PREVIEW_URL</code> en <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">.env.local</code> para usar la vista local.
-      </div>
-    );
-  } else if (!iframeSrc) {
-    previewSurface = (
-      <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white">
-        Ningún sitio seleccionado para previsualización.
-      </div>
-    );
-  } else {
-    previewSurface = (
+  const previewSurface = (() => {
+    if (!formData) {
+      return (
+        <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white">
+          Ningún sitio seleccionado para previsualización.
+        </div>
+      );
+    }
+    if (previewSource === 'local' && !TEMPLATE_PREVIEW_URL) {
+      return (
+        <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white p-6 text-center">
+          Configura <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">VITE_TEMPLATE_PREVIEW_URL</code> en <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">.env.local</code> para usar la vista local.
+        </div>
+      );
+    }
+    if (!iframeSrc) {
+      return (
+        <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white">
+          Ningún sitio seleccionado para previsualización.
+        </div>
+      );
+    }
+    return (
       <iframe
         ref={previewIframeRef}
         key={iframeKey}
@@ -168,7 +167,7 @@ export default function DevicePreviewPanel({
         className="w-full h-full border-0 bg-white"
       />
     );
-  }
+  })();
 
   return (
     <div className="flex-1 min-h-0 min-w-0 bg-[#E8E6E1] p-4 sm:p-5 flex flex-col overflow-hidden">
