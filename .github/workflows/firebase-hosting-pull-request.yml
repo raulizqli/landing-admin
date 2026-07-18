@@ -8,7 +8,20 @@ permissions:
   contents: read
   pull-requests: write
 jobs:
+  test:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
   build_and_preview_admin:
+    needs: [test]
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
@@ -41,6 +54,7 @@ jobs:
           target: admin
 
   build_and_preview_template:
+    needs: [test]
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
