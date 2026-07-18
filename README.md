@@ -69,6 +69,7 @@ La colección `paginas` y los campos antiguos en español se aceptan únicamente
 
 - [Desarrollo local y variables de entorno](docs/local-development.md)
 - [Optimización LeftSideDev (plan + arquitectura del sitio)](docs/leftsidedev-optimization-plan.md)
+- [Enterprise Marketing Site (CMS multi-página para clientes)](docs/enterprise-marketing-site-plan.md)
 - [Arquitectura y estructura del repositorio](docs/architecture.md)
 - [Guía específica del administrador](landing-admin/README.md)
 - [Guía específica del template](landing-template/README.md)
