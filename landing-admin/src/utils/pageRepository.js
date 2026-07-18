@@ -93,6 +93,8 @@ export async function savePageFromEditor(pageId, formData) {
   delete dataToUpdate.id;
   delete dataToUpdate.marketingRoutes;
   delete dataToUpdate.activeMarketingRouteId;
+  // siteAccess is owned by billing sync (Cloud Functions), not the page editor.
+  delete dataToUpdate.siteAccess;
 
   const firstSlide = dataToUpdate.heroSlides?.[0];
   if (firstSlide) {
