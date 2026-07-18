@@ -1,4 +1,4 @@
-# Marketing Site deploy notes (Phase 5)
+# Marketing Site deploy notes (Phases 5–6)
 
 Enterprise Marketing Sites are served by **`landing-template`** when `siteMode: 'marketing'`. The static `leftsidedev-site/` app remains a **design sandbox**; production apex should use the template + CMS.
 
@@ -62,6 +62,17 @@ npm run deploy:template
 Ensure `canonicalBaseUrl` or `customDomain` is set (seed uses `https://leftsidedev.site`).
 
 `landing-template/firebase.json` rewrites SEO paths to the functions **before** the SPA catch-all.
+
+### Phase 6 functions (entitlement)
+
+Deploy also publishes:
+
+| Callable | Purpose |
+|---|---|
+| `assertMarketingSiteAccess` | Hard reject when publishing `siteMode: 'marketing'` without Enterprise / Agency add-on / root |
+| `setBillingAccountAddons` | Root toggles `addons.marketingSite` on a billing account |
+
+Onboarding checklist: `docs/enterprise-marketing-onboarding.md`.
 
 ## Point `leftsidedev.site` at the template
 

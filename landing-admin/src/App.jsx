@@ -312,7 +312,7 @@ export default function App() {
         ? formData
         : applyLockedPageLayout(formData, layoutBaseline);
       if (isMarketingSite(dataToSave) && !entitlements.canUseMarketingSite) {
-        alert('Marketing Site requiere plan Enterprise. Se guardará como landing clásica.');
+        alert('Marketing Site requiere Enterprise o el add-on Agency. Se guardará como landing clásica.');
         dataToSave = { ...dataToSave, siteMode: 'landing' };
       }
       const result = await savePageFromEditor(selectedId, dataToSave);

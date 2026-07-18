@@ -37,7 +37,11 @@ function CtaLink({ cta, className = '', interactive = true }) {
 function StickyCta({ marketing, interactive }) {
   if (marketing.stickyCtaEnabled === false) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-4 sm:px-6">
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-4 sm:px-6"
+      role="region"
+      aria-label="Sticky call to action"
+    >
       <div className="pointer-events-auto mx-auto flex max-w-3xl flex-col items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#121A17]/92 px-4 py-3 backdrop-blur-xl sm:flex-row sm:px-5">
         <p className="text-center text-sm text-[#F4F7F5] sm:text-left">
           Ready to scope your next AI-powered product?
@@ -63,12 +67,16 @@ function FloatingContact({ site, marketing, interactive }) {
   if (marketing.floatingContactEnabled === false) return null;
   const email = site.email;
   return (
-    <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-2 sm:right-6">
+    <div
+      className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-2 sm:right-6"
+      role="complementary"
+      aria-label="Quick contact"
+    >
       {email && (
         interactive ? (
           <a
             href={`mailto:${email}`}
-            className="rounded-full border border-white/10 bg-[#121A17]/9 px-4 py-2 text-xs font-semibold text-[#F4F7F5] backdrop-blur"
+            className="rounded-full border border-white/10 bg-[#121A17]/9 px-4 py-2 text-xs font-semibold text-[#F4F7F5] backdrop-blur focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7CFFB2]"
           >
             Email us
           </a>
@@ -81,7 +89,7 @@ function FloatingContact({ site, marketing, interactive }) {
       <CtaLink
         cta={{ label: 'Talk', href: '/contact' }}
         interactive={interactive}
-        className="h-14 w-14 rounded-full bg-[#7CFFB2] p-0 text-sm font-bold text-[#070B0A]"
+        className="h-14 w-14 rounded-full bg-[#7CFFB2] p-0 text-sm font-bold text-[#070B0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       />
     </div>
   );
@@ -91,37 +99,94 @@ function MarketingChrome({ site, children, interactive = true, activePath = '/' 
   const marketing = site.marketing || {};
   const nav = listEnabledMarketingNav(site.marketingRoutes);
   const name = site.name || 'Marketing Site';
+  const linkFocus = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7CFFB2]';
 
   return (
-    <div className="min-h-full bg-[#070B0A] pb-28 text-[#F4F7F5] font-sans">
+    <div className="marketing-site min-h-full bg-[#070B0A] pb-28 text-[#F4F7F5] font-sans">
+      <style>{`
+        .marketing-site a:focus-visible,
+        .marketing-site button:focus-visible,
+        .marketing-site summary:focus-visible,
+        .marketing-site input:focus-visible {
+          outline: 2px solid #7CFFB2;
+          outline-offset: 2px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .marketing-site *,
+          .marketing-site *::before,
+          .marketing-site *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+          }
+        }
+      `}</style>
+      {interactive && (
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-[#7CFFB2] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#070B0A]"
+        >
+          Skip to content
+        </a>
+      )}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#070B0A]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
-          <a href={interactive ? '/' : undefined} className="min-w-0" onClick={interactive ? undefined : (e) => e.preventDefault()}>
+          <a
+            href={interactive ? '/' : undefined}
+            className={`min-w-0 ${linkFocus}`}
+            onClick={interactive ? undefined : (e) => e.preventDefault()}
+            aria-label={`${name} home`}
+          >
             <p className="truncate text-lg font-bold tracking-tight">{name}</p>
             <p className="truncate text-[10px] uppercase tracking-[0.18em] text-[#7CFFB2]">
               {site.specialty || 'Marketing Site'}
             </p>
           </a>
-          <nav className="hidden items-center gap-4 lg:flex" aria-label="Marketing">
+          <nav className="hidden items-center gap-4 lg:flex" aria-label="Primary">
             {nav.map((item) => (
               <a
                 key={item.to}
                 href={interactive ? item.to : undefined}
-                className={`text-sm ${item.to === activePath ? 'text-[#7CFFB2]' : 'text-[#A8B5AE] hover:text-white'}`}
+                className={`text-sm ${linkFocus} ${item.to === activePath ? 'text-[#7CFFB2]' : 'text-[#A8B5AE] hover:text-white'}`}
+                aria-current={item.to === activePath ? 'page' : undefined}
                 onClick={interactive ? undefined : (event) => event.preventDefault()}
               >
                 {item.label}
               </a>
             ))}
           </nav>
+          <details className="relative lg:hidden">
+            <summary className={`cursor-pointer list-none rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-[#F4F7F5] ${linkFocus}`}>
+              Menu
+            </summary>
+            <nav
+              className="absolute right-0 z-30 mt-2 min-w-[12rem] rounded-xl border border-white/10 bg-[#121A17] p-2 shadow-xl"
+              aria-label="Mobile primary"
+            >
+              {nav.map((item) => (
+                <a
+                  key={item.to}
+                  href={interactive ? item.to : undefined}
+                  className={`block rounded-lg px-3 py-2 text-sm ${item.to === activePath ? 'text-[#7CFFB2]' : 'text-[#A8B5AE]'}`}
+                  aria-current={item.to === activePath ? 'page' : undefined}
+                  onClick={interactive ? undefined : (event) => event.preventDefault()}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </details>
           <CtaLink
             cta={marketing.primaryCta}
             interactive={interactive}
-            className="bg-[#7CFFB2] text-[#070B0A] hover:bg-[#3ECF8E] hover:text-white"
+            className="hidden bg-[#7CFFB2] text-[#070B0A] hover:bg-[#3ECF8E] hover:text-white sm:inline-flex"
           />
         </div>
       </header>
-      {children}
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
       <footer className="border-t border-white/10 px-5 py-10">
         <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2">
           <div>
@@ -147,7 +212,7 @@ function MarketingChrome({ site, children, interactive = true, activePath = '/' 
   );
 }
 
-function HomeView({ site }) {
+function HomeView({ site, interactive = true }) {
   const home = normalizeMarketingRoutes(site.marketingRoutes).find((route) => route.type === 'home');
   const content = home?.content || {};
   const marketing = site.marketing || {};
@@ -171,8 +236,8 @@ function HomeView({ site }) {
                 || 'We build AI-powered software, custom applications and intelligent automations that help businesses scale.'}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <CtaLink cta={marketing.primaryCta} className="bg-[#7CFFB2] text-[#070B0A]" interactive={false} />
-              <CtaLink cta={marketing.secondaryCta} className="border border-white/15 text-white" interactive={false} />
+              <CtaLink cta={marketing.primaryCta} className="bg-[#7CFFB2] text-[#070B0A]" interactive={interactive} />
+              <CtaLink cta={marketing.secondaryCta} className="border border-white/15 text-white" interactive={interactive} />
             </div>
             <ul className="mt-8 flex flex-wrap gap-2">
               {(marketing.specializations || []).map((item) => (
@@ -237,8 +302,8 @@ function HomeView({ site }) {
         <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(124,255,178,0.12),rgba(61,139,255,0.10))] px-6 py-12">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Let’s build your next AI-powered product.</h2>
           <div className="mt-6 flex flex-wrap gap-3">
-            <CtaLink cta={marketing.primaryCta} className="bg-[#7CFFB2] text-[#070B0A]" interactive={false} />
-            <CtaLink cta={{ label: 'Estimate My Project', href: '/estimate' }} className="border border-white/20" interactive={false} />
+            <CtaLink cta={marketing.primaryCta} className="bg-[#7CFFB2] text-[#070B0A]" interactive={interactive} />
+            <CtaLink cta={{ label: 'Estimate My Project', href: '/estimate' }} className="border border-white/20" interactive={interactive} />
           </div>
         </div>
       </section>
@@ -537,7 +602,7 @@ export default function MarketingSite({
   const route = findMarketingRouteByPath(routes, path)
     || routes.find((item) => item.type === 'home');
 
-  let body = <HomeView site={data} />;
+  let body = <HomeView site={data} interactive={interactive} />;
   if (route?.type === 'services_index') {
     body = (
       <IndexView
@@ -568,7 +633,7 @@ export default function MarketingSite({
   else if (route?.type === 'estimate') body = <EstimateView route={route} interactive={interactive} />;
   else if (route?.type === 'resources') body = <ResourcesView route={route} />;
   else if (route?.type === 'contact') body = <ContactView site={data} route={route} />;
-  else if (route?.type === 'home' || !route) body = <HomeView site={data} />;
+  else if (route?.type === 'home' || !route) body = <HomeView site={data} interactive={interactive} />;
 
   return (
     <div className={className}>

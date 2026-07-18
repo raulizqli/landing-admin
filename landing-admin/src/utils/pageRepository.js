@@ -13,6 +13,7 @@ import {
   stripMarketingEditorFields,
 } from '@raulizqli/landing-core/marketingSite';
 import { buildMarketingSeoArtifacts } from '@raulizqli/landing-core/marketingSeo';
+import { assertMarketingSiteAccessRemote } from './billingFunctions';
 import { getHubDb, getDbForConfig } from './firebaseClients';
 import {
   mergeHubRouteWithExternalContent,
@@ -101,6 +102,8 @@ export async function savePageFromEditor(pageId, formData) {
 
   let seoArtifacts = dataToUpdate.seoArtifacts || null;
   if (dataToUpdate.siteMode === 'marketing') {
+    // Server-side entitlement hard gate (Enterprise plan or Agency add-on; root bypass).
+    await assertMarketingSiteAccessRemote(pageId);
     seoArtifacts = buildMarketingSeoArtifacts({
       ...dataToUpdate,
       marketingRoutes,

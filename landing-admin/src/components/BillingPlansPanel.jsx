@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   createBillingCheckout,
   ensureBillingAccountRemote,
+  setBillingAccountAddonsRemote,
   setBillingPlanManual,
 } from '../utils/billingFunctions';
 import {
@@ -37,9 +38,11 @@ export default function BillingPlansPanel({ open, onClose }) {
   const [busyKey, setBusyKey] = useState('');
   const [error, setError] = useState('');
   const [banner, setBanner] = useState('');
+  const [addonAccountId, setAddonAccountId] = useState('');
   const bypass = isBillingBypass(profile);
   const plans = listBillingPlansForDisplay();
   const currentPlan = getBillingPlan(billingAccount?.plan);
+  const marketingAddonOn = billingAccount?.addons?.marketingSite === true;
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +67,11 @@ export default function BillingPlansPanel({ open, onClose }) {
       .then(() => refreshBillingAccount?.())
       .catch(() => {});
   }, [open, bypass, billingAccount, refreshBillingAccount]);
+
+  useEffect(() => {
+    if (!open) return;
+    setAddonAccountId((current) => current || billingAccount?.id || profile?.accountId || user?.uid || '');
+  }, [open, billingAccount?.id, profile?.accountId, user?.uid]);
 
   if (!open) return null;
 
@@ -99,6 +107,30 @@ export default function BillingPlansPanel({ open, onClose }) {
         planId: 'enterprise',
         status: 'active',
       });
+      await refreshBillingAccount?.();
+    } catch (err) {
+      setError(err?.message || t('billing.checkoutError'));
+    } finally {
+      setBusyKey('');
+    }
+  };
+
+  const toggleMarketingSiteAddon = async (enabled) => {
+    if (!canManageUsers(profile)) return;
+    const accountId = String(addonAccountId || '').trim();
+    if (!accountId) {
+      setError(t('billing.addonAccountId'));
+      return;
+    }
+    setBusyKey('addon:marketingSite');
+    setError('');
+    setBanner('');
+    try {
+      await setBillingAccountAddonsRemote({
+        accountId,
+        addons: { marketingSite: enabled },
+      });
+      setBanner(t('billing.addonSuccess'));
       await refreshBillingAccount?.();
     } catch (err) {
       setError(err?.message || t('billing.checkoutError'));
@@ -190,6 +222,47 @@ export default function BillingPlansPanel({ open, onClose }) {
               </p>
             )}
           </div>
+
+          {canManageUsers(profile) && (
+            <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-[#2A342D]">{t('billing.addonTitle')}</p>
+                <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.addonSubtitle')}</p>
+              </div>
+              <label className="block text-xs text-[#2A342D]/70">
+                {t('billing.addonAccountId')}
+                <input
+                  type="text"
+                  value={addonAccountId}
+                  onChange={(event) => setAddonAccountId(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-[#2A342D]/15 bg-white px-3 py-2 text-sm text-[#2A342D]"
+                />
+              </label>
+              <p className="text-xs font-medium text-[#4A5D4E]">
+                {marketingAddonOn && addonAccountId === billingAccount?.id
+                  ? t('billing.addonEnabled')
+                  : t('billing.addonDisabled')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={Boolean(busyKey)}
+                  onClick={() => toggleMarketingSiteAddon(true)}
+                  className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+                >
+                  {busyKey === 'addon:marketingSite' ? t('common.loading') : t('billing.addonEnable')}
+                </button>
+                <button
+                  type="button"
+                  disabled={Boolean(busyKey)}
+                  onClick={() => toggleMarketingSiteAddon(false)}
+                  className="rounded-lg border border-[#2A342D]/20 px-3 py-2 text-xs font-semibold text-[#2A342D] hover:bg-[#F4F1EA] disabled:opacity-50"
+                >
+                  {t('billing.addonDisable')}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
             {plans.map((plan) => {

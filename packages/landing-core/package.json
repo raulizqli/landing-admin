@@ -15,6 +15,9 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
+  "scripts": {
+    "test": "node --test src/*.test.mjs"
+  },
   "exports": {
     ".": "./src/index.js",
     "./firebaseConfig": "./src/firebaseConfig.js",

@@ -77,7 +77,7 @@ export default function MarketingSiteFieldsEditor({
             </p>
             {!canUseMarketingSite && (
               <p className="mt-2 text-[11px] text-amber-700">
-                Marketing Site requires Enterprise. Root accounts bypass this gate.
+                Marketing Site requires Enterprise, or the Agency marketingSite add-on. Root bypasses this gate.
               </p>
             )}
           </div>
@@ -95,7 +95,7 @@ export default function MarketingSiteFieldsEditor({
               onClick={enableMarketing}
               className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-indigo-500"
             >
-              {canUseMarketingSite ? 'Enable Marketing Site' : 'Upgrade to Enterprise'}
+              {canUseMarketingSite ? 'Enable Marketing Site' : 'Upgrade (Enterprise / Agency add-on)'}
             </button>
           ) : (
             <button

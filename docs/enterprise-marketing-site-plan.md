@@ -34,7 +34,7 @@ features: {
 }
 ```
 
-Optional later: sell `marketingSite` as a paid add-on on Agency without full Enterprise.
+Optional: sell `marketingSite` as a paid add-on on Agency (`billingAccounts.addons.marketingSite`) without full Enterprise — supported in Phase 6.
 
 ### Buyer promise
 
@@ -275,6 +275,7 @@ Extend **`landing-template`** (not per-client forks of `leftsidedev-site`):
 - Lighthouse budgets, a11y pass, entitlement tests.
 - Agency add-on option (optional).
 - Docs for onboarding Enterprise clients.
+- Hard entitlement reject in Cloud Functions (`assertMarketingSiteAccess`).
 
 ---
 
@@ -341,7 +342,12 @@ Everything else builds on that vertical slice.
 | Cloud Functions + template rewrites for SEO feeds | Done (Phase 5) |
 | Migrate LeftSideDev showcase seed to marketing mode | Done (Phase 5) |
 | Docs: point apex at template; sandbox `leftsidedev-site` | Done (`docs/marketing-site-deploy.md`) |
-| Functions hard entitlement reject | Soft client gate only for now (Phase 6) |
+| Functions hard entitlement reject | Done (`assertMarketingSiteAccess` + admin save gate) |
+| Agency `marketingSite` add-on | Done (`addons.marketingSite` + root ops UI) |
+| MarketingSite a11y pass | Done (skip link, landmarks, focus, reduced motion, mobile nav) |
+| Lighthouse budgets | Done (`marketing-lighthouse-budget.json`, `leftsidedev-site/lighthouserc.json`) |
+| Entitlement unit tests | Done (`npm run test:core`) |
+| Enterprise onboarding docs | Done (`docs/enterprise-marketing-onboarding.md`) |
 
 ---
 
@@ -361,4 +367,4 @@ Everything else builds on that vertical slice.
 1. Embedded routes on the page doc vs subcollection? → **Prefer subcollection** for scale.
 2. Blog: extend existing `blog` array vs `posts` subcollection? → **Subcollection for marketing mode**; keep array for classic landings.
 3. Visual theme: force dark premium skin vs fully themeable? → **Themeable tokens with a “Studio” preset**.
-4. Add-on for Agency or Enterprise-only at launch? → **Enterprise-only for v1**.
+4. Add-on for Agency or Enterprise-only at launch? → **Enterprise default; Agency add-on available (Phase 6)**.

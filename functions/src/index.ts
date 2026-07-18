@@ -16,3 +16,7 @@ export {
   marketingRss,
   marketingRobots,
 } from "./marketingSeo.js";
+export {
+  assertMarketingSiteAccess,
+  setBillingAccountAddons,
+} from "./marketingEntitlement.js";

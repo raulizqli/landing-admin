@@ -20,8 +20,10 @@
     "deploy:site": "npm run build:site && npm run deploy --prefix leftsidedev-site",
     "deploy:hosting": "npm run deploy:admin && npm run deploy:template",
     "extract:template-repo": "bash scripts/extract-template-repo.sh",
-    "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui"
+    "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui",
+    "test:core": "npm run test -w @raulizqli/landing-core"
   },
+
   "devDependencies": {
     "firebase-tools": "^14.0.0"
   }

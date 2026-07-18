@@ -115,6 +115,18 @@ export function isBillingAccountActive(account) {
   return status === 'active' || status === 'trialing';
 }
 
+/** Known paid add-ons that can unlock plan features (e.g. Agency + marketingSite). */
+export const BILLING_ADDON_KEYS = ['marketingSite'];
+
+export function normalizeBillingAddons(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  const addons = {};
+  for (const key of BILLING_ADDON_KEYS) {
+    if (source[key] === true) addons[key] = true;
+  }
+  return addons;
+}
+
 export function createEmptyBillingAccount(overrides = {}) {
   const planId = normalizeBillingPlanId(overrides.plan || DEFAULT_BILLING_PLAN);
   return {
@@ -132,6 +144,7 @@ export function createEmptyBillingAccount(overrides = {}) {
     pageIds: Array.isArray(overrides.pageIds)
       ? [...new Set(overrides.pageIds.map((id) => String(id ?? '').trim()).filter(Boolean))]
       : [],
+    addons: normalizeBillingAddons(overrides.addons),
     currentPeriodEnd: overrides.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: overrides.cancelAtPeriodEnd === true,
     createdAt: overrides.createdAt ?? null,
@@ -159,12 +172,17 @@ export function planHasFeature(planId, featureKey) {
   return Boolean(plan?.features?.[featureKey]);
 }
 
+export function accountHasAddon(account, addonKey) {
+  return account?.addons?.[addonKey] === true;
+}
+
 export function accountHasFeature(account, featureKey, { bypass = false } = {}) {
   if (bypass) return true;
   if (!isBillingAccountActive(account)) {
     // Past due: still allow basic edit of existing pages.
     return featureKey === 'basicSections';
   }
+  if (accountHasAddon(account, featureKey)) return true;
   return planHasFeature(account.plan, featureKey);
 }
 
