@@ -1,42 +1,47 @@
-# Proposal: AI integration for paid subscribers
+# Proposal: AI integration (free-model lite + paid Assist)
 
 ## Goal
 
-Add **AI-assisted content and SEO tools inside the admin CMS**, available only to **paid, active** subscriptions, without breaking:
+Add **AI-assisted content tools inside the admin CMS**, with two tracks:
+
+1. **Free tier → free models** — Starter and unpaid/free-tier CMS accounts get **AI Lite** routed to free-tier providers (Gemini / Groq), tight monthly caps.  
+2. **Paid Pro+ → paid models** — better quality, higher quotas, BYOK on Agency/Enterprise.
+
+Without breaking:
 
 - local mirror preview (zero Firestore writes per keystroke);
 - English data model + `normalizePageData()`;
-- plan entitlements (`accountHasFeature` + Cloud Functions hard gates);
-- free-tier / unpaid publicity rules (AI stays locked when not paid).
-
-AI should feel like a **co-pilot for psychologists / studios**, not a separate product.
+- plan entitlements + Cloud Functions hard gates;
+- unpaid publicity / offline site policy (public site rules stay separate from CMS AI).
 
 ---
 
 ## Product packaging (recommended)
 
-| Plan | AI access | Monthly AI budget (suggested) | Capabilities |
-|---|---|---|---|
-| **Starter** | None (or 5 trial generations once) | — | Upgrade wall |
-| **Pro** | **AI Assist** included | ~50 generations / mo (platform key) | Section rewrite, bio polish, blog draft, SEO meta |
-| **Agency** | **AI Studio** | ~200 gens / mo **or BYOK** | Everything in Pro + batch + tone presets + **own API token** |
-| **Enterprise** | **AI Studio +** | Custom / BYOK | Marketing Site generators + BYOK + optional higher platform quota |
+| Tier | AI access | Model path | Monthly budget (suggested) | Capabilities |
+|---|---|---|---|---|
+| **Free tier** (Starter **or** unpaid/lapsed CMS) | **AI Lite** | **Free models** — Gemini Flash / Groq (platform free-tier keys) | ~15 gens / mo | Bio/hero **rewrite** only (no blog batch, no Marketing Site) |
+| **Pro** (active) | **AI Assist** | Paid mini (OpenAI / Gemini paid) | ~50 gens / mo | Rewrite, services, blog draft, SEO meta |
+| **Agency** (active) | **AI Studio** | Paid mini **or BYOK** | ~200 gens / mo | + batch, tone presets, own API token |
+| **Enterprise** (active) | **AI Studio +** | Paid / BYOK | Custom | + Marketing Site generators |
 
-Optional later: sell `features.aiAssist` as an **add-on** on Starter (same pattern as `addons.marketingSite`).
+**Rule of thumb:** free users never burn paid OpenAI tokens; paid users never depend on flaky free quotas for core UX.
 
-### Entitlement flag
+### Entitlement flags
 
 ```js
 features: {
-  // existing…
-  aiAssist: false, // starter
-  aiAssist: true,  // pro+
+  aiAssistLite: true,  // starter + free-tier CMS (free models)
+  aiAssist: true,      // pro+ paid models
 }
 ```
 
-Hard gate in Cloud Functions (same pattern as `assertMarketingSiteAccess`):
+Hard gate in `runAiAssist`:
 
-- Callable `runAiAssist` checks `active|trialing` + `accountHasFeature(..., 'aiAssist')` (or root bypass).
+- Resolve lane: `lite` vs `full` from plan + billing status.
+- **Lite:** allow even when `past_due` / `canceled` / Starter; use free-model provider; enforce lite quota + lite action allow-list.
+- **Full:** require `active|trialing` + Pro+; use paid provider or BYOK.
+- Root bypass as today.
 - Never call the model from the browser with a secret key.
 
 ---
