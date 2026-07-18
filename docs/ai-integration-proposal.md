@@ -188,6 +188,27 @@ OpenAI-compatible BYOK fields:
 
 All calls go through Cloud Functions — the browser never sees platform or BYOK secrets.
 
+### Free / low-cost API options
+
+There is no reliable **unlimited free** API for a multi-tenant SaaS. What exists are **free tiers** (quotas, rate limits, ToS that can change):
+
+| Option | Cost | Fit for us | Caveats |
+|---|---|---|---|
+| **Google Gemini (AI Studio)** | Free tier | Best “free” BYOK / platform trial | Daily RPM/token caps; production should use paid/Vertex |
+| **Groq** | Free tier | Great BYOK via `openai_compatible` | Rate limits; model list changes |
+| **OpenRouter** | Some free models | BYOK compatible | Free models crowded/slow; quality varies |
+| **Mistral / DeepSeek** | Free or cheap tiers | BYOK compatible | Check current ToS for commercial use |
+| **Hugging Face Inference** | Limited free | Weak for v1 | Cold starts, less stable JSON |
+| **Ollama / local LLM** | Free (self-host) | Enterprise only | Client must host GPU/CPU; not our cloud default |
+| **OpenAI / Anthropic** | Paid | Platform default | No meaningful free production tier |
+
+**Recommendation**
+
+1. **Platform default:** paid mini model (OpenAI or Gemini paid) so Pro subscribers get predictable quality.  
+2. **“Free for the subscriber” path:** BYOK with **Gemini free tier** or **Groq free tier** (Agency+). They use their own free quota; we don’t pay tokens.  
+3. **Optional platform trial:** route Starter’s 5 trial gens through Gemini free/paid with hard caps — not unlimited.  
+4. Never depend on a free tier alone for all paid customers (outages, ToS, rate limits).
+
 ### Bring your own API key (BYOK) — yes
 
 Paid subscribers (recommended **Agency + Enterprise**; optional Pro add-on) can choose:
