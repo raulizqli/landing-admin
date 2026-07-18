@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>LeftSideDev Blog</title>
+    <link>https://leftsidedev.site/blog</link>
+    <description>AI engineering, software architecture, and automation insights from LeftSideDev.</description>
+    <language>en</language>
+    <item>
+      <title>How To Build Ai Agents</title>
+      <link>https://leftsidedev.site/blog/how-to-build-ai-agents</link>
+      <guid>https://leftsidedev.site/blog/how-to-build-ai-agents</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: How To Build Ai Agents</description>
+    </item>
+    <item>
+      <title>Cursor Vs Claude Code</title>
+      <link>https://leftsidedev.site/blog/cursor-vs-claude-code</link>
+      <guid>https://leftsidedev.site/blog/cursor-vs-claude-code</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: Cursor Vs Claude Code</description>
+    </item>
+    <item>
+      <title>React Best Practices 2026</title>
+      <link>https://leftsidedev.site/blog/react-best-practices-2026</link>
+      <guid>https://leftsidedev.site/blog/react-best-practices-2026</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: React Best Practices 2026</description>
+    </item>
+    <item>
+      <title>Angular Performance</title>
+      <link>https://leftsidedev.site/blog/angular-performance</link>
+      <guid>https://leftsidedev.site/blog/angular-performance</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: Angular Performance</description>
+    </item>
+    <item>
+      <title>Firebase Authentication Patterns</title>
+      <link>https://leftsidedev.site/blog/firebase-authentication-patterns</link>
+      <guid>https://leftsidedev.site/blog/firebase-authentication-patterns</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: Firebase Authentication Patterns</description>
+    </item>
+    <item>
+      <title>Building Rag Systems</title>
+      <link>https://leftsidedev.site/blog/building-rag-systems</link>
+      <guid>https://leftsidedev.site/blog/building-rag-systems</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: Building Rag Systems</description>
+    </item>
+    <item>
+      <title>Openai Responses Api</title>
+      <link>https://leftsidedev.site/blog/openai-responses-api</link>
+      <guid>https://leftsidedev.site/blog/openai-responses-api</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: Openai Responses Api</description>
+    </item>
+    <item>
+      <title>N8n Automation At Work</title>
+      <link>https://leftsidedev.site/blog/n8n-automation-at-work</link>
+      <guid>https://leftsidedev.site/blog/n8n-automation-at-work</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: N8n Automation At Work</description>
+    </item>
+    <item>
+      <title>Ai For Businesses</title>
+      <link>https://leftsidedev.site/blog/ai-for-businesses</link>
+      <guid>https://leftsidedev.site/blog/ai-for-businesses</guid>
+      <pubDate>Sat, 18 Jul 2026 10:43:34 GMT</pubDate>
+      <description>LeftSideDev technical article: Ai For Businesses</description>
+    </item>
+  </channel>
+</rss>

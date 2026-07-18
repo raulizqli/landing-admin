@@ -136,7 +136,20 @@ La landing muestra el selector EN/ES en el navbar cuando hay más de un idioma h
 
 ## Página comercial de LeftSideDev
 
-El seed crea o reemplaza `pages/leftsidedev`:
+### Sitio corporativo (recomendado)
+
+El sitio **AI Engineering Studio** vive en `leftsidedev-site/` (multi-ruta, SEO/GEO, blog, case studies):
+
+```bash
+npm run dev:site
+# http://localhost:5175
+```
+
+Plan e implementación: [leftsidedev-optimization-plan.md](./leftsidedev-optimization-plan.md).
+
+### Seed legacy del Landing CMS (`pages/leftsidedev`)
+
+El seed sigue disponible para la landing del producto CMS en el template:
 
 ```bash
 cd functions

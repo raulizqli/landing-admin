@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#070B0A"/>
+  <circle cx="980" cy="120" r="220" fill="#7CFFB2" fill-opacity="0.12"/>
+  <circle cx="200" cy="520" r="180" fill="#3D8BFF" fill-opacity="0.10"/>
+  <text x="80" y="250" fill="#F4F7F5" font-family="Arial, sans-serif" font-size="72" font-weight="700">LeftSideDev</text>
+  <text x="80" y="330" fill="#7CFFB2" font-family="Arial, sans-serif" font-size="40" font-weight="600">AI Engineering Studio</text>
+  <text x="80" y="410" fill="#A8B5AE" font-family="Arial, sans-serif" font-size="28">AI-powered software · Automations · Custom systems</text>
+</svg>
