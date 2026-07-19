@@ -92,6 +92,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewSectionKey, setPreviewSectionKey] = useState('identity');
+  const [previewDeviceView, setPreviewDeviceView] = useState('desktop');
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [showBilling, setShowBilling] = useState(false);
@@ -115,6 +116,13 @@ export default function App() {
       // ignore
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
+      setPagesSidebarCollapsed(true);
+    }
+  }, []);
+
   const canEditSelectedPage = canEditPage(profile, selectedId);
   const canManageHosting = canAccessHostingSettings(profile);
   const canCreateNewPages = canCreatePages(profile);
@@ -302,10 +310,16 @@ export default function App() {
     }
   };
 
-  const handleCreatePage = async ({ pageId, name, specialty, vertical }) => {
+  const handleCreatePage = async ({ pageId, name, specialty, vertical, draft }) => {
     setCreatingPage(true);
     try {
-      const created = await createPageInHub({ pageId, name, specialty, vertical });
+      const created = await createPageInHub({
+        pageId,
+        name,
+        specialty,
+        vertical,
+        draft,
+      });
       setLandings((current) => {
         const next = [{ id: pageId, ...created }, ...current.filter((item) => item.id !== pageId)];
         return next;
@@ -397,7 +411,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh w-full max-w-full bg-gray-100 text-gray-800 overflow-hidden font-sans">
+    <div className="flex h-dvh w-full max-w-full bg-gray-100 text-gray-800 overflow-hidden font-sans max-lg:pb-11">
       {/* 1. BARRA LATERAL */}
       <div
         className={`bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0 min-h-0 transition-[width] duration-200 ease-out ${
@@ -462,14 +476,15 @@ export default function App() {
                 </button>
               </div>
               <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
-                <p className="text-[10px] text-gray-400 truncate" title={user.email}>{user.email}</p>
-                <p className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wide">{getRoleLabel(profile.role)}</p>
+                <AiQuotaBadge>
+                  <p className="text-[10px] text-gray-400 truncate" title={user.email}>{user.email}</p>
+                  <p className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wide">{getRoleLabel(profile.role)}</p>
+                </AiQuotaBadge>
                 <SubscriptionHealthCard
                   health={entitlements.health}
                   planName={t(`billing.plans.${entitlements.planId}.name`)}
                   onOpenBilling={openBilling}
                 />
-                <AiQuotaBadge />
                 <LanguageSwitcher className="text-gray-300" />
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -563,18 +578,22 @@ export default function App() {
       </div>
 
       {/* 2. FORMULARIO */}
-      <div className="w-5/12 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-6 bg-white border-r border-gray-200 shadow-inner">
+      <div className={`min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-6 bg-white border-r border-gray-200 shadow-inner max-lg:!grow max-lg:!shrink max-lg:!basis-0 max-sm:p-3 transition-[flex-grow,flex-basis] duration-500 ease-in-out ${
+        previewDeviceView === 'mobile'
+          ? 'grow shrink basis-0'
+          : 'grow-0 shrink-0 basis-[41.666667%]'
+      }`}>
         {editorData ? (
           <form onSubmit={handleSaveChanges} className="space-y-4">
-            <div className="flex justify-between items-center border-b pb-4">
-              <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b pb-4">
+              <div className="min-w-0">
                 <h2 className="text-lg font-bold text-gray-900">Editor Editorial</h2>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 truncate">
                   ID del Documento: {selectedId}
                   {isDemoPreview && ' · modo demo'}
                 </p>
               </div>
-              <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0">
                 {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}
               </button>
             </div>
@@ -683,7 +702,7 @@ export default function App() {
                 sectionKey="hero"
                 fillStatus={getEditorSectionFill('hero', editorData)}
                 title="Hero"
-                description="Especialidad, diapositivas, colores y botones"
+                description="Especialidad, diapositivas, colores, botones — y ✨ LeftSide AI"
                 defaultOpen={false}
                 onActivate={activatePreviewSection}
               >
@@ -703,7 +722,8 @@ export default function App() {
                 sectionKey="about"
                 fillStatus={getEditorSectionFill('about', editorData)}
                 title="Acerca de"
-                description="Título, frase, texto descriptivo y colores"
+                description="Título, frase, texto descriptivo, colores — y ✨ LeftSide AI"
+                defaultOpen
                 onActivate={activatePreviewSection}
               >
                 <AboutFieldsEditor
@@ -959,6 +979,8 @@ export default function App() {
         editingLanguage={editingLanguage}
         previewScrollSectionId={previewScrollSectionId}
         activeMarketingRouteId={activeMarketingRouteId}
+        deviceView={previewDeviceView}
+        onDeviceViewChange={setPreviewDeviceView}
       />
 
       {showUserManagement && (

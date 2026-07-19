@@ -134,7 +134,13 @@ export async function savePageFromEditor(pageId, formData) {
   return { migratedToExternal: false, marketingRoutes, seoArtifacts };
 }
 
-export async function createPageInHub({ pageId, name = '', specialty = '', vertical = 'generic' }) {
+export async function createPageInHub({
+  pageId,
+  name = '',
+  specialty = '',
+  vertical = 'generic',
+  draft = null,
+}) {
   const id = String(pageId ?? '').trim();
   if (!id) {
     throw new Error('Falta el ID de la página.');
@@ -147,6 +153,7 @@ export async function createPageInHub({ pageId, name = '', specialty = '', verti
   }
 
   const initial = hydratePageForm({
+    ...(draft && typeof draft === 'object' ? draft : {}),
     name: String(name ?? '').trim(),
     specialty: String(specialty ?? '').trim(),
     vertical,

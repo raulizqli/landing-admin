@@ -26,6 +26,16 @@ export async function runAiAssistRemote(payload) {
   }
 }
 
+export async function generateLandingDraftRemote(payload) {
+  try {
+    const callable = httpsCallable(getHubFunctions(), 'generateLandingDraft', { timeout: 120000 });
+    const result = await callable(payload);
+    return result.data;
+  } catch (error) {
+    throw new Error(mapAiError(error));
+  }
+}
+
 export async function getAiAssistUsageRemote() {
   try {
     const callable = httpsCallable(getHubFunctions(), 'getAiAssistUsage');
@@ -46,35 +56,49 @@ export async function setAiProviderConfigRemote(payload) {
   }
 }
 
-/** Browser-side Local Ollama (Lite) — never sends secrets to our backend. */
-export async function runLocalOllamaAssist({
+/** Browser-side local model engine (Lite) — never sends secrets to our backend. */
+export async function runLocalAssistant({
   system,
   user,
-  model = 'qwen2.5:7b',
+  model = 'llama3.2',
   baseUrl = 'http://127.0.0.1:11434',
 } = {}) {
-  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      stream: false,
-      format: 'json',
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }),
-  });
+  const endpoint = `${baseUrl.replace(/\/$/, '')}/api/chat`;
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        stream: false,
+        format: 'json',
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `El motor local no responde en ${baseUrl}. Comprueba que el servicio y el modelo estén disponibles. (${detail})`,
+    );
+  }
   const raw = await response.text();
   if (!response.ok) {
-    throw new Error(`Ollama local no disponible (${response.status}). ¿Está corriendo ollama serve?`);
+    if (response.status === 404) {
+      throw new Error(
+        `El modelo local «${model}» no está disponible. Instálalo o selecciona otro modelo.`,
+      );
+    }
+    throw new Error(`El motor local falló (${response.status}): ${raw.slice(0, 160) || 'sin detalle'}`);
   }
   let data;
   try {
     data = JSON.parse(raw);
   } catch {
-    throw new Error('Respuesta inválida de Ollama local.');
+    throw new Error('Respuesta inválida del motor local.');
   }
   const content = data?.message?.content || '{}';
   try {

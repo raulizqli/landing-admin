@@ -41,6 +41,67 @@ export default function SubscriptionHealthCard({
   const periodLabel = formatPeriodEnd(health.currentPeriodEnd, locale);
   const title = t(`billing.health.${health.state}.title`);
   const body = t(`billing.health.${health.state}.body`);
+  const collapsiblePaidState = health.paid || health.state === 'ok' || health.state === 'bypass';
+
+  if (collapsiblePaidState) {
+    return (
+      <details className={`group rounded-lg border px-2.5 py-2 ${style}`}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 truncate text-[10px] font-bold uppercase tracking-wide">
+            {health.state === 'ok'
+              ? t('billing.health.okShort')
+              : t('billing.health.paidBadge')}
+            {health.state === 'bypass' && (
+              <span className="ml-1 normal-case tracking-normal opacity-75">· {title}</span>
+            )}
+          </span>
+          <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide opacity-75">
+            {t('billing.health.details')}
+            <span className="ml-1 inline-block transition-transform group-open:rotate-180" aria-hidden>⌄</span>
+          </span>
+        </summary>
+
+        <div className="mt-2 border-t border-current/20 pt-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold leading-snug">{title}</p>
+              <p className="mt-1 text-[10px] leading-relaxed opacity-90">{body}</p>
+            </div>
+            {!compact && onOpenBilling && (
+              <button
+                type="button"
+                onClick={onOpenBilling}
+                className="shrink-0 rounded border border-current/30 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide opacity-90 hover:opacity-100"
+              >
+                {t('common.billing')}
+              </button>
+            )}
+          </div>
+
+          <dl className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] opacity-90">
+            <div>
+              <dt className="uppercase tracking-wide opacity-70">{t('billing.currentPlan')}</dt>
+              <dd className="font-semibold">{planName}</dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-wide opacity-70">{t('billing.pages')}</dt>
+              <dd className="font-semibold">
+                {health.pageLimit == null
+                  ? `${health.pageCount} · ${t('billing.unlimited')}`
+                  : `${health.pageCount} / ${health.pageLimit}`}
+              </dd>
+            </div>
+            {periodLabel && (
+              <div className="col-span-2">
+                <dt className="uppercase tracking-wide opacity-70">{t('billing.health.nextRenewal')}</dt>
+                <dd className="font-semibold">{periodLabel}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      </details>
+    );
+  }
 
   return (
     <div className={`rounded-lg border px-2.5 py-2 ${style}`}>

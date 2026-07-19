@@ -247,7 +247,7 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
               action="hero_suggest"
               fieldPath="heroSlides[0]"
               currentValue={items[0]?.text || items[0]?.title || ''}
-              label="✨ Hero IA"
+              label="✨ LeftSide AI"
             />
           )}
           <button

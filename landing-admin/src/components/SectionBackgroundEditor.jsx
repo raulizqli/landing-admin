@@ -15,19 +15,24 @@ export function ColorField({ label, value, onChange, presets = BRAND_COLOR_PRESE
     <div className="space-y-1.5">
       <label className="block text-[10px] font-bold text-gray-400 uppercase">{label}</label>
       <div className="flex flex-wrap gap-1.5">
-        {presets.map((preset) => (
-          <button
-            key={`${label}-${preset.value}`}
-            type="button"
-            title={preset.label}
-            onClick={() => onChange(preset.value)}
-            className={`h-6 w-6 rounded-full border-2 transition ${
-              hexValue === preset.value ? 'border-indigo-500 scale-110' : 'border-white shadow-sm'
-            }`}
-            style={{ backgroundColor: preset.value }}
-            aria-label={preset.label}
-          />
-        ))}
+        {presets.map((preset) => {
+          const selected = hexValue === preset.value;
+          return (
+            <button
+              key={`${label}-${preset.value}`}
+              type="button"
+              title={preset.label}
+              onClick={() => onChange(preset.value)}
+              className={`h-6 w-6 rounded-full border transition ${
+                selected
+                  ? 'border-indigo-500 ring-1 ring-indigo-500 scale-110'
+                  : 'border-indigo-300/70 ring-1 ring-indigo-300/40'
+              }`}
+              style={{ backgroundColor: preset.value }}
+              aria-label={preset.label}
+            />
+          );
+        })}
       </div>
       <div className="flex items-center gap-2">
         <input

@@ -5,15 +5,25 @@ import {
   listUserProfiles,
   saveUserProfile,
 } from '../utils/userAccess';
-import { createCmsUser, deleteCmsUser } from '../utils/userFunctions';
+import {
+  createCmsUser,
+  deleteCmsUser,
+  generateCmsUserInvitation,
+} from '../utils/userFunctions';
+import {
+  buildUserInvitationMessage,
+  buildUserInvitationUrl,
+  INVITATION_CHANNELS,
+} from '../utils/userInvitation';
 
 const EMPTY_FORM = {
   email: '',
-  password: '',
   displayName: '',
   role: ROLES.USER,
   assignedPageIds: '',
   pageId: '',
+  invitationChannel: INVITATION_CHANNELS.EMAIL,
+  whatsappPhone: '',
 };
 
 function parsePageIdsInput(value) {
@@ -30,6 +40,8 @@ export default function UserManagement({ pageOptions = [], onClose }) {
   const [error, setError] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingUid, setEditingUid] = useState(null);
+  const [invitation, setInvitation] = useState(null);
+  const [invitationStatus, setInvitationStatus] = useState('');
 
   const loadUsers = async () => {
     setLoading(true);
@@ -58,11 +70,12 @@ export default function UserManagement({ pageOptions = [], onClose }) {
     setEditingUid(user.uid);
     setForm({
       email: user.email,
-      password: '',
       displayName: user.displayName,
       role: user.role || ROLES.USER,
       assignedPageIds: (user.assignedPageIds || []).join('\n'),
       pageId: user.pageId || '',
+      invitationChannel: INVITATION_CHANNELS.EMAIL,
+      whatsappPhone: '',
     });
   };
 
@@ -83,15 +96,28 @@ export default function UserManagement({ pageOptions = [], onClose }) {
       if (editingUid) {
         await saveUserProfile(db, editingUid, payload);
       } else {
-        const password = String(form.password ?? '');
-        if (password.length < 6) {
-          throw new Error('La contraseña debe tener al menos 6 caracteres.');
+        if (
+          form.invitationChannel === INVITATION_CHANNELS.WHATSAPP
+          && !String(form.whatsappPhone ?? '').replace(/\D/g, '')
+        ) {
+          throw new Error('Ingresa un teléfono de WhatsApp con código de país.');
         }
 
-        await createCmsUser({
+        const result = await createCmsUser({
           ...payload,
-          password,
+          createInvitation: form.invitationChannel !== INVITATION_CHANNELS.NONE,
         });
+        if (result.invitationLink) {
+          setInvitation({
+            uid: result.uid,
+            email: result.email,
+            displayName: payload.displayName,
+            invitationLink: result.invitationLink,
+            channel: form.invitationChannel,
+            phone: form.whatsappPhone,
+          });
+          setInvitationStatus('');
+        }
       }
 
       await loadUsers();
@@ -100,6 +126,45 @@ export default function UserManagement({ pageOptions = [], onClose }) {
       setError(saveError.message || 'No se pudo guardar el usuario.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePrepareInvitation = async (user) => {
+    setError('');
+    setInvitationStatus('');
+    try {
+      const result = await generateCmsUserInvitation(user.uid);
+      setInvitation({
+        ...result,
+        displayName: result.displayName || user.displayName || '',
+        channel: INVITATION_CHANNELS.EMAIL,
+        phone: '',
+      });
+    } catch (invitationError) {
+      setError(invitationError.message || 'No se pudo preparar la invitación.');
+    }
+  };
+
+  const handleOpenInvitation = () => {
+    try {
+      const url = buildUserInvitationUrl(invitation);
+      if (invitation.channel === INVITATION_CHANNELS.EMAIL) {
+        window.location.href = url;
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+      setInvitationStatus('Canal abierto. Confirma el envío en la aplicación.');
+    } catch (openError) {
+      setInvitationStatus(openError.message);
+    }
+  };
+
+  const handleCopyInvitation = async (value, confirmation) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setInvitationStatus(confirmation);
+    } catch {
+      setInvitationStatus('No se pudo copiar al portapapeles.');
     }
   };
 
@@ -126,7 +191,7 @@ export default function UserManagement({ pageOptions = [], onClose }) {
           <div>
             <h2 className="text-lg font-bold text-gray-900">Gestión de usuarios</h2>
             <p className="text-xs text-gray-500">
-              Solo root. Crea cuentas con email/contraseña y asigna rol y páginas.
+              Solo root. Crea cuentas, asigna accesos y prepara invitaciones seguras.
             </p>
           </div>
           <button
@@ -166,6 +231,13 @@ export default function UserManagement({ pageOptions = [], onClose }) {
                       <div className="flex gap-1 shrink-0">
                         <button
                           type="button"
+                          onClick={() => handlePrepareInvitation(user)}
+                          className="px-2 py-1 rounded bg-amber-50 text-amber-700 hover:bg-amber-100"
+                        >
+                          Invitar
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleEdit(user)}
                           className="px-2 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                         >
@@ -203,22 +275,6 @@ export default function UserManagement({ pageOptions = [], onClose }) {
               />
             </div>
 
-            {!editingUid && (
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  value={form.password}
-                  onChange={(event) => setForm({ ...form, password: event.target.value })}
-                  placeholder="Mínimo 6 caracteres"
-                  className="w-full border rounded-lg px-3 py-2 text-xs"
-                />
-              </div>
-            )}
-
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-gray-400 uppercase">Nombre (opcional)</label>
               <input
@@ -228,6 +284,36 @@ export default function UserManagement({ pageOptions = [], onClose }) {
                 className="w-full border rounded-lg px-3 py-2 text-xs"
               />
             </div>
+
+            {!editingUid && (
+              <div className="space-y-2 rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
+                <label className="block text-[10px] font-bold text-indigo-500 uppercase">
+                  Preparar invitación
+                </label>
+                <select
+                  value={form.invitationChannel}
+                  onChange={(event) => setForm({ ...form, invitationChannel: event.target.value })}
+                  className="w-full border rounded-lg px-3 py-2 text-xs bg-white"
+                >
+                  <option value={INVITATION_CHANNELS.EMAIL}>Correo</option>
+                  <option value={INVITATION_CHANNELS.WHATSAPP}>WhatsApp</option>
+                  <option value={INVITATION_CHANNELS.NONE}>No preparar ahora</option>
+                </select>
+                {form.invitationChannel === INVITATION_CHANNELS.WHATSAPP && (
+                  <input
+                    type="tel"
+                    required
+                    value={form.whatsappPhone}
+                    onChange={(event) => setForm({ ...form, whatsappPhone: event.target.value })}
+                    placeholder="5215512345678 (con código de país)"
+                    className="w-full border rounded-lg px-3 py-2 text-xs bg-white"
+                  />
+                )}
+                <p className="text-[10px] text-indigo-500">
+                  Se generará un enlace temporal para que el usuario establezca su contraseña.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-gray-400 uppercase">Rol</label>
@@ -306,11 +392,110 @@ export default function UserManagement({ pageOptions = [], onClose }) {
             <p className="text-[10px] text-gray-400 leading-relaxed">
               {editingUid
                 ? 'La edición actualiza rol y páginas en Firestore. El email y la contraseña de Authentication no se modifican desde aquí.'
-                : 'La creación usa Cloud Functions (createCmsUser) para registrar la cuenta en Firebase Auth y su perfil de acceso.'}
+                : 'La cuenta se crea con una contraseña interna aleatoria. El usuario establece la suya mediante la invitación.'}
             </p>
           </form>
         </div>
       </div>
+
+      {invitation && (
+        <div className="fixed inset-0 z-[60] bg-black/55 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white border border-gray-200 shadow-2xl p-5 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Invitación preparada</h3>
+              <p className="mt-1 text-xs text-gray-500">
+                Usuario creado: <span className="font-semibold text-gray-700">{invitation.email}</span>
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Enviar mediante</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInvitation({ ...invitation, channel: INVITATION_CHANNELS.EMAIL })}
+                  className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+                    invitation.channel === INVITATION_CHANNELS.EMAIL
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  ✉ Correo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInvitation({ ...invitation, channel: INVITATION_CHANNELS.WHATSAPP })}
+                  className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+                    invitation.channel === INVITATION_CHANNELS.WHATSAPP
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  WhatsApp
+                </button>
+              </div>
+              {invitation.channel === INVITATION_CHANNELS.WHATSAPP && (
+                <input
+                  type="tel"
+                  value={invitation.phone}
+                  onChange={(event) => setInvitation({ ...invitation, phone: event.target.value })}
+                  placeholder="5215512345678 (con código de país)"
+                  className="w-full rounded-lg border px-3 py-2 text-xs"
+                />
+              )}
+            </div>
+
+            <div className="rounded-lg bg-gray-50 border border-gray-100 p-3 text-xs leading-relaxed text-gray-600">
+              {buildUserInvitationMessage(invitation)}
+            </div>
+
+            {invitationStatus && (
+              <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+                {invitationStatus}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleOpenInvitation}
+                className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white"
+              >
+                {invitation.channel === INVITATION_CHANNELS.WHATSAPP
+                  ? 'Abrir WhatsApp'
+                  : 'Abrir correo'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopyInvitation(
+                  buildUserInvitationMessage(invitation),
+                  'Mensaje copiado.',
+                )}
+                className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Copiar mensaje
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopyInvitation(invitation.invitationLink, 'Enlace copiado.')}
+                className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Copiar enlace
+              </button>
+              <button
+                type="button"
+                onClick={() => setInvitation(null)}
+                className="rounded-lg border bg-white px-3 py-2 text-xs text-gray-500 hover:bg-gray-50"
+              >
+                Cerrar
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400">
+              La invitación queda preparada; el envío se confirma en Correo o WhatsApp.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

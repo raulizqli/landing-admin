@@ -20,6 +20,12 @@ export default function MirrorPreviewFrame() {
   const [scrollSectionId, setScrollSectionId] = useState(null);
   const [activeMarketingRouteId, setActiveMarketingRouteId] = useState('');
 
+  // Admin shell locks html/body overflow; unlock so the live preview can scroll.
+  useEffect(() => {
+    document.documentElement.classList.add('preview-frame');
+    return () => document.documentElement.classList.remove('preview-frame');
+  }, []);
+
   useEffect(() => {
     const handleMessage = (event) => {
       if (!isSameOriginPreviewMessage(event)) return;

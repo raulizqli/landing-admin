@@ -6,7 +6,8 @@ import {
   isAiActionAllowed,
   resolveAiAssistLane,
 } from '../utils/aiAssist';
-import { runAiAssistRemote, runLocalOllamaAssist } from '../utils/aiAssistFunctions';
+import { runAiAssistRemote, runLocalAssistant } from '../utils/aiAssistFunctions';
+import { getAiProviderDisplayName } from '../utils/aiProviderLabel';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useLocale } from '../i18n/LocaleContext';
 
@@ -34,13 +35,13 @@ export default function AiAssistButton({
   showLiteMenu = true,
   resultPatch = null,
 }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const entitlements = useEntitlements();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
-  const [engine, setEngine] = useState('platform'); // platform | local_ollama
+  const [engine, setEngine] = useState('platform'); // platform | local
 
   const lane = entitlements.aiLane
     || resolveAiAssistLane(entitlements.account, { bypass: entitlements.bypass });
@@ -78,7 +79,7 @@ export default function AiAssistButton({
     try {
       let result;
       let meta = { lane, provider: engine };
-      if (engine === 'local_ollama') {
+      if (engine === 'local') {
         const system = buildAiSystemPrompt({ language, vertical: context.vertical });
         const user = buildAiUserPrompt({
           action: item.action,
@@ -88,8 +89,8 @@ export default function AiAssistButton({
           brief,
           context,
         });
-        result = await runLocalOllamaAssist({ system, user });
-        meta = { lane: 'lite', provider: 'local_ollama' };
+        result = await runLocalAssistant({ system, user });
+        meta = { lane: 'lite', provider: 'local' };
       } else {
         const data = await runAiAssistRemote({
           pageId,
@@ -148,14 +149,14 @@ export default function AiAssistButton({
             <button
               type="button"
               onClick={() => setEngine('platform')}
-              className={`flex-1 rounded px-2 py-1 text-[10px] font-semibold ${engine === 'platform' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}
+              className={`flex-1 rounded px-2 py-1 text-[10px] font-semibold transition ${engine === 'platform' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-400 hover:bg-indigo-100'}`}
             >
               {t('ai.enginePlatform')}
             </button>
             <button
               type="button"
-              onClick={() => setEngine('local_ollama')}
-              className={`flex-1 rounded px-2 py-1 text-[10px] font-semibold ${engine === 'local_ollama' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}
+              onClick={() => setEngine('local')}
+              className={`flex-1 rounded px-2 py-1 text-[10px] font-semibold transition ${engine === 'local' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-400 hover:bg-indigo-100'}`}
             >
               {t('ai.engineLocal')}
             </button>
@@ -180,7 +181,9 @@ export default function AiAssistButton({
           {preview && (
             <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
               <p className="text-[10px] text-gray-400">
-                {preview.meta?.provider} · {t('ai.reviewHint')}
+                {getAiProviderDisplayName(preview.meta?.provider, locale)}
+                {' · '}
+                {t('ai.reviewHint')}
               </p>
               <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-2 text-[11px] text-gray-800">
                 {preview.result?.text

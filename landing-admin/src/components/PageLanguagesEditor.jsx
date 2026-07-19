@@ -63,7 +63,7 @@ export default function PageLanguagesEditor({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
             Idioma predeterminado
@@ -125,7 +125,7 @@ export default function PageLanguagesEditor({
         <p className="text-[10px] text-gray-400 mb-2">
           Cambia también las etiquetas por defecto (botones, menú, títulos fijos) y el contenido de ese idioma.
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {PAGE_LANGUAGE_OPTIONS
             .filter((option) => enabledLanguages.includes(option.value))
             .map((option) => (
@@ -133,10 +133,10 @@ export default function PageLanguagesEditor({
                 key={option.value}
                 type="button"
                 onClick={() => onEditingLanguageChange(option.value)}
-                className={`rounded-lg border px-4 py-2 text-xs font-semibold transition ${
+                className={`rounded-lg border px-3 sm:px-4 py-2 text-xs font-semibold transition flex-1 sm:flex-none min-w-[7rem] ${
                   editingLanguage === option.value
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    ? 'border-indigo-600 bg-indigo-600 text-white'
+                    : 'border-indigo-100 bg-indigo-50 text-indigo-400 hover:bg-indigo-100'
                 }`}
               >
                 {option.label}

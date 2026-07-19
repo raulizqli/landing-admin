@@ -9,3 +9,13 @@ body,
   margin: 0;
   overflow: hidden;
 }
+
+/* Same-origin Espejo iframe must scroll like a real landing page. */
+html.preview-frame,
+html.preview-frame body,
+html.preview-frame #root {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}

@@ -59,8 +59,8 @@ if (mode === 'staging') {
   fileCandidates.push(
     'landing-admin/.env.staging',
     'landing-template/.env.staging',
+    'functions/.env.landings-stage',
     'functions/.env.staging',
-    'functions/.env',
   );
 } else if (mode === 'production') {
   fileCandidates.push(

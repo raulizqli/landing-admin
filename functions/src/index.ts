@@ -2,7 +2,11 @@ import { setGlobalOptions } from "firebase-functions";
 
 setGlobalOptions({ maxInstances: 10 });
 
-export { createCmsUser, deleteCmsUser } from "./cmsUsers.js";
+export {
+  createCmsUser,
+  deleteCmsUser,
+  generateCmsUserInvitation,
+} from "./cmsUsers.js";
 export { triggerHostingDeploy } from "./hostingDeploy.js";
 export {
   ensureBillingAccount,
@@ -25,7 +29,9 @@ export {
   syncSiteAccessDaily,
 } from "./siteAccessSync.js";
 export {
+  generateLandingDraft,
   runAiAssist,
   setAiProviderConfig,
   getAiAssistUsage,
 } from "./aiAssist.js";
+export { askOllamaCloud } from "./askOllamaCloud.js";

@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCmsUser = exports.createCmsUser = void 0;
+exports.deleteCmsUser = exports.generateCmsUserInvitation = exports.createCmsUser = void 0;
 const app_1 = require("firebase-admin/app");
 const auth_1 = require("firebase-admin/auth");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
+const node_crypto_1 = require("node:crypto");
 (0, app_1.initializeApp)();
 const USERS_COLLECTION = "users";
 const VALID_ROLES = new Set(["root", "admin", "user"]);
@@ -62,16 +63,32 @@ const callableOptions = {
     cors: true,
     invoker: "public",
 };
-exports.createCmsUser = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c;
-    await assertRootCaller(request);
-    const password = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.password) !== null && _b !== void 0 ? _b : "");
-    if (password.length < 6) {
-        throw new https_1.HttpsError("invalid-argument", "La contraseña debe tener al menos 6 caracteres.");
+function getAdminPublicUrl() {
+    var _a;
+    return String((_a = process.env.ADMIN_PUBLIC_URL) !== null && _a !== void 0 ? _a : "http://localhost:5173").trim().replace(/\/+$/, "");
+}
+async function generateInvitationLink(email) {
+    var _a;
+    const loginUrl = new URL("/login", getAdminPublicUrl());
+    loginUrl.searchParams.set("email", email);
+    try {
+        return await (0, auth_1.getAuth)().generatePasswordResetLink(email, {
+            url: loginUrl.toString(),
+            handleCodeInApp: false,
+        });
     }
-    const profileData = buildUserProfileData((_c = request.data) !== null && _c !== void 0 ? _c : {});
+    catch (error) {
+        console.error("generateCmsUserInvitation error:", (_a = error === null || error === void 0 ? void 0 : error.code) !== null && _a !== void 0 ? _a : "unknown");
+        throw new https_1.HttpsError("internal", "No se pudo generar el enlace de invitación.");
+    }
+}
+exports.createCmsUser = (0, https_1.onCall)(callableOptions, async (request) => {
+    var _a, _b;
+    await assertRootCaller(request);
+    const profileData = buildUserProfileData((_a = request.data) !== null && _a !== void 0 ? _a : {});
     const auth = (0, auth_1.getAuth)();
     const db = (0, firestore_1.getFirestore)();
+    const password = (0, node_crypto_1.randomBytes)(32).toString("base64url");
     let userRecord;
     try {
         userRecord = await auth.createUser({
@@ -105,10 +122,41 @@ exports.createCmsUser = (0, https_1.onCall)(callableOptions, async (request) => 
         console.error("createCmsUser firestore error:", error);
         throw new https_1.HttpsError("internal", "No se pudo guardar el perfil de acceso.");
     }
+    const invitationLink = ((_b = request.data) === null || _b === void 0 ? void 0 : _b.createInvitation) === true
+        ? await generateInvitationLink(profileData.email)
+        : null;
     return {
         uid: userRecord.uid,
         email: profileData.email,
         role: profileData.role,
+        invitationLink,
+    };
+});
+exports.generateCmsUserInvitation = (0, https_1.onCall)(callableOptions, async (request) => {
+    var _a, _b, _c;
+    await assertRootCaller(request);
+    const uid = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.uid) !== null && _b !== void 0 ? _b : "").trim();
+    if (!uid) {
+        throw new https_1.HttpsError("invalid-argument", "El UID es obligatorio.");
+    }
+    let userRecord;
+    try {
+        userRecord = await (0, auth_1.getAuth)().getUser(uid);
+    }
+    catch (error) {
+        if ((error === null || error === void 0 ? void 0 : error.code) === "auth/user-not-found") {
+            throw new https_1.HttpsError("not-found", "El usuario no existe en Authentication.");
+        }
+        throw new https_1.HttpsError("internal", "No se pudo consultar el usuario.");
+    }
+    if (!userRecord.email) {
+        throw new https_1.HttpsError("failed-precondition", "El usuario no tiene un email asociado.");
+    }
+    return {
+        uid,
+        email: userRecord.email,
+        displayName: (_c = userRecord.displayName) !== null && _c !== void 0 ? _c : "",
+        invitationLink: await generateInvitationLink(userRecord.email),
     };
 });
 exports.deleteCmsUser = (0, https_1.onCall)(callableOptions, async (request) => {

@@ -24,7 +24,10 @@ function getScrollParent(node) {
 function scrollIntoScrollParent(target, behavior = 'smooth') {
   if (!target) return;
   const parent = getScrollParent(target);
-  if (!parent) return;
+  if (!parent) {
+    target.scrollIntoView({ behavior, block: 'start' });
+    return;
+  }
 
   const parentRect = parent.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();

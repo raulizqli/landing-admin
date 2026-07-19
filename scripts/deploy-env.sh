@@ -37,12 +37,35 @@ else
   npm run build:template
 fi
 
+# Firebase Functions loads `.env`, `.env.<projectId>`, `.env.<alias>`.
+# For stage, sync from `.env.staging` and temporarily hide root `.env`
+# so prod/local keys do not leak into the Stage deploy.
+FUNCTIONS_ENV_BACKUP=""
+if [[ "$ENV_NAME" == "stage" ]]; then
+  if [[ -f functions/.env.staging ]]; then
+    cp functions/.env.staging functions/.env.landings-stage
+    rm -f functions/.env.stage
+  fi
+  if [[ -f functions/.env ]]; then
+    FUNCTIONS_ENV_BACKUP="$(mktemp)"
+    mv functions/.env "$FUNCTIONS_ENV_BACKUP"
+    echo "==> staged functions env (hid functions/.env for Stage deploy)"
+  fi
+fi
+restore_functions_env() {
+  if [[ -n "${FUNCTIONS_ENV_BACKUP}" && -f "${FUNCTIONS_ENV_BACKUP}" ]]; then
+    mv "${FUNCTIONS_ENV_BACKUP}" functions/.env
+    echo "==> restored functions/.env"
+  fi
+}
+trap restore_functions_env EXIT
+
 echo "==> deploy firestore rules/indexes + storage"
 npx firebase deploy --only firestore:rules,firestore:indexes,storage
 
 echo "==> deploy functions"
 (cd functions && npm install --no-fund --no-audit)
-npx firebase deploy --only functions
+npx firebase deploy --only functions --force
 
 echo "==> deploy hosting (admin + template)"
 npx firebase deploy --only hosting:admin

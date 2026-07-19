@@ -1,0 +1,65 @@
+# Daily replication of production data into the Stage Firebase project.
+#
+# Copies Firestore + Storage (MODE=content) so Stage mirrors prod content.
+# Set the `mode` input to `full` to also copy Auth users/passwords.
+#
+# Requires repository secret GCP_REPLICATION_SA: a JSON key for the service
+# account prod-to-stage-sync@landings-stage.iam.gserviceaccount.com, which has
+# cross-project roles (Firestore import/export + Storage) on both projects.
+#
+# See docs/environments-dev-stage-prod.md.
+
+name: Replicate Prod -> Stage
+
+on:
+  schedule:
+    # 03:00 UTC daily (~21:00 America/Mexico_City)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Replication mode'
+        required: true
+        default: content
+        type: choice
+        options:
+          - content
+          - full
+
+concurrency:
+  group: replicate-prod-to-stage
+  cancel-in-progress: false
+
+jobs:
+  replicate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Require replication service account secret
+        run: |
+          if [ -z "$GCP_REPLICATION_SA" ]; then
+            echo "::error::GCP_REPLICATION_SA secret is empty. Add the prod-to-stage-sync SA JSON key."
+            exit 1
+          fi
+        env:
+          GCP_REPLICATION_SA: ${{ secrets.GCP_REPLICATION_SA }}
+
+      - name: Authenticate gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_REPLICATION_SA }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Replicate prod -> stage
+        run: bash scripts/replicate-prod-to-stage.sh
+        env:
+          MODE: ${{ github.event.inputs.mode || 'content' }}
+          PROD_PROJECT: landing-admin-9452e
+          STAGE_PROJECT: landings-stage

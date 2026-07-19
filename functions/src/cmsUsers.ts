@@ -2,6 +2,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { randomBytes } from "node:crypto";
 
 initializeApp();
 
@@ -19,7 +20,11 @@ interface UserProfilePayload {
 }
 
 interface CreateUserPayload extends UserProfilePayload {
-  password?: string;
+  createInvitation?: boolean;
+}
+
+interface GenerateInvitationPayload {
+  uid?: string;
 }
 
 function normalizeRole(role: unknown): CmsRole | null {
@@ -86,19 +91,34 @@ const callableOptions = {
   invoker: "public",
 };
 
+function getAdminPublicUrl() {
+  return String(process.env.ADMIN_PUBLIC_URL ?? "http://localhost:5173").trim().replace(/\/+$/, "");
+}
+
+async function generateInvitationLink(email: string) {
+  const loginUrl = new URL("/login", getAdminPublicUrl());
+  loginUrl.searchParams.set("email", email);
+
+  try {
+    return await getAuth().generatePasswordResetLink(email, {
+      url: loginUrl.toString(),
+      handleCodeInApp: false,
+    });
+  } catch (error) {
+    console.error("generateCmsUserInvitation error:", (error as { code?: string })?.code ?? "unknown");
+    throw new HttpsError("internal", "No se pudo generar el enlace de invitación.");
+  }
+}
+
 export const createCmsUser = onCall(
   callableOptions,
   async (request: CallableRequest<CreateUserPayload>) => {
     await assertRootCaller(request);
 
-    const password = String(request.data?.password ?? "");
-    if (password.length < 6) {
-      throw new HttpsError("invalid-argument", "La contraseña debe tener al menos 6 caracteres.");
-    }
-
     const profileData = buildUserProfileData(request.data ?? {});
     const auth = getAuth();
     const db = getFirestore();
+    const password = randomBytes(32).toString("base64url");
 
     let userRecord;
     try {
@@ -135,10 +155,48 @@ export const createCmsUser = onCall(
       throw new HttpsError("internal", "No se pudo guardar el perfil de acceso.");
     }
 
+    const invitationLink = request.data?.createInvitation === true
+      ? await generateInvitationLink(profileData.email)
+      : null;
+
     return {
       uid: userRecord.uid,
       email: profileData.email,
       role: profileData.role,
+      invitationLink,
+    };
+  },
+);
+
+export const generateCmsUserInvitation = onCall(
+  callableOptions,
+  async (request: CallableRequest<GenerateInvitationPayload>) => {
+    await assertRootCaller(request);
+
+    const uid = String(request.data?.uid ?? "").trim();
+    if (!uid) {
+      throw new HttpsError("invalid-argument", "El UID es obligatorio.");
+    }
+
+    let userRecord;
+    try {
+      userRecord = await getAuth().getUser(uid);
+    } catch (error: unknown) {
+      if ((error as { code?: string })?.code === "auth/user-not-found") {
+        throw new HttpsError("not-found", "El usuario no existe en Authentication.");
+      }
+      throw new HttpsError("internal", "No se pudo consultar el usuario.");
+    }
+
+    if (!userRecord.email) {
+      throw new HttpsError("failed-precondition", "El usuario no tiene un email asociado.");
+    }
+
+    return {
+      uid,
+      email: userRecord.email,
+      displayName: userRecord.displayName ?? "",
+      invitationLink: await generateInvitationLink(userRecord.email),
     };
   },
 );

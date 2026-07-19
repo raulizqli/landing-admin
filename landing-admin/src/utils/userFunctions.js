@@ -49,6 +49,17 @@ export async function createCmsUser(payload) {
   }
 }
 
+export async function generateCmsUserInvitation(uid) {
+  try {
+    await assertCallableAuthSession();
+    const callable = httpsCallable(getHubFunctions(), 'generateCmsUserInvitation');
+    const result = await callable({ uid });
+    return result.data;
+  } catch (error) {
+    throw mapCallableError(error);
+  }
+}
+
 export async function deleteCmsUser(uid) {
   try {
     await assertCallableAuthSession();

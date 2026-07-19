@@ -239,6 +239,33 @@ Never deploy Prod from a dirty feature branch.
 
 Seed scripts (`functions/scripts/seed-*.mjs`) must take `GOOGLE_CLOUD_PROJECT` / ADC for the target env explicitly.
 
+### Daily Prod → Stage replication
+
+`scripts/replicate-prod-to-stage.sh` mirrors production content into Stage:
+
+- **Firestore** — export from prod, import into stage (via `gs://landings-stage-data-sync`; keeps the 3 latest exports).
+- **Storage** — `gcloud storage rsync -r --delete-unmatched-destination-objects` (exact mirror of the default bucket).
+- **Auth** — only with `MODE=full` (copies users + password hashes). Default `MODE=content` skips Auth so Stage keeps its own QA users.
+
+Runs daily at `03:00 UTC` via `.github/workflows/replicate-prod-to-stage.yml` (also `workflow_dispatch` with a `mode` input).
+
+Requirements / notes:
+
+- Secret `GCP_REPLICATION_SA`: JSON key for `prod-to-stage-sync@landings-stage.iam.gserviceaccount.com` (cross-project Firestore import/export + Storage roles on both projects).
+- Firestore import **merges** by document ID; it does not delete docs removed in prod. Storage rsync **does** delete extra files in stage.
+- Billing/AI keys in Stage stay **TEST** — replication copies data, not `functions/.env.*`.
+- Budget alert on `landings-stage` fires at 50/90/100% of the monthly budget.
+- The GitHub schedule only runs once the workflow is on the default branch.
+
+Manual run:
+
+```bash
+# content only (Firestore + Storage)
+scripts/replicate-prod-to-stage.sh
+# full (also Auth users/passwords)
+MODE=full scripts/replicate-prod-to-stage.sh
+```
+
 ---
 
 ## Domains (suggestion)

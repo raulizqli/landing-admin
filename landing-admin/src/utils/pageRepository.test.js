@@ -44,7 +44,7 @@ vi.mock('./billingFunctions', () => ({
   assertMarketingSiteAccessRemote: (...args) => assertMarketingSiteAccessRemote(...args),
 }));
 
-const { loadPageForEditor, savePageFromEditor } = await import('./pageRepository.js');
+const { createPageInHub, loadPageForEditor, savePageFromEditor } = await import('./pageRepository.js');
 
 describe('savePageFromEditor', () => {
   beforeEach(() => {
@@ -172,5 +172,39 @@ describe('loadPageForEditor', () => {
     expect(form.specialty).toBe('From route');
     expect(form.heroSlides).toHaveLength(1);
     expect(form.marketingRoutes).toEqual([]);
+  });
+});
+
+describe('createPageInHub', () => {
+  beforeEach(() => {
+    setDoc.mockClear();
+    getPageSnapshot.mockReset();
+    getPageSnapshot.mockResolvedValue({
+      snapshot: { exists: () => false },
+      collectionName: 'pages',
+    });
+  });
+
+  it('creates a hydrated page with AI draft content and explicit identity fields', async () => {
+    const created = await createPageInHub({
+      pageId: 'sonrisa-norte',
+      name: 'Sonrisa Norte',
+      specialty: 'Odontología familiar',
+      vertical: 'dental',
+      draft: {
+        name: 'Nombre sugerido',
+        heroSlides: [{ title: 'Cuida tu sonrisa', text: 'Atención cercana.' }],
+        aboutBio: 'Acompañamos a cada familia.',
+        servicesSectionEnabled: true,
+        services: [{ title: 'Valoración', description: 'Un primer diagnóstico claro.' }],
+      },
+    });
+
+    expect(created.name).toBe('Sonrisa Norte');
+    expect(created.vertical).toBe('dental');
+    expect(created.heroSlides[0].title).toBe('Cuida tu sonrisa');
+    expect(created.services[0].title).toBe('Valoración');
+    expect(setDoc).toHaveBeenCalledTimes(1);
+    expect(setDoc.mock.calls[0][2]).toEqual({ merge: false });
   });
 });

@@ -162,6 +162,91 @@ async function assertAndIncrementQuota(
   };
 }
 
+function buildLandingDraftPrompt(brief: string, language: string, vertical: string): string {
+  const lang = language === "en" ? "English" : "Spanish";
+  return [
+    "Create a complete first draft for a professional landing page from the user's brief below.",
+    `Write all public-facing copy in ${lang}.`,
+    `Selected vertical (use it unless the brief clearly requires another): ${vertical || "generic"}.`,
+    "Allowed vertical values: generic, psychology, dental, veterinary, legal, medical, beauty, fitness, education, ecommerce.",
+    "Do not invent contact details, addresses, credentials, testimonials, prices, guarantees, diagnoses, or regulated claims.",
+    "Make the copy specific to the audience and goal described by the user; avoid generic filler.",
+    "Hero title: concise and benefit-led. Hero text: 1-2 clear sentences.",
+    "About tagline: one sentence. About bio: 90-160 words.",
+    "Generate 3-6 services, each with a short title and a 2-3 sentence description.",
+    "SEO title: at most 60 characters. SEO description: at most 155 characters.",
+    "Return ONLY one valid JSON object. No markdown fences and no commentary.",
+    "Use exactly this shape:",
+    JSON.stringify({
+      name: "brand or professional name",
+      specialty: "clear specialty or business category",
+      vertical: "one allowed vertical value",
+      hero: { title: "string", text: "string" },
+      about: { tagline: "string", bio: "string" },
+      servicesSection: { title: "string", text: "string" },
+      services: [{ title: "string", description: "string" }],
+      seo: { title: "string", description: "string" },
+    }),
+    "USER BRIEF (preserve all relevant details):",
+    brief,
+  ].join("\n");
+}
+
+export const generateLandingDraft = onCall({ timeoutSeconds: 120 }, async (request: CallableRequest) => {
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+  }
+
+  const profile = await getCallerProfile(request.auth.uid);
+  if (String(profile.role ?? "").trim().toLowerCase() !== "root") {
+    throw new HttpsError("permission-denied", "Solo root puede crear páginas con IA.");
+  }
+
+  const brief = String(request.data?.brief ?? "").trim();
+  if (brief.length < 80) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Describe con más detalle el objetivo, público, servicios y propuesta de valor.",
+    );
+  }
+  if (brief.length > 12000) {
+    throw new HttpsError("invalid-argument", "La descripción es demasiado larga (máximo 12,000 caracteres).");
+  }
+
+  const language = String(request.data?.language ?? "es").toLowerCase().startsWith("en") ? "en" : "es";
+  const vertical = String(request.data?.vertical ?? "generic").trim().toLowerCase() || "generic";
+  const system = [
+    "You are a conversion copywriter and information architect for professional landing pages.",
+    `Write in ${language === "en" ? "English" : "Spanish"}.`,
+    "Use a clear, trustworthy tone appropriate to the business vertical.",
+    "Never invent facts, credentials, contact details, reviews, guarantees, diagnoses, or regulated claims.",
+    "Return ONLY valid JSON matching the requested schema. No markdown fences.",
+  ].join(" ");
+  const user = buildLandingDraftPrompt(brief, language, vertical);
+  const providers = [...new Set([resolveFullProvider(), ...resolveLiteProviderChain()])];
+  let lastError: unknown = null;
+
+  for (const provider of providers) {
+    try {
+      const output = await runProviderChat(provider, { system, user });
+      return {
+        ok: true,
+        provider: output.provider,
+        result: output.result,
+        disclaimer: "Este contenido es un borrador. Revísalo antes de publicar.",
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  console.error("generateLandingDraft provider failure", lastError);
+  throw new HttpsError(
+    "internal",
+    lastError instanceof Error ? lastError.message.slice(0, 240) : "No se pudo generar el borrador.",
+  );
+});
+
 export const runAiAssist = onCall({ timeoutSeconds: 120 }, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");

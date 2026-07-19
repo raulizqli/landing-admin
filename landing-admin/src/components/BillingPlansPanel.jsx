@@ -424,7 +424,7 @@ export default function BillingPlansPanel({ open, onClose }) {
                       <option value="gemini">Gemini</option>
                       <option value="anthropic">Anthropic</option>
                       <option value="groq">Groq</option>
-                      <option value="openai_compatible">OpenAI-compatible / Ollama remote</option>
+                      <option value="openai_compatible">Compatible con OpenAI / servidor privado</option>
                     </select>
                   </label>
                   <label className="text-xs text-[#2A342D]/70">

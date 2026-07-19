@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAiAssistUsage = exports.setAiProviderConfig = exports.runAiAssist = void 0;
+exports.getAiAssistUsage = exports.setAiProviderConfig = exports.runAiAssist = exports.generateLandingDraft = void 0;
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const app_1 = require("firebase-admin/app");
@@ -125,6 +125,80 @@ async function assertAndIncrementQuota(accountId, lane, limit, isRoot) {
         remaining: Math.max(0, limit - used),
     };
 }
+function buildLandingDraftPrompt(brief, language, vertical) {
+    const lang = language === "en" ? "English" : "Spanish";
+    return [
+        "Create a complete first draft for a professional landing page from the user's brief below.",
+        `Write all public-facing copy in ${lang}.`,
+        `Selected vertical (use it unless the brief clearly requires another): ${vertical || "generic"}.`,
+        "Allowed vertical values: generic, psychology, dental, veterinary, legal, medical, beauty, fitness, education, ecommerce.",
+        "Do not invent contact details, addresses, credentials, testimonials, prices, guarantees, diagnoses, or regulated claims.",
+        "Make the copy specific to the audience and goal described by the user; avoid generic filler.",
+        "Hero title: concise and benefit-led. Hero text: 1-2 clear sentences.",
+        "About tagline: one sentence. About bio: 90-160 words.",
+        "Generate 3-6 services, each with a short title and a 2-3 sentence description.",
+        "SEO title: at most 60 characters. SEO description: at most 155 characters.",
+        "Return ONLY one valid JSON object. No markdown fences and no commentary.",
+        "Use exactly this shape:",
+        JSON.stringify({
+            name: "brand or professional name",
+            specialty: "clear specialty or business category",
+            vertical: "one allowed vertical value",
+            hero: { title: "string", text: "string" },
+            about: { tagline: "string", bio: "string" },
+            servicesSection: { title: "string", text: "string" },
+            services: [{ title: "string", description: "string" }],
+            seo: { title: "string", description: "string" },
+        }),
+        "USER BRIEF (preserve all relevant details):",
+        brief,
+    ].join("\n");
+}
+exports.generateLandingDraft = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (request) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
+        throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
+    }
+    const profile = await getCallerProfile(request.auth.uid);
+    if (String((_b = profile.role) !== null && _b !== void 0 ? _b : "").trim().toLowerCase() !== "root") {
+        throw new https_1.HttpsError("permission-denied", "Solo root puede crear páginas con IA.");
+    }
+    const brief = String((_d = (_c = request.data) === null || _c === void 0 ? void 0 : _c.brief) !== null && _d !== void 0 ? _d : "").trim();
+    if (brief.length < 80) {
+        throw new https_1.HttpsError("invalid-argument", "Describe con más detalle el objetivo, público, servicios y propuesta de valor.");
+    }
+    if (brief.length > 12000) {
+        throw new https_1.HttpsError("invalid-argument", "La descripción es demasiado larga (máximo 12,000 caracteres).");
+    }
+    const language = String((_f = (_e = request.data) === null || _e === void 0 ? void 0 : _e.language) !== null && _f !== void 0 ? _f : "es").toLowerCase().startsWith("en") ? "en" : "es";
+    const vertical = String((_h = (_g = request.data) === null || _g === void 0 ? void 0 : _g.vertical) !== null && _h !== void 0 ? _h : "generic").trim().toLowerCase() || "generic";
+    const system = [
+        "You are a conversion copywriter and information architect for professional landing pages.",
+        `Write in ${language === "en" ? "English" : "Spanish"}.`,
+        "Use a clear, trustworthy tone appropriate to the business vertical.",
+        "Never invent facts, credentials, contact details, reviews, guarantees, diagnoses, or regulated claims.",
+        "Return ONLY valid JSON matching the requested schema. No markdown fences.",
+    ].join(" ");
+    const user = buildLandingDraftPrompt(brief, language, vertical);
+    const providers = [...new Set([(0, aiProviders_js_1.resolveFullProvider)(), ...(0, aiProviders_js_1.resolveLiteProviderChain)()])];
+    let lastError = null;
+    for (const provider of providers) {
+        try {
+            const output = await (0, aiProviders_js_1.runProviderChat)(provider, { system, user });
+            return {
+                ok: true,
+                provider: output.provider,
+                result: output.result,
+                disclaimer: "Este contenido es un borrador. Revísalo antes de publicar.",
+            };
+        }
+        catch (error) {
+            lastError = error;
+        }
+    }
+    console.error("generateLandingDraft provider failure", lastError);
+    throw new https_1.HttpsError("internal", lastError instanceof Error ? lastError.message.slice(0, 240) : "No se pudo generar el borrador.");
+});
 exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (request) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {

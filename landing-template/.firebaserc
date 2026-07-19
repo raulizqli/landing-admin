@@ -1,8 +1,18 @@
 {
   "projects": {
-    "default": "landing-admin-9452e"
+    "default": "landing-admin-9452e",
+    "dev": "landing-admin-9452e",
+    "stage": "landings-stage",
+    "prod": "landing-admin-9452e"
   },
   "targets": {
+    "landings-stage": {
+      "hosting": {
+        "template": [
+          "landings-stage-template"
+        ]
+      }
+    },
     "landing-admin-9452e": {
       "hosting": {
         "template": [
