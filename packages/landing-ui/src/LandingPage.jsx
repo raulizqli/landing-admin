@@ -16,7 +16,10 @@ export default function LandingPage({
   const labels = resolvePageLabels(data);
   const name = data.name || getLabel(labels, 'placeholders.psychologistName');
   const specialty = data.specialty || getLabel(labels, 'placeholders.specialty');
-  const navSpecialty = String(data.navSpecialty ?? '').trim() || specialty;
+  const showNavSpecialty = data.navShowSpecialty !== false;
+  const navSpecialty = showNavSpecialty
+    ? (String(data.navSpecialty ?? '').trim() || specialty)
+    : '';
   const bookingCta = resolveBookingCta(data);
   const pageStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'page'), { sectionKey: 'page' });
   const footerStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'footer'), { sectionKey: 'footer' });
@@ -60,10 +63,10 @@ export default function LandingPage({
                 rel="noopener noreferrer"
                 className="underline-offset-2 hover:underline hover:opacity-100 transition-opacity"
               >
-                LeftSideDev
+                TapSite
               </a>
             ) : (
-              <span>LeftSideDev</span>
+              <span>TapSite</span>
             )}
           </p>
         </footer>

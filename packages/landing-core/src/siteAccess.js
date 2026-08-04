@@ -2,21 +2,21 @@
  * Public site access policy after unpaid subscription periods.
  *
  * Timeline (from unpaidSince):
- *  0–6 months  → grace (online, no ads)
- *  6–9 months  → ads (online + Google Ad / publicity banner for platform revenue)
- *  9+ months   → offline, unless ops marks adsRevenueOk (ads keep generating revenue)
+ *  0–1 month   → grace (online, no ads)
+ *  1–6 months  → ads (online + Google Ad / publicity banner for platform revenue)
+ *  6+ months   → offline, unless ops marks adsRevenueOk (ads keep generating revenue)
  */
 
 export const SITE_ACCESS_STAGES = ['paid', 'grace', 'ads', 'offline'];
 
-/** Days unpaid before Google Ads / publicity banner appears. */
-export const SITE_ACCESS_ADS_AFTER_DAYS = 180;
+/** Days unpaid before Google Ads / publicity banner appears (end of first free month). */
+export const SITE_ACCESS_ADS_AFTER_DAYS = 30;
 
 /**
  * Days unpaid before the site goes offline when ad revenue is not confirmed.
- * Default = 6 months grace + 3 months ads without revenue.
+ * Default = 1 month grace + 5 months ads (6 months unpaid total).
  */
-export const SITE_ACCESS_OFFLINE_AFTER_DAYS = 270;
+export const SITE_ACCESS_OFFLINE_AFTER_DAYS = 180;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

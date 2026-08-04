@@ -3,9 +3,11 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import MirrorPreviewFrame from './components/MirrorPreviewFrame.jsx';
+import UsersAdminPage from './components/UsersAdminPage.jsx';
 import { useAuth } from './contexts/AuthContext.jsx';
 import { useLocale } from './i18n/LocaleContext.jsx';
-import { getMarketingUrl, isExternalMarketingUrl } from './utils/marketingUrl.js';
+import { getRootPublicUrl, isExternalPublicUrl } from './utils/marketingUrl.js';
+import { canManageUsers } from './utils/permissions.js';
 
 function AuthLoadingScreen() {
   const { t } = useLocale();
@@ -16,16 +18,16 @@ function AuthLoadingScreen() {
   );
 }
 
-function GuestMarketingRedirect() {
+function GuestPublicRedirect() {
   const { t } = useLocale();
-  const marketingUrl = getMarketingUrl();
+  const publicUrl = getRootPublicUrl();
 
   useEffect(() => {
-    if (!isExternalMarketingUrl(marketingUrl)) return;
-    window.location.replace(marketingUrl);
-  }, [marketingUrl]);
+    if (!isExternalPublicUrl(publicUrl)) return;
+    window.location.replace(publicUrl);
+  }, [publicUrl]);
 
-  if (!isExternalMarketingUrl(marketingUrl)) {
+  if (!isExternalPublicUrl(publicUrl)) {
     return <Navigate to="/login" replace />;
   }
 
@@ -34,23 +36,22 @@ function GuestMarketingRedirect() {
       <p className="text-sm tracking-wide uppercase opacity-80 animate-pulse">
         {t('shell.redirectingMarketing')}
       </p>
-      <a href={marketingUrl} className="text-[#40B850] text-sm underline underline-offset-2">
-        {marketingUrl}
+      <a href={publicUrl} className="text-[#40B850] text-sm underline underline-offset-2">
+        {publicUrl}
       </a>
     </div>
   );
 }
 
 function RootRoute() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) return <AuthLoadingScreen />;
-  if (user) return <Navigate to="/app" replace />;
-  // Guests → public sales landing (template). Same-origin guard avoids loops
-  // if VITE_MARKETING_URL is misconfigured to this host.
-  if (!isExternalMarketingUrl()) {
+  // `/` → corporate site when configured, else template/marketing. CMS at `/app`.
+  // Same-origin guard avoids loops if the public URL points at this host.
+  if (!isExternalPublicUrl()) {
     return <Navigate to="/login" replace />;
   }
-  return <GuestMarketingRedirect />;
+  return <GuestPublicRedirect />;
 }
 
 function LoginRoute() {
@@ -67,6 +68,14 @@ function RequireAuth({ children }) {
   return children;
 }
 
+function RequireRoot({ children }) {
+  const { user, profile, loading } = useAuth();
+  if (loading) return <AuthLoadingScreen />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canManageUsers(profile)) return <Navigate to="/app" replace />;
+  return children;
+}
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -79,6 +88,14 @@ export default function AppRouter() {
             <RequireAuth>
               <App />
             </RequireAuth>
+          )}
+        />
+        <Route
+          path="/app/users"
+          element={(
+            <RequireRoot>
+              <UsersAdminPage />
+            </RequireRoot>
           )}
         />
         <Route

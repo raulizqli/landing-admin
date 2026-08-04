@@ -1,7 +1,7 @@
 export const PORTFOLIO = [
   {
     slug: 'landing-cms',
-    title: 'Landing CMS Multi-tenant',
+    title: 'TapSite',
     summary: 'Central admin, shared template, Firebase-backed pages for professionals and agencies.',
     demoUrl: 'https://leftsidedev.site',
     videoUrl: '',

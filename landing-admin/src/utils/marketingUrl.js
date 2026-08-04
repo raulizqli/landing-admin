@@ -1,11 +1,15 @@
 /**
- * Public LeftSideDev marketing / sales landing URL.
- * Used for guest redirects from admin `/` and the login «back to site» link.
+ * Public URLs for admin `/` redirects and the login «back to site» link.
+ *
+ * Priority for `/`:
+ * 1. VITE_CORPORATE_SITE_URL (leftsidedev-site / corporate)
+ * 2. VITE_MARKETING_URL / template showcase (configured marketing landing)
  */
+
 export const DEFAULT_PRODUCTION_MARKETING_URL =
   'https://landing-template-9452e.web.app/?pageId=leftsidedev';
 
-function normalizeMarketingUrl(raw) {
+function normalizePublicUrl(raw) {
   const url = String(raw ?? '').trim();
   if (!url) return '';
   // Keep `/?query` intact; only strip a bare trailing slash.
@@ -13,8 +17,14 @@ function normalizeMarketingUrl(raw) {
   return url.replace(/\/$/, '');
 }
 
+/** Corporate / studio site. Empty when not configured. */
+export function getCorporateSiteUrl() {
+  return normalizePublicUrl(import.meta.env.VITE_CORPORATE_SITE_URL);
+}
+
+/** Marketing / CMS showcase template URL. */
 export function getMarketingUrl() {
-  const fromEnv = normalizeMarketingUrl(import.meta.env.VITE_MARKETING_URL);
+  const fromEnv = normalizePublicUrl(import.meta.env.VITE_MARKETING_URL);
   if (fromEnv) return fromEnv;
 
   if (import.meta.env.DEV) {
@@ -25,15 +35,25 @@ export function getMarketingUrl() {
 }
 
 /**
- * Whether hard-redirecting to the marketing URL is safe.
- * Same-origin targets must not use location.replace — that loops forever when
- * the admin CMS is served on the marketing hostname.
+ * Destination for admin `/` and login «back to site».
+ * Corporate when configured; otherwise the template/marketing URL.
  */
-export function isExternalMarketingUrl(
-  marketingUrl = getMarketingUrl(),
+export function getRootPublicUrl() {
+  const corporate = getCorporateSiteUrl();
+  if (corporate) return corporate;
+  return getMarketingUrl();
+}
+
+/**
+ * Whether hard-redirecting to a public URL is safe.
+ * Same-origin targets must not use location.replace — that loops forever when
+ * the admin CMS is served on the same hostname.
+ */
+export function isExternalPublicUrl(
+  publicUrl = getRootPublicUrl(),
   currentOrigin = typeof window !== 'undefined' ? window.location.origin : '',
 ) {
-  const url = String(marketingUrl ?? '').trim();
+  const url = String(publicUrl ?? '').trim();
   const origin = String(currentOrigin ?? '').trim();
   if (!url) return false;
   if (!origin) return true;
@@ -44,3 +64,6 @@ export function isExternalMarketingUrl(
     return false;
   }
 }
+
+/** @deprecated Prefer isExternalPublicUrl */
+export const isExternalMarketingUrl = isExternalPublicUrl;

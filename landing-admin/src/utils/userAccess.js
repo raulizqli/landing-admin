@@ -22,6 +22,8 @@ export function normalizeUserProfile(uid, data = {}) {
     accountId: String(data.accountId ?? '').trim(),
     assignedPageIds: normalizePageIdList(data.assignedPageIds),
     pageId: String(data.pageId ?? '').trim(),
+    isDemo: data.isDemo === true,
+    disabled: data.disabled === true,
     updatedAt: data.updatedAt ?? null,
     createdAt: data.createdAt ?? null,
   };
@@ -109,6 +111,7 @@ export async function saveUserProfile(db, uid, payload) {
     role,
     assignedPageIds: role === 'admin' ? assignedPageIds : [],
     pageId: role === 'user' ? pageId : '',
+    isDemo: role === 'root' ? false : payload.isDemo === true,
     updatedAt: new Date().toISOString(),
   };
 
@@ -125,6 +128,20 @@ export async function saveUserProfile(db, uid, payload) {
   }
 
   return normalizeUserProfile(uid, data);
+}
+
+export async function setUserIsDemo(db, uid, isDemo) {
+  if (!uid) throw new Error('El UID es obligatorio.');
+  const userRef = doc(db, USERS_COLLECTION, uid);
+  const existing = await getDoc(userRef);
+  if (existing.exists() && normalizeRole(existing.data()?.role) === 'root') {
+    throw new Error('No se puede marcar como demo a un usuario root.');
+  }
+  await updateDoc(userRef, {
+    isDemo: isDemo === true,
+    updatedAt: new Date().toISOString(),
+  });
+  return { uid, isDemo: isDemo === true };
 }
 
 export async function deleteUserProfile(db, uid) {

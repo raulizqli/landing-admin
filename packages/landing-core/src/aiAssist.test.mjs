@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   applyAiAssistResult,
   isAiActionAllowed,
+  normalizeStructureSuggestion,
   resolveAiAssistLane,
   sanitizeAiText,
 } from './aiAssist.js';
@@ -22,6 +23,8 @@ describe('aiAssist lanes and apply', () => {
     assert.equal(isAiActionAllowed('lite', 'rewrite_field'), true);
     assert.equal(isAiActionAllowed('lite', 'seo_meta'), false);
     assert.equal(isAiActionAllowed('full', 'seo_meta'), true);
+    assert.equal(isAiActionAllowed('full', 'suggest_page_structure'), true);
+    assert.equal(isAiActionAllowed('lite', 'suggest_page_structure'), false);
   });
 
   it('applies bio polish into formData without HTML', () => {
@@ -44,5 +47,34 @@ describe('aiAssist lanes and apply', () => {
       { action: 'hero_suggest', result: { title: 'H', text: 'S' } },
     );
     assert.equal(withHero.heroSlides[0].title, 'H');
+  });
+
+  it('normalizes and applies suggest_page_structure', () => {
+    const normalized = normalizeStructureSuggestion({
+      vertical: 'veterinary',
+      summary: 'Focus on services and gallery',
+      recommendedSections: [
+        { flag: 'servicesSectionEnabled', enabled: true, reason: 'Offerings' },
+        { flag: 'gallerySectionEnabled', enabled: true, reason: 'Cases' },
+        { flag: 'unknownFlag', enabled: true, reason: 'ignore' },
+        { flag: 'blogSectionEnabled', enabled: false, reason: 'Later' },
+      ],
+    });
+    assert.equal(normalized.vertical, 'veterinary');
+    assert.equal(normalized.recommendedSections.length, 3);
+
+    const next = applyAiAssistResult(
+      {
+        vertical: 'generic',
+        servicesSectionEnabled: false,
+        gallerySectionEnabled: false,
+        blogSectionEnabled: true,
+      },
+      { action: 'suggest_page_structure', result: normalized },
+    );
+    assert.equal(next.vertical, 'veterinary');
+    assert.equal(next.servicesSectionEnabled, true);
+    assert.equal(next.gallerySectionEnabled, true);
+    assert.equal(next.blogSectionEnabled, false);
   });
 });

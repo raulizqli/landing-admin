@@ -21,9 +21,9 @@ describe('siteAccess unpaid publicity policy', () => {
     assert.equal(siteAccessShowsAds(access), false);
   });
 
-  it('uses grace for the first 6 unpaid months', () => {
+  it('uses grace for the first unpaid month', () => {
     const now = Date.parse('2026-07-18T00:00:00.000Z');
-    const unpaidSince = new Date(now - 30 * DAY).toISOString();
+    const unpaidSince = new Date(now - 15 * DAY).toISOString();
     const access = resolveSiteAccessFromAccount(
       { status: 'canceled', unpaidSince },
       { now },
@@ -33,7 +33,7 @@ describe('siteAccess unpaid publicity policy', () => {
     assert.equal(access.offline, false);
   });
 
-  it('enables Google Ads publicity after 6 unpaid months', () => {
+  it('enables Google Ads publicity after the first unpaid month', () => {
     const now = Date.parse('2026-07-18T00:00:00.000Z');
     const unpaidSince = new Date(now - SITE_ACCESS_ADS_AFTER_DAYS * DAY).toISOString();
     const access = resolveSiteAccessFromAccount(
@@ -46,7 +46,7 @@ describe('siteAccess unpaid publicity policy', () => {
     assert.equal(siteAccessAllowsPublicView(access), true);
   });
 
-  it('goes offline after ads window without confirmed revenue', () => {
+  it('goes offline after 6 unpaid months without confirmed revenue', () => {
     const now = Date.parse('2026-07-18T00:00:00.000Z');
     const unpaidSince = new Date(now - SITE_ACCESS_OFFLINE_AFTER_DAYS * DAY).toISOString();
     const access = resolveSiteAccessFromAccount(

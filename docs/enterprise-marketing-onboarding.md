@@ -15,7 +15,7 @@ The admin sidebar shows a **subscription health card**:
 
 - Those **3 pages stay** on the account (you are not forced down to Starter’s 1-page limit by deleting them).
 - CMS falls to **free tier**: edit basic fields on existing pages; **no new landings**; paid features locked until renew.
-- Public sites: **6 months** online without ads → then **Google Ads / publicity** → if ads don’t earn (and ops doesn’t mark revenue OK) → **offline**. Details: `docs/unpaid-site-publicity.md`.
+- Public sites: **1 month** online without ads → then **Google Ads / publicity** until **6 months** → if ads don’t earn (and ops doesn’t mark revenue OK) → **offline**. Details: `docs/unpaid-site-publicity.md`.
 
 ## 1. Commercial activation
 

@@ -23,7 +23,9 @@ function getSearchParams() {
 }
 
 function isPreviewMode() {
-  return import.meta.env.DEV || getSearchParams().get('preview') === 'true';
+  // Only explicit ?preview=true (admin iframe / Abrir pestaña). Do not treat all
+  // DEV as preview — that disabled SiteAccessGate and hid unpaid ads on localhost.
+  return getSearchParams().get('preview') === 'true';
 }
 
 function isAllowedPreviewSender(origin) {

@@ -328,6 +328,7 @@ async function upsertUser(auth, db, user) {
       role: user.role,
       assignedPageIds: user.role === 'admin' ? user.assignedPageIds : [],
       pageId: user.role === 'user' ? user.pageId : '',
+      isDemo: true,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: new Date().toISOString(),
       seeded: true,

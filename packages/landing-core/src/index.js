@@ -20,6 +20,7 @@ export * from './videoSection.js';
 export * from './heroVideo.js';
 export * from './heroSlides.js';
 export * from './maps.js';
+export * from './locations.js';
 export * from './preHero.js';
 export * from './socialLinks.js';
 export * from './pageLoadErrors.js';

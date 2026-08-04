@@ -66,6 +66,7 @@ if (mode === 'staging') {
   fileCandidates.push(
     'landing-admin/.env.production',
     'landing-template/.env.production',
+    'functions/.env.production',
     'functions/.env',
   );
 } else {
@@ -100,8 +101,19 @@ if (isProd) {
   if (String(merged.STRIPE_SECRET_KEY || '').startsWith('sk_test_')) {
     errors.push('Prod Functions appear to use Stripe test key (sk_test_). Use live keys.');
   }
+  if (!String(merged.STRIPE_SECRET_KEY || '').startsWith('sk_live_')) {
+    errors.push('Prod Functions require STRIPE_SECRET_KEY starting with sk_live_.');
+  }
   if (String(merged.MERCADOPAGO_ACCESS_TOKEN || '').startsWith('TEST-')) {
     errors.push('Prod Functions appear to use Mercado Pago TEST token.');
+  }
+  const hasStarter = Boolean(
+    merged.STRIPE_PRICE_STARTER_USD
+    || merged.STRIPE_PRICE_STARTER_MXN
+    || merged.STRIPE_PRICE_STARTER,
+  );
+  if (!hasStarter) {
+    errors.push('Prod Stripe catalog missing STRIPE_PRICE_STARTER(_USD|_MXN). Run ensure-stripe-catalog.mjs.');
   }
 }
 

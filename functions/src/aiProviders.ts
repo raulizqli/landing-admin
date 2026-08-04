@@ -109,7 +109,9 @@ async function chatOpenAiCompatible(
 
   const raw = await response.text();
   if (!response.ok) {
-    throw new Error(`AI provider error ${response.status}: ${raw.slice(0, 240)}`);
+    throw new Error(
+      `Proveedor OpenAI-compatible (${model}) respondió ${response.status}: ${raw.slice(0, 220) || "sin detalle"}`,
+    );
   }
   const data = JSON.parse(raw) as {
     choices?: Array<{ message?: { content?: string } }>;
@@ -138,7 +140,9 @@ export async function chatOllama(request: ChatJsonRequest): Promise<Record<strin
     });
     const raw = await response.text();
     if (!response.ok) {
-      throw new Error(`Ollama error ${response.status}: ${raw.slice(0, 240)}`);
+      throw new Error(
+        `Ollama (${model} @ ${base}) respondió ${response.status}: ${raw.slice(0, 220) || "sin detalle"}`,
+      );
     }
     const data = JSON.parse(raw) as { message?: { content?: string } };
     return extractJsonObject(data.message?.content || "{}");
@@ -191,7 +195,9 @@ export async function chatGemini(request: ChatJsonRequest): Promise<Record<strin
   });
   const raw = await response.text();
   if (!response.ok) {
-    throw new Error(`Gemini error ${response.status}: ${raw.slice(0, 240)}`);
+    throw new Error(
+      `Gemini (${model}) respondió ${response.status}: ${raw.slice(0, 220) || "sin detalle"}`,
+    );
   }
   const data = JSON.parse(raw) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -221,7 +227,9 @@ export async function chatAnthropic(request: ChatJsonRequest): Promise<Record<st
   });
   const raw = await response.text();
   if (!response.ok) {
-    throw new Error(`Anthropic error ${response.status}: ${raw.slice(0, 240)}`);
+    throw new Error(
+      `Anthropic (${model}) respondió ${response.status}: ${raw.slice(0, 220) || "sin detalle"}`,
+    );
   }
   const data = JSON.parse(raw) as { content?: Array<{ text?: string }> };
   const content = data.content?.map((part) => part.text || "").join("\n") || "{}";
@@ -299,4 +307,93 @@ export function resolveFullProvider(preferred?: string): AiProviderId {
     return value;
   }
   return "openai";
+}
+
+function mockLogoDataUrl(name: string, specialty: string): string {
+  const label = (name || specialty || "LS").trim().slice(0, 24) || "LS";
+  const initials = label
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "LS";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#4A5D4E"/>
+  <text x="256" y="278" text-anchor="middle" font-family="Georgia, serif" font-size="160" fill="#F4F1EA">${initials}</text>
+</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Generate a simple brand mark / logo image.
+ * Uses OpenAI Images when OPENAI_API_KEY is set; otherwise returns an SVG data URL.
+ */
+export async function generateLogoImage(input: {
+  name?: string;
+  specialty?: string;
+  vertical?: string;
+  brief?: string;
+  language?: string;
+  apiKey?: string;
+}): Promise<{ imageUrl: string; provider: string; prompt: string }> {
+  const name = String(input.name ?? "").trim();
+  const specialty = String(input.specialty ?? "").trim();
+  const vertical = String(input.vertical ?? "generic").trim();
+  const brief = String(input.brief ?? "").trim();
+  const language = input.language === "en" ? "English" : "Spanish";
+  const prompt = [
+    `Minimal professional logo mark for a ${vertical || "services"} brand.`,
+    name ? `Brand name: ${name}.` : "",
+    specialty ? `Specialty: ${specialty}.` : "",
+    brief ? `Brief: ${brief}.` : "",
+    "Flat vector style, centered icon, cream (#F4F1EA) and sage green (#4A5D4E), no text clutter, no watermark, square composition.",
+    `Design notes may be in ${language}.`,
+  ].filter(Boolean).join(" ");
+
+  const apiKey = String(input.apiKey || process.env.OPENAI_API_KEY || "").trim();
+  if (!apiKey) {
+    return {
+      imageUrl: mockLogoDataUrl(name, specialty),
+      provider: "mock",
+      prompt,
+    };
+  }
+
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_IMAGE_MODEL || "dall-e-3",
+      prompt: prompt.slice(0, 3500),
+      n: 1,
+      size: "1024x1024",
+      response_format: "url",
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`OpenAI images error ${response.status}: ${detail.slice(0, 200)}`);
+  }
+
+  const payload = await response.json() as { data?: Array<{ url?: string; b64_json?: string }> };
+  const first = payload?.data?.[0];
+  if (first?.url) {
+    return { imageUrl: first.url, provider: "openai", prompt };
+  }
+  if (first?.b64_json) {
+    return {
+      imageUrl: `data:image/png;base64,${first.b64_json}`,
+      provider: "openai",
+      prompt,
+    };
+  }
+  return {
+    imageUrl: mockLogoDataUrl(name, specialty),
+    provider: "mock",
+    prompt,
+  };
 }

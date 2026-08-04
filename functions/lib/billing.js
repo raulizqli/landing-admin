@@ -38,19 +38,39 @@ function getStripe() {
     }
     return new stripe_1.default(key);
 }
-function stripePriceIdForPlan(planId) {
+function stripePriceEnvCandidates(planId, currency = "usd") {
+    const plan = planId.toUpperCase();
+    const cur = currency.toUpperCase();
+    // Prefer currency-specific prices (Prod USD/MXN), then legacy single-price env.
+    return [
+        `STRIPE_PRICE_${plan}_${cur}`,
+        `STRIPE_PRICE_${plan}`,
+    ];
+}
+function stripePriceIdForPlan(planId, currency = "usd") {
     var _a;
-    const map = {
-        starter: process.env.STRIPE_PRICE_STARTER,
-        pro: process.env.STRIPE_PRICE_PRO,
-        agency: process.env.STRIPE_PRICE_AGENCY,
-        enterprise: process.env.STRIPE_PRICE_ENTERPRISE,
-    };
-    const priceId = String((_a = map[planId]) !== null && _a !== void 0 ? _a : "").trim();
-    if (!priceId) {
-        throw new https_1.HttpsError("failed-precondition", `Falta STRIPE_PRICE_${planId.toUpperCase()} en el entorno de Functions.`);
+    for (const envKey of stripePriceEnvCandidates(planId, currency)) {
+        const priceId = String((_a = process.env[envKey]) !== null && _a !== void 0 ? _a : "").trim();
+        if (priceId)
+            return priceId;
     }
-    return priceId;
+    throw new https_1.HttpsError("failed-precondition", `Falta STRIPE_PRICE_${planId.toUpperCase()}_${currency.toUpperCase()} (o STRIPE_PRICE_${planId.toUpperCase()}) en Functions.`);
+}
+function allConfiguredStripePriceIds() {
+    var _a;
+    const plans = ["starter", "pro", "agency", "enterprise"];
+    const currencies = ["usd", "mxn"];
+    const entries = [];
+    for (const planId of plans) {
+        for (const currency of currencies) {
+            for (const envKey of stripePriceEnvCandidates(planId, currency)) {
+                const priceId = String((_a = process.env[envKey]) !== null && _a !== void 0 ? _a : "").trim();
+                if (priceId)
+                    entries.push([planId, priceId]);
+            }
+        }
+    }
+    return entries;
 }
 function mercadoPagoToken() {
     var _a;
@@ -68,6 +88,17 @@ async function getCallerProfile(uid) {
     }
     return Object.assign({ uid }, ((_a = snap.data()) !== null && _a !== void 0 ? _a : {}));
 }
+function normalizePageIdList(values) {
+    if (!Array.isArray(values))
+        return [];
+    return [...new Set(values.map((value) => String(value !== null && value !== void 0 ? value : "").trim()).filter(Boolean))];
+}
+function pageIdsFromProfile(profile) {
+    var _a;
+    const fromList = normalizePageIdList(profile.assignedPageIds);
+    const single = String((_a = profile.pageId) !== null && _a !== void 0 ? _a : "").trim();
+    return normalizePageIdList([...fromList, single]);
+}
 async function loadOrCreateAccountForUser(profile) {
     var _a, _b, _c;
     const db = (0, firestore_1.getFirestore)();
@@ -75,6 +106,7 @@ async function loadOrCreateAccountForUser(profile) {
     const ref = db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
     const snap = await ref.get();
     const now = new Date().toISOString();
+    const profilePageIds = pageIdsFromProfile(profile);
     if (!snap.exists) {
         const account = {
             name: String(profile.displayName || profile.email || accountId).trim(),
@@ -87,7 +119,7 @@ async function loadOrCreateAccountForUser(profile) {
             stripeSubscriptionId: "",
             mercadoPagoPreapprovalId: "",
             mercadoPagoPayerEmail: String((_b = profile.email) !== null && _b !== void 0 ? _b : "").trim().toLowerCase(),
-            pageIds: [],
+            pageIds: profilePageIds,
             currentPeriodEnd: null,
             cancelAtPeriodEnd: false,
             createdAt: now,
@@ -100,7 +132,19 @@ async function loadOrCreateAccountForUser(profile) {
     if (!profile.accountId) {
         await db.collection(USERS_COLLECTION).doc(profile.uid).set({ accountId, updatedAt: now }, { merge: true });
     }
-    return Object.assign({ id: accountId }, ((_c = snap.data()) !== null && _c !== void 0 ? _c : {}));
+    const data = (_c = snap.data()) !== null && _c !== void 0 ? _c : {};
+    const existingPageIds = normalizePageIdList(data.pageIds);
+    const mergedPageIds = normalizePageIdList([...existingPageIds, ...profilePageIds]);
+    const needsPageSync = mergedPageIds.length !== existingPageIds.length
+        || mergedPageIds.some((id) => !existingPageIds.includes(id));
+    if (needsPageSync) {
+        await ref.set({
+            pageIds: mergedPageIds,
+            updatedAt: now,
+        }, { merge: true });
+        return Object.assign(Object.assign({ id: accountId }, data), { pageIds: mergedPageIds, updatedAt: now });
+    }
+    return Object.assign({ id: accountId }, data);
 }
 async function applyPlanToAccount(accountId, patch) {
     return (0, siteAccessSync_js_1.applyBillingPatchWithSiteAccess)(accountId, patch);
@@ -176,7 +220,7 @@ exports.createBillingCheckout = (0, https_1.onCall)(async (request) => {
         const session = await stripe.checkout.sessions.create({
             mode: "subscription",
             customer: customerId,
-            line_items: [{ price: stripePriceIdForPlan(planId), quantity: 1 }],
+            line_items: [{ price: stripePriceIdForPlan(planId, currency), quantity: 1 }],
             success_url: successUrl,
             cancel_url: cancelUrl,
             client_reference_id: account.id,
@@ -185,11 +229,13 @@ exports.createBillingCheckout = (0, https_1.onCall)(async (request) => {
                 accountId: account.id,
                 planId,
                 uid: profile.uid,
+                currency,
             },
             subscription_data: {
                 metadata: {
                     accountId: account.id,
                     planId,
+                    currency,
                 },
             },
         });
@@ -214,7 +260,7 @@ exports.createBillingCheckout = (0, https_1.onCall)(async (request) => {
         throw new https_1.HttpsError("failed-precondition", "Necesitamos el email del pagador para Mercado Pago.");
     }
     const body = {
-        reason: `Landing CMS — ${planId}`,
+        reason: `TapSite — ${planId}`,
         external_reference: `${account.id}:${planId}`,
         payer_email: payerEmail,
         back_url: successUrl,
@@ -253,14 +299,7 @@ exports.createBillingCheckout = (0, https_1.onCall)(async (request) => {
     return { url, provider: "mercadopago", preapprovalId: payload.id };
 });
 function planFromStripePrice(priceId) {
-    var _a, _b, _c, _d;
-    const entries = [
-        ["starter", String((_a = process.env.STRIPE_PRICE_STARTER) !== null && _a !== void 0 ? _a : "").trim()],
-        ["pro", String((_b = process.env.STRIPE_PRICE_PRO) !== null && _b !== void 0 ? _b : "").trim()],
-        ["agency", String((_c = process.env.STRIPE_PRICE_AGENCY) !== null && _c !== void 0 ? _c : "").trim()],
-        ["enterprise", String((_d = process.env.STRIPE_PRICE_ENTERPRISE) !== null && _d !== void 0 ? _d : "").trim()],
-    ];
-    for (const [planId, envPrice] of entries) {
+    for (const [planId, envPrice] of allConfiguredStripePriceIds()) {
         if (envPrice && envPrice === priceId)
             return planId;
     }

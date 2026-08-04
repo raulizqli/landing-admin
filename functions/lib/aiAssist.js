@@ -17,12 +17,28 @@ const FULL_ACTIONS = new Set([
     "service_blurb",
     "seo_meta",
     "blog_draft",
+    "suggest_page_structure",
+    "generate_logo",
 ]);
+const STRUCTURE_SECTION_FLAGS = [
+    "preHeroEnabled",
+    "heroSectionEnabled",
+    "aboutSectionEnabled",
+    "servicesSectionEnabled",
+    "catalogSectionEnabled",
+    "gallerySectionEnabled",
+    "videoSectionEnabled",
+    "testimonialsEnabled",
+    "blogSectionEnabled",
+    "contactSectionEnabled",
+    "socialSectionEnabled",
+    "footerSectionEnabled",
+];
 const PLAN_QUOTAS = {
-    starter: { lite: 30, full: 0, aiAssist: false, aiByok: false },
-    pro: { lite: 30, full: 50, aiAssist: true, aiByok: false },
-    agency: { lite: 30, full: 200, aiAssist: true, aiByok: true },
-    enterprise: { lite: 30, full: null, aiAssist: true, aiByok: true },
+    starter: { lite: 30, full: 0, logo: 0, aiAssist: false, aiByok: false },
+    pro: { lite: 30, full: 50, logo: 3, aiAssist: true, aiByok: false },
+    agency: { lite: 30, full: 200, logo: null, aiAssist: true, aiByok: true },
+    enterprise: { lite: 30, full: null, logo: null, aiAssist: true, aiByok: true },
 };
 function normalizePlanId(value) {
     const id = String(value !== null && value !== void 0 ? value : "").trim().toLowerCase();
@@ -83,6 +99,29 @@ function buildSystemPrompt(language, vertical) {
     ].join(" ");
 }
 function buildUserPrompt(payload) {
+    if (payload.action === "suggest_page_structure") {
+        return [
+            "Action: suggest_page_structure",
+            "Recommend which landing-page sections to enable for this business.",
+            `Selected vertical (prefer unless the note clearly requires another): ${payload.context.vertical || "generic"}.`,
+            "Allowed vertical values: generic, psychology, dental, veterinary, legal, medical, beauty, fitness, education, ecommerce.",
+            `Allowed section flags: ${STRUCTURE_SECTION_FLAGS.join(", ")}.`,
+            "Always enable heroSectionEnabled, aboutSectionEnabled, contactSectionEnabled, and footerSectionEnabled unless there is a strong reason not to.",
+            "Do not invent contact details, prices, testimonials, credentials, or medical claims.",
+            "Return ONLY one valid JSON object. No markdown fences.",
+            "Use exactly this shape:",
+            JSON.stringify({
+                vertical: "one allowed vertical value",
+                summary: "1-2 sentences explaining the recommended structure",
+                recommendedSections: [
+                    { flag: "servicesSectionEnabled", enabled: true, reason: "short reason" },
+                ],
+            }),
+            payload.context.name ? `Brand/name: ${payload.context.name}` : "",
+            payload.context.specialty ? `Specialty: ${payload.context.specialty}` : "",
+            payload.brief ? `User note:\n${payload.brief}` : "User note: (none)",
+        ].filter(Boolean).join("\n");
+    }
     return [
         `Action: ${payload.action}`,
         `Tone: ${payload.tone}`,
@@ -98,6 +137,11 @@ async function assertAndIncrementQuota(accountId, lane, limit, isRoot) {
     if (isRoot || limit == null) {
         return { generations: 0, limit, remaining: null };
     }
+    if (limit <= 0) {
+        throw new https_1.HttpsError("permission-denied", lane === "logo"
+            ? "Generar logo con IA requiere plan Pro o superior."
+            : "Esta acción de IA no está incluida en tu plan.");
+    }
     const period = currentPeriod();
     const ref = (0, firestore_1.getFirestore)()
         .collection(BILLING_ACCOUNTS_COLLECTION)
@@ -109,7 +153,9 @@ async function assertAndIncrementQuota(accountId, lane, limit, isRoot) {
         const snap = await tx.get(ref);
         const generations = Number((_b = (_a = snap.data()) === null || _a === void 0 ? void 0 : _a.generations) !== null && _b !== void 0 ? _b : 0) || 0;
         if (generations >= limit) {
-            throw new https_1.HttpsError("resource-exhausted", `Cuota de IA ${lane} agotada (${limit}/mes). Mejora tu plan o espera al próximo periodo.`);
+            throw new https_1.HttpsError("resource-exhausted", lane === "logo"
+                ? `Cuota de logos IA agotada (${limit}/mes en Pro). Mejora a Agency para ilimitado, o espera al próximo periodo.`
+                : `Cuota de IA ${lane} agotada (${limit}/mes). Mejora tu plan o espera al próximo periodo.`);
         }
         tx.set(ref, {
             period,
@@ -124,6 +170,38 @@ async function assertAndIncrementQuota(accountId, lane, limit, isRoot) {
         limit,
         remaining: Math.max(0, limit - used),
     };
+}
+/** Firebase clients redact messages for code "internal"; use unavailable + details. */
+function sanitizeAiProviderMessage(error, fallback) {
+    const raw = error instanceof Error
+        ? error.message
+        : typeof error === "string"
+            ? error
+            : "";
+    const cleaned = String(raw || "").replace(/\s+/g, " ").trim().slice(0, 280);
+    if (!cleaned || /^(internal|unknown)$/i.test(cleaned)) {
+        return fallback;
+    }
+    if (/401|unauthorized|invalid.?api.?key|api.?key/i.test(cleaned)) {
+        return `API key del proveedor de IA faltante o inválida. (${cleaned.slice(0, 180)})`;
+    }
+    if (/403|permission|forbidden/i.test(cleaned)) {
+        return `El proveedor de IA rechazó el acceso. (${cleaned.slice(0, 180)})`;
+    }
+    if (/429|rate.?limit|quota|resource.?exhausted/i.test(cleaned)) {
+        return `Límite o cuota del proveedor de IA agotada. (${cleaned.slice(0, 180)})`;
+    }
+    if (/ECONNREFUSED|ENOTFOUND|ETIMEDOUT|fetch failed|network|socket/i.test(cleaned)) {
+        return `No se pudo conectar con el proveedor de IA. (${cleaned.slice(0, 180)})`;
+    }
+    return cleaned;
+}
+function throwAiProviderFailure(error, fallback) {
+    const message = sanitizeAiProviderMessage(error, fallback);
+    throw new https_1.HttpsError("unavailable", message, {
+        reason: "ai_provider_failure",
+        detail: message,
+    });
 }
 function buildLandingDraftPrompt(brief, language, vertical) {
     const lang = language === "en" ? "English" : "Spanish";
@@ -181,7 +259,7 @@ exports.generateLandingDraft = (0, https_1.onCall)({ timeoutSeconds: 120 }, asyn
     ].join(" ");
     const user = buildLandingDraftPrompt(brief, language, vertical);
     const providers = [...new Set([(0, aiProviders_js_1.resolveFullProvider)(), ...(0, aiProviders_js_1.resolveLiteProviderChain)()])];
-    let lastError = null;
+    const failures = [];
     for (const provider of providers) {
         try {
             const output = await (0, aiProviders_js_1.runProviderChat)(provider, { system, user });
@@ -193,14 +271,15 @@ exports.generateLandingDraft = (0, https_1.onCall)({ timeoutSeconds: 120 }, asyn
             };
         }
         catch (error) {
-            lastError = error;
+            const detail = sanitizeAiProviderMessage(error, "fallo sin detalle");
+            failures.push(`${provider}: ${detail}`);
+            console.error("generateLandingDraft provider failure", { provider, detail, error });
         }
     }
-    console.error("generateLandingDraft provider failure", lastError);
-    throw new https_1.HttpsError("internal", lastError instanceof Error ? lastError.message.slice(0, 240) : "No se pudo generar el borrador.");
+    throwAiProviderFailure(new Error(failures.join(" | ") || "Ningún proveedor de IA respondió."), "No se pudo generar el borrador. Revisa claves, modelo y conectividad de IA.");
 });
 exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -235,9 +314,51 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
     }
     const planId = normalizePlanId(account.plan);
     const quotaConf = PLAN_QUOTAS[planId];
+    if (action === "generate_logo") {
+        const logoUsage = await assertAndIncrementQuota(accountId, "logo", isRoot ? null : quotaConf.logo, isRoot);
+        let logoResult;
+        try {
+            const byokKey = ((_5 = account.aiProvider) === null || _5 === void 0 ? void 0 : _5.mode) === "byok"
+                && quotaConf.aiByok
+                && isActiveStatus(account.status)
+                ? String((_7 = (_6 = account.aiProvider) === null || _6 === void 0 ? void 0 : _6.apiKey) !== null && _7 !== void 0 ? _7 : "")
+                : "";
+            logoResult = await (0, aiProviders_js_1.generateLogoImage)({
+                name: String((_8 = context.name) !== null && _8 !== void 0 ? _8 : ""),
+                specialty: String((_9 = context.specialty) !== null && _9 !== void 0 ? _9 : ""),
+                vertical: String((_10 = context.vertical) !== null && _10 !== void 0 ? _10 : "generic"),
+                brief,
+                language,
+                apiKey: byokKey || undefined,
+            });
+        }
+        catch (error) {
+            throwAiProviderFailure(error, "No se pudo generar el logo con IA.");
+        }
+        return {
+            ok: true,
+            lane: "full",
+            action,
+            provider: logoResult.provider,
+            result: {
+                imageUrl: logoResult.imageUrl,
+                url: logoResult.imageUrl,
+                text: logoResult.prompt,
+                fieldPath,
+            },
+            usage: {
+                period: currentPeriod(),
+                lane: "logo",
+                generations: logoUsage.generations,
+                limit: logoUsage.limit,
+                remaining: logoUsage.remaining,
+            },
+            disclaimer: "Revisa el logo antes de publicar.",
+        };
+    }
     const limit = lane === "full" ? quotaConf.full : quotaConf.lite;
     const usage = await assertAndIncrementQuota(accountId, lane, limit, isRoot);
-    const system = buildSystemPrompt(language, String((_5 = context.vertical) !== null && _5 !== void 0 ? _5 : "generic"));
+    const system = buildSystemPrompt(language, String((_11 = context.vertical) !== null && _11 !== void 0 ? _11 : "generic"));
     const user = buildUserPrompt({
         action,
         tone,
@@ -250,12 +371,12 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
     let apiKey = "";
     let baseUrl = "";
     let model = "";
-    const byok = ((_6 = account.aiProvider) === null || _6 === void 0 ? void 0 : _6.mode) === "byok" && quotaConf.aiByok && isActiveStatus(account.status);
-    if (lane === "full" && byok && ((_7 = account.aiProvider) === null || _7 === void 0 ? void 0 : _7.provider)) {
+    const byok = ((_12 = account.aiProvider) === null || _12 === void 0 ? void 0 : _12.mode) === "byok" && quotaConf.aiByok && isActiveStatus(account.status);
+    if (lane === "full" && byok && ((_13 = account.aiProvider) === null || _13 === void 0 ? void 0 : _13.provider)) {
         provider = (0, aiProviders_js_1.resolveFullProvider)(account.aiProvider.provider);
-        apiKey = String((_8 = account.aiProvider.apiKey) !== null && _8 !== void 0 ? _8 : "");
-        baseUrl = String((_9 = account.aiProvider.baseUrl) !== null && _9 !== void 0 ? _9 : "");
-        model = String((_10 = account.aiProvider.model) !== null && _10 !== void 0 ? _10 : "");
+        apiKey = String((_14 = account.aiProvider.apiKey) !== null && _14 !== void 0 ? _14 : "");
+        baseUrl = String((_15 = account.aiProvider.baseUrl) !== null && _15 !== void 0 ? _15 : "");
+        model = String((_16 = account.aiProvider.model) !== null && _16 !== void 0 ? _16 : "");
     }
     else if (lane === "full") {
         provider = (0, aiProviders_js_1.resolveFullProvider)();
@@ -271,21 +392,22 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
     let usedProvider = provider;
     try {
         if (lane === "lite" && !preferredEngine) {
-            let lastError = null;
+            const failures = [];
             for (const candidate of (0, aiProviders_js_1.resolveLiteProviderChain)()) {
                 try {
                     const out = await (0, aiProviders_js_1.runProviderChat)(candidate, chatRequest);
                     result = out.result;
                     usedProvider = out.provider;
-                    lastError = null;
                     break;
                 }
                 catch (error) {
-                    lastError = error;
+                    const detail = sanitizeAiProviderMessage(error, "fallo sin detalle");
+                    failures.push(`${candidate}: ${detail}`);
+                    console.error("runAiAssist lite provider failure", { candidate, detail, error });
                 }
             }
             if (!result) {
-                throw lastError instanceof Error ? lastError : new Error("No AI lite provider available.");
+                throw new Error(failures.join(" | ") || "Ningún proveedor Lite de IA respondió.");
             }
         }
         else {
@@ -296,7 +418,7 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
     }
     catch (error) {
         console.error("runAiAssist provider failure", error);
-        throw new https_1.HttpsError("internal", error instanceof Error ? error.message.slice(0, 240) : "Error al generar con IA.");
+        throwAiProviderFailure(error, "Error al generar con IA. Revisa el proveedor configurado (API key, modelo, cuota).");
     }
     await (0, firestore_1.getFirestore)().collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId).set({
         aiUsageUpdatedAt: new Date().toISOString(),
@@ -388,7 +510,7 @@ exports.setAiProviderConfig = (0, https_1.onCall)(async (request) => {
     };
 });
 exports.getAiAssistUsage = (0, https_1.onCall)(async (request) => {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -408,6 +530,14 @@ exports.getAiAssistUsage = (0, https_1.onCall)(async (request) => {
         .doc(`${period}-${lane}`)
         .get();
     const generations = Number((_f = (_e = usageSnap.data()) === null || _e === void 0 ? void 0 : _e.generations) !== null && _f !== void 0 ? _f : 0) || 0;
+    const logoSnap = await (0, firestore_1.getFirestore)()
+        .collection(BILLING_ACCOUNTS_COLLECTION)
+        .doc(accountId)
+        .collection(AI_USAGE_SUBCOLLECTION)
+        .doc(`${period}-logo`)
+        .get();
+    const logoGenerations = Number((_h = (_g = logoSnap.data()) === null || _g === void 0 ? void 0 : _g.generations) !== null && _h !== void 0 ? _h : 0) || 0;
+    const logoLimit = isRoot ? null : PLAN_QUOTAS[planId].logo;
     const aiProvider = account.aiProvider && typeof account.aiProvider === "object"
         ? account.aiProvider
         : {};
@@ -418,6 +548,11 @@ exports.getAiAssistUsage = (0, https_1.onCall)(async (request) => {
         generations,
         limit,
         remaining: limit == null ? null : Math.max(0, limit - generations),
+        logo: {
+            generations: logoGenerations,
+            limit: logoLimit,
+            remaining: logoLimit == null ? null : Math.max(0, logoLimit - logoGenerations),
+        },
         aiProvider: {
             mode: aiProvider.mode || "platform",
             provider: aiProvider.provider || "",

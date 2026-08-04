@@ -43,7 +43,10 @@ exports.askOllamaCloud = (0, https_1.onRequest)({
     const token = String(ollamaCloudToken.value() || process.env.OLLAMA_CLOUD_TOKEN || "").trim();
     if (!token) {
         firebase_functions_1.logger.error("askOllamaCloud: OLLAMA_CLOUD_TOKEN is not configured");
-        res.status(500).json({ error: "Ollama Cloud token is not configured." });
+        res.status(500).json({
+            error: "OLLAMA_CLOUD_TOKEN no está configurado en Functions/Secret Manager.",
+            detail: "Configura el secreto OLLAMA_CLOUD_TOKEN y vuelve a desplegar askOllamaCloud.",
+        });
         return;
     }
     try {
@@ -64,7 +67,7 @@ exports.askOllamaCloud = (0, https_1.onRequest)({
         const message = error instanceof Error ? error.message : String(error);
         firebase_functions_1.logger.error("askOllamaCloud failed", { message, error });
         res.status(502).json({
-            error: "Failed to reach Ollama Cloud",
+            error: `Ollama Cloud (${OLLAMA_CLOUD_MODEL}) no respondió.`,
             detail: message.slice(0, 240),
         });
     }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LanguageSwitcher, useLocale } from '../i18n/LocaleContext';
-import { getMarketingUrl, isExternalMarketingUrl } from '../utils/marketingUrl';
+import { getRootPublicUrl, isExternalPublicUrl } from '../utils/marketingUrl';
 
 export default function LoginScreen() {
   const { signIn, authError } = useAuth();
@@ -10,8 +10,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState('');
-  const marketingUrl = getMarketingUrl();
-  const showBackToSite = isExternalMarketingUrl(marketingUrl);
+  const publicUrl = getRootPublicUrl();
+  const showBackToSite = isExternalPublicUrl(publicUrl);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -39,7 +39,7 @@ export default function LoginScreen() {
         <div className={`flex items-center mb-2 gap-2 ${showBackToSite ? 'justify-between' : 'justify-end'}`}>
           {showBackToSite ? (
             <a
-              href={marketingUrl}
+              href={publicUrl}
               className="text-[11px] font-semibold text-[#40B850] hover:underline underline-offset-2"
             >
               ← {t('login.backToSite')}

@@ -1,5 +1,7 @@
 import ImageUrlField from './ImageUrlField';
+import AiLogoButton from './AiLogoButton';
 import SectionBackgroundEditor, { ColorField } from './SectionBackgroundEditor';
+import ShowContentToggle from './ShowContentToggle';
 import { buildSocialUrl } from '../utils/socialLinks';
 import { NAV_ALIGN_OPTIONS } from '../utils/sectionVisibility';
 import { NAV_SPECIALTY_CASE_OPTIONS } from '../utils/navDisplay';
@@ -14,45 +16,62 @@ import {
 
 function NavSpecialtyFields({ formData, onChange }) {
   const casing = formData.navSpecialtyCase === 'capitalize' ? 'capitalize' : 'uppercase';
+  const showSpecialty = formData.navShowSpecialty !== false;
 
   return (
     <div className="space-y-3 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
-      <div className="space-y-2">
-        <label className="block text-[10px] font-bold text-gray-400 uppercase">
-          Especialidad en el navbar
-        </label>
-        <input
-          type="text"
-          value={formData.navSpecialty || ''}
-          onChange={(e) => onChange({ ...formData, navSpecialty: e.target.value })}
-          placeholder={formData.specialty || 'Psicología clínica'}
-          className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
-        />
-        <p className="text-[10px] text-gray-400">
-          Texto bajo el nombre. Si lo dejas vacío, se usa la especialidad del hero (cuando exista).
-        </p>
-      </div>
-
-      <fieldset className="space-y-2">
-        <legend className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Estilo tipográfico</legend>
-        {NAV_SPECIALTY_CASE_OPTIONS.map((option) => (
-          <label key={option.value} className="flex items-center gap-2 text-xs text-gray-600">
+      <ShowContentToggle
+        checked={showSpecialty}
+        onChange={(navShowSpecialty) => onChange({ ...formData, navShowSpecialty })}
+        label="Mostrar especialidad en el navbar"
+        hint="Si lo desactivas, no se muestra texto bajo el nombre (ni especialidad ni placeholder)."
+      />
+      {showSpecialty && (
+        <>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">
+              Especialidad en el navbar
+            </label>
             <input
-              type="radio"
-              name="nav-specialty-case"
-              checked={casing === option.value}
-              onChange={() => onChange({ ...formData, navSpecialtyCase: option.value })}
-              className="border-gray-300"
+              type="text"
+              value={formData.navSpecialty || ''}
+              onChange={(e) => onChange({ ...formData, navSpecialty: e.target.value })}
+              placeholder={formData.specialty || 'Psicología clínica'}
+              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
             />
-            {option.label}
-          </label>
-        ))}
-      </fieldset>
+            <p className="text-[10px] text-gray-400">
+              Texto bajo el nombre. Si lo dejas vacío, se usa la especialidad de Identidad (cuando exista).
+            </p>
+          </div>
+
+          <fieldset className="space-y-2">
+            <legend className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Estilo tipográfico</legend>
+            {NAV_SPECIALTY_CASE_OPTIONS.map((option) => (
+              <label key={option.value} className="flex items-center gap-2 text-xs text-gray-600">
+                <input
+                  type="radio"
+                  name="nav-specialty-case"
+                  checked={casing === option.value}
+                  onChange={() => onChange({ ...formData, navSpecialtyCase: option.value })}
+                  className="border-gray-300"
+                />
+                {option.label}
+              </label>
+            ))}
+          </fieldset>
+        </>
+      )}
     </div>
   );
 }
 
-export default function NavFieldsEditor({ formData, onChange, pageId }) {
+export default function NavFieldsEditor({
+  formData,
+  onChange,
+  pageId,
+  onUpgradePlan,
+  upgradeLabel = 'Upgrade',
+}) {
   const logoMode = formData.navMode === 'logo';
   const iconOnly = formData.navIconOnly === true;
   const ctaTarget = formData.navCtaTarget || 'email';
@@ -102,6 +121,16 @@ export default function NavFieldsEditor({ formData, onChange, pageId }) {
             previewClassName="h-8 w-8 rounded-full object-cover border bg-white"
             previewAlt="Vista previa del icono"
             helperText="Pega una URL o sube una imagen (JPG, PNG, WEBP o GIF, máx. 5 MB)."
+            onUpgradePlan={onUpgradePlan}
+            upgradeLabel={upgradeLabel}
+          />
+          <AiLogoButton
+            formData={formData}
+            onChange={onChange}
+            pageId={pageId}
+            fieldPath="navIconUrl"
+            onUpgradePlan={onUpgradePlan}
+            upgradeLabel={upgradeLabel}
           />
 
           <fieldset className="space-y-2">
@@ -150,6 +179,16 @@ export default function NavFieldsEditor({ formData, onChange, pageId }) {
             previewClassName="h-10 max-w-[180px] object-contain border bg-white rounded px-2"
             previewAlt="Vista previa del logo"
             helperText="Pega una URL o sube tu logo. Sin imagen se usará nombre y especialidad como respaldo."
+            onUpgradePlan={onUpgradePlan}
+            upgradeLabel={upgradeLabel}
+          />
+          <AiLogoButton
+            formData={formData}
+            onChange={onChange}
+            pageId={pageId}
+            fieldPath="navLogoUrl"
+            onUpgradePlan={onUpgradePlan}
+            upgradeLabel={upgradeLabel}
           />
           <NavSpecialtyFields formData={formData} onChange={onChange} />
         </>

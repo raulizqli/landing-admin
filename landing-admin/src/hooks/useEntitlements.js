@@ -3,31 +3,37 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   accountHasFeature,
   canAccountCreatePage,
+  canOwnerSelfServeCreatePage,
+  getAccountPageCount,
   getAccountPageLimit,
+  getAccountLocationLimit,
   getAiMonthlyQuota,
   getBillingPlan,
   getSubscriptionHealth,
   isBillingAccountActive,
+  pageIdsFromUserProfile,
+  resolveAccountPageIds,
 } from '../utils/billingPlans';
 import { resolveAiAssistLane } from '../utils/aiAssist';
-import { isBillingBypass } from '../utils/permissions';
+import { isBillingAccountOwner, isBillingBypass } from '../utils/permissions';
 
 /**
  * Plan entitlements for the signed-in user.
  * Root always bypasses (unlimited ops access).
  */
 export function useEntitlements() {
-  const { profile, billingAccount } = useAuth();
+  const { profile, billingAccount, user } = useAuth();
 
   return useMemo(() => {
     const bypass = isBillingBypass(profile);
     const plan = getBillingPlan(billingAccount?.plan);
     const active = bypass || isBillingAccountActive(billingAccount);
     const pageLimit = getAccountPageLimit(billingAccount, { bypass });
-    const pageCount = Array.isArray(billingAccount?.pageIds)
-      ? billingAccount.pageIds.length
-      : 0;
-    const health = getSubscriptionHealth(billingAccount, { bypass });
+    const profilePageIds = pageIdsFromUserProfile(profile);
+    const pageIds = resolveAccountPageIds(billingAccount, profilePageIds);
+    const pageCount = getAccountPageCount(billingAccount, { extraPageIds: profilePageIds, bypass });
+    const health = getSubscriptionHealth(billingAccount, { bypass, extraPageIds: profilePageIds });
+    const isOwner = isBillingAccountOwner(profile, user?.uid);
 
     const has = (featureKey) => accountHasFeature(billingAccount, featureKey, { bypass });
     const aiLane = resolveAiAssistLane(billingAccount, { bypass });
@@ -40,11 +46,18 @@ export function useEntitlements() {
       active,
       pageLimit,
       pageCount,
+      pageIds,
+      locationLimit: getAccountLocationLimit(billingAccount, { bypass }),
       health,
       paid: health.paid,
       freeTier: health.freeTier,
+      isOwner,
       has,
       canCreateMorePages: canAccountCreatePage(billingAccount, pageCount, { bypass }),
+      canOwnerCreatePages: canOwnerSelfServeCreatePage(billingAccount, pageCount, {
+        isOwner,
+        bypass,
+      }),
       canUseBlog: has('blog'),
       canUseCustomEmbeds: has('customEmbeds'),
       canUseGalleryPortfolio: has('galleryPortfolio'),
@@ -61,5 +74,5 @@ export function useEntitlements() {
       canUseAiByok: has('aiByok'),
       aiMonthlyQuota: getAiMonthlyQuota(billingAccount, aiLane === 'full' ? 'full' : 'lite', { bypass }),
     };
-  }, [profile, billingAccount]);
+  }, [profile, billingAccount, user?.uid]);
 }

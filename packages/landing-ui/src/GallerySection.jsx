@@ -18,6 +18,8 @@ export default function GallerySection({ data, interactive = true }) {
   const items = getVisibleGalleryItems(data);
   const sectionTitle = String(data.gallerySectionTitle ?? '').trim() || getLabel(labels, 'gallery.defaultTitle');
   const introParagraphs = splitGallerySectionText(data.gallerySectionText);
+  const showTitle = data.galleryShowTitle !== false;
+  const showIntro = data.galleryShowIntro !== false;
   const portfolioUrl = getGalleryPortfolioUrl(data);
   const portfolioLabel = String(data.galleryPortfolioLabel ?? '').trim()
     || getLabel(labels, 'gallery.viewPortfolio');
@@ -45,22 +47,28 @@ export default function GallerySection({ data, interactive = true }) {
   return (
     <section id={SECTION_IDS.gallery} className="border-y border-[#2A342D]/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-          <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
-            {sectionTitle}
-          </h2>
-          {introParagraphs.length > 0 ? (
-            <div className="space-y-3 text-sm text-current/60 leading-relaxed">
-              {introParagraphs.map((paragraph, index) => (
-                <p key={`gallery-intro-${index}`}>{paragraph}</p>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-current/60">
-              {getLabel(labels, 'gallery.defaultIntro')}
-            </p>
-          )}
-        </div>
+        {(showTitle || showIntro) ? (
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+            {showTitle ? (
+              <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
+                {sectionTitle}
+              </h2>
+            ) : null}
+            {showIntro ? (
+              introParagraphs.length > 0 ? (
+                <div className="space-y-3 text-sm text-current/60 leading-relaxed">
+                  {introParagraphs.map((paragraph, index) => (
+                    <p key={`gallery-intro-${index}`}>{paragraph}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-current/60">
+                  {getLabel(labels, 'gallery.defaultIntro')}
+                </p>
+              )
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           {items.map((item, index) => {

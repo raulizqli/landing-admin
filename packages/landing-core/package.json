@@ -44,6 +44,7 @@
     "./heroVideo": "./src/heroVideo.js",
     "./heroSlides": "./src/heroSlides.js",
     "./maps": "./src/maps.js",
+    "./locations": "./src/locations.js",
     "./preHero": "./src/preHero.js",
     "./socialLinks": "./src/socialLinks.js",
     "./pageLoadErrors": "./src/pageLoadErrors.js",

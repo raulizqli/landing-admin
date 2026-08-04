@@ -50,6 +50,9 @@ const COLLECTION_SPECS = {
   blogPosts: {
     fields: ['title', 'text', 'imageAlt'],
   },
+  locations: {
+    fields: ['label', 'address', 'email', 'phone'],
+  },
   customEmbeds: {
     fields: [
       'label',
@@ -86,7 +89,10 @@ function pickLocalizedValue(activeValue, fallbackValue, baseValue) {
 }
 
 function pickEditingValue(activeValue, baseValue) {
-  if (hasValue(activeValue)) return cloneTextValue(activeValue);
+  // Preserve explicit blanks and in-progress spaces while typing in the editor.
+  if (activeValue !== undefined && activeValue !== null) {
+    return cloneTextValue(activeValue);
+  }
   return Array.isArray(baseValue) ? [] : '';
 }
 
@@ -287,7 +293,8 @@ export function resolvePageLanguage(page = {}, requestedLanguage, options = {}) 
   const translations = normalizePageTranslations(page.translations, page, defaultLanguage);
   const activeBucket = translations[language] || {};
   const fallbackBucket = translations[defaultLanguage] || {};
-  const fallbackEnabled = options.fallback !== false || language === defaultLanguage;
+  // Respect explicit fallback:false in the editor so blank values and trailing spaces survive.
+  const fallbackEnabled = options.fallback !== false;
   const result = {
     ...page,
     defaultLanguage,

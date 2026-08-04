@@ -3,8 +3,10 @@
  * Keep thresholds in sync when changing the core module.
  */
 
-export const SITE_ACCESS_ADS_AFTER_DAYS = 180;
-export const SITE_ACCESS_OFFLINE_AFTER_DAYS = 270;
+/** End of first unpaid month → ads. */
+export const SITE_ACCESS_ADS_AFTER_DAYS = 30;
+/** After 6 unpaid months without confirmed ad revenue → offline. */
+export const SITE_ACCESS_OFFLINE_AFTER_DAYS = 180;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

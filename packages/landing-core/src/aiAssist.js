@@ -9,6 +9,7 @@ import {
   getBillingPlan,
   isBillingAccountActive,
 } from './billingPlans.js';
+import { normalizeVertical } from './verticals.js';
 
 export const AI_ASSIST_LANES = ['lite', 'full'];
 
@@ -26,7 +27,26 @@ export const AI_FULL_ACTIONS = [
   'service_blurb',
   'seo_meta',
   'blog_draft',
+  'suggest_page_structure',
+  'generate_logo',
 ];
+
+/** Keep in sync with TOGGLEABLE_PAGE_SECTIONS flags in sectionVisibility.js */
+export const STRUCTURE_SECTION_FLAGS = [
+  'preHeroEnabled',
+  'heroSectionEnabled',
+  'aboutSectionEnabled',
+  'servicesSectionEnabled',
+  'catalogSectionEnabled',
+  'gallerySectionEnabled',
+  'videoSectionEnabled',
+  'testimonialsEnabled',
+  'blogSectionEnabled',
+  'contactSectionEnabled',
+  'socialSectionEnabled',
+  'footerSectionEnabled',
+];
+const STRUCTURE_SECTION_FLAG_SET = new Set(STRUCTURE_SECTION_FLAGS);
 
 export const AI_TONES = ['empathetic', 'formal', 'concise', 'shorter', 'translate_en', 'translate_es'];
 
@@ -100,12 +120,45 @@ export function sanitizeAiText(value) {
 }
 
 /**
+ * Normalize a suggest_page_structure model result to known section flags.
+ */
+export function normalizeStructureSuggestion(result = {}) {
+  const source = result && typeof result === 'object' ? result : {};
+  const recommendedSections = (Array.isArray(source.recommendedSections) ? source.recommendedSections : [])
+    .map((item) => {
+      const flag = String(item?.flag ?? '').trim();
+      if (!STRUCTURE_SECTION_FLAG_SET.has(flag)) return null;
+      return {
+        flag,
+        enabled: item?.enabled === true,
+        reason: sanitizeAiText(item?.reason ?? ''),
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    vertical: normalizeVertical(source.vertical),
+    summary: sanitizeAiText(source.summary ?? source.rationale ?? ''),
+    recommendedSections,
+  };
+}
+
+/**
  * Apply a successful AI result into local formData (mirror-friendly).
  */
 export function applyAiAssistResult(formData = {}, { action, fieldPath, result } = {}) {
   const next = { ...formData };
   const text = sanitizeAiText(result?.text ?? result?.value ?? '');
   const normalizedAction = normalizeAiAction(action);
+
+  if (normalizedAction === 'suggest_page_structure') {
+    const suggestion = normalizeStructureSuggestion(result);
+    if (suggestion.vertical) next.vertical = suggestion.vertical;
+    for (const item of suggestion.recommendedSections) {
+      next[item.flag] = item.enabled === true;
+    }
+    return next;
+  }
 
   if (normalizedAction === 'polish_bio' || fieldPath === 'aboutBio') {
     next.aboutBio = text || next.aboutBio;
@@ -169,6 +222,17 @@ export function applyAiAssistResult(formData = {}, { action, fieldPath, result }
     next.blogSectionEnabled = true;
     return next;
   }
+  if (normalizedAction === 'generate_logo') {
+    const imageUrl = sanitizeAiText(result?.imageUrl || result?.url || '');
+    if (!imageUrl) return next;
+    if (fieldPath === 'navIconUrl') {
+      next.navIconUrl = imageUrl;
+      return next;
+    }
+    next.navLogoUrl = imageUrl;
+    next.navMode = 'logo';
+    return next;
+  }
   if (normalizedAction === 'service_blurb' && typeof result?.index === 'number') {
     const services = Array.isArray(next.services) ? [...next.services] : [];
     if (services[result.index]) {
@@ -204,6 +268,32 @@ export function buildAiUserPrompt({
 } = {}) {
   const name = context.name || '';
   const specialty = context.specialty || '';
+  const normalizedAction = normalizeAiAction(action) || String(action ?? '').trim().toLowerCase();
+
+  if (normalizedAction === 'suggest_page_structure') {
+    return [
+      'Action: suggest_page_structure',
+      'Recommend which landing-page sections to enable for this business.',
+      `Selected vertical (prefer unless the note clearly requires another): ${context.vertical || 'generic'}.`,
+      'Allowed vertical values: generic, psychology, dental, veterinary, legal, medical, beauty, fitness, education, ecommerce.',
+      `Allowed section flags: ${STRUCTURE_SECTION_FLAGS.join(', ')}.`,
+      'Always enable heroSectionEnabled, aboutSectionEnabled, contactSectionEnabled, and footerSectionEnabled unless there is a strong reason not to.',
+      'Do not invent contact details, prices, testimonials, credentials, or medical claims.',
+      'Return ONLY one valid JSON object. No markdown fences.',
+      'Use exactly this shape:',
+      JSON.stringify({
+        vertical: 'one allowed vertical value',
+        summary: '1-2 sentences explaining the recommended structure',
+        recommendedSections: [
+          { flag: 'servicesSectionEnabled', enabled: true, reason: 'short reason' },
+        ],
+      }),
+      name ? `Brand/name: ${name}` : '',
+      specialty ? `Specialty: ${specialty}` : '',
+      brief ? `User note:\n${brief}` : 'User note: (none)',
+    ].filter(Boolean).join('\n');
+  }
+
   const parts = [
     `Action: ${action}`,
     `Tone: ${normalizeAiTone(tone)}`,

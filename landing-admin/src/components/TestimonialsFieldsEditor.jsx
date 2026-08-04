@@ -1,6 +1,7 @@
 import { createEmptyTestimonial } from '../utils/testimonials';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import ShowContentToggle from './ShowContentToggle';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function TestimonialsFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
@@ -52,15 +53,29 @@ export default function TestimonialsFieldsEditor({ formData, onChange, pageId, c
       {enabled && (
         <>
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Título de la sección</label>
-            <input
-              type="text"
-              value={formData.testimonialsSectionTitle || ''}
-              onChange={(e) => onChange({ ...formData, testimonialsSectionTitle: e.target.value })}
-              placeholder={titlePlaceholder}
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+            <ShowContentToggle
+              checked={formData.testimonialsShowTitle !== false}
+              onChange={(testimonialsShowTitle) => onChange({ ...formData, testimonialsShowTitle })}
+              label="Mostrar título de la sección"
+              hint="Desactivado = se omite el título (no usa el valor por defecto)."
             />
+            {formData.testimonialsShowTitle !== false && (
+              <input
+                type="text"
+                value={formData.testimonialsSectionTitle || ''}
+                onChange={(e) => onChange({ ...formData, testimonialsSectionTitle: e.target.value })}
+                placeholder={titlePlaceholder}
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+              />
+            )}
           </div>
+
+          <ShowContentToggle
+            checked={formData.testimonialsShowSubtitle !== false}
+            onChange={(testimonialsShowSubtitle) => onChange({ ...formData, testimonialsShowSubtitle })}
+            label="Mostrar subtítulo"
+            hint="Desactivado = se omite el subtítulo por defecto de testimonios."
+          />
 
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-gray-400">Cada testimonio necesita al menos la frase. La foto es opcional.</p>

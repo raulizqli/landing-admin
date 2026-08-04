@@ -6,6 +6,8 @@ export {
   createCmsUser,
   deleteCmsUser,
   generateCmsUserInvitation,
+  listCmsUsers,
+  updateCmsUser,
 } from "./cmsUsers.js";
 export { triggerHostingDeploy } from "./hostingDeploy.js";
 export {
@@ -34,4 +36,5 @@ export {
   setAiProviderConfig,
   getAiAssistUsage,
 } from "./aiAssist.js";
+export { createCmsPage } from "./cmsPages.js";
 export { askOllamaCloud } from "./askOllamaCloud.js";

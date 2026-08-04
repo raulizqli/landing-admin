@@ -1,19 +1,59 @@
 import { httpsCallable } from 'firebase/functions';
 import { getHubFunctions } from './firebaseClients';
 
-function mapAiError(error) {
+function extractCallableErrorDetail(error) {
+  const details = error?.details ?? error?.customData?.details ?? error?.customData;
+  if (typeof details === 'string' && details.trim()) {
+    return details.trim();
+  }
+  if (details && typeof details === 'object') {
+    const fromDetails = details.detail || details.message || details.error;
+    if (fromDetails) return String(fromDetails).trim();
+  }
+
+  const raw = String(error?.message ?? '').trim();
+  const cleaned = raw
+    .replace(/^FirebaseError:\s*/i, '')
+    .replace(/^Error:\s*/i, '')
+    .replace(/^functions\//i, '')
+    .trim();
+
+  if (!cleaned || /^(internal|unknown|unavailable)$/i.test(cleaned)) {
+    return '';
+  }
+  // Client SDK sometimes prefixes: "unavailable: actual message"
+  return cleaned.replace(/^(internal|unknown|unavailable|failed-precondition):\s*/i, '').trim();
+}
+
+export function mapAiError(error) {
   const code = String(error?.code ?? '');
-  if (code.includes('unauthenticated')) return 'Debes iniciar sesión.';
+  const detail = extractCallableErrorDetail(error);
+
+  if (code.includes('unauthenticated')) {
+    return detail || 'Debes iniciar sesión.';
+  }
   if (code.includes('resource-exhausted')) {
-    return error?.message || 'Cuota de IA agotada este mes.';
+    return detail || 'Cuota de IA agotada este mes.';
   }
   if (code.includes('permission-denied')) {
-    return error?.message || 'Tu plan no permite esta acción de IA.';
+    return detail || 'Tu plan no permite esta acción de IA.';
   }
-  if (code.includes('not-found') || code.includes('functions/not-found')) {
-    return 'Cloud Function de IA no desplegada. Despliega runAiAssist.';
+  if (code.includes('invalid-argument')) {
+    return detail || 'La solicitud de IA no es válida.';
   }
-  return error?.message || 'No se pudo generar con IA.';
+  if (code.includes('not-found')) {
+    return detail || 'Cloud Function de IA no desplegada. Despliega runAiAssist / generateLandingDraft.';
+  }
+  if (code.includes('unavailable') || code.includes('failed-precondition')) {
+    return detail || 'El servicio de IA no está disponible. Revisa API key, modelo y conectividad.';
+  }
+  if (code.includes('deadline-exceeded') || code.includes('timeout')) {
+    return detail || 'La generación con IA tardó demasiado. Inténtalo de nuevo.';
+  }
+  if (code.includes('internal') || code.includes('unknown')) {
+    return detail || 'Error del servicio de IA. Revisa la configuración del proveedor (API key, modelo, cuota).';
+  }
+  return detail || 'No se pudo generar con IA.';
 }
 
 export async function runAiAssistRemote(payload) {
@@ -43,6 +83,29 @@ export async function getAiAssistUsageRemote() {
     return result.data;
   } catch (error) {
     throw new Error(mapAiError(error));
+  }
+}
+
+export async function createCmsPageRemote(payload) {
+  try {
+    const callable = httpsCallable(getHubFunctions(), 'createCmsPage', { timeout: 60000 });
+    const result = await callable(payload);
+    return result.data;
+  } catch (error) {
+    const code = String(error?.code ?? '');
+    if (code.includes('already-exists')) {
+      throw new Error(error?.message || 'Ya existe una página con ese ID.');
+    }
+    if (code.includes('resource-exhausted')) {
+      throw new Error(error?.message || 'Límite de páginas alcanzado.');
+    }
+    if (code.includes('permission-denied')) {
+      throw new Error(error?.message || 'No tienes permiso para crear páginas.');
+    }
+    if (code.includes('not-found') || code.includes('functions/not-found')) {
+      throw new Error('Cloud Function createCmsPage no desplegada.');
+    }
+    throw new Error(error?.message || 'No se pudo crear la página.');
   }
 }
 

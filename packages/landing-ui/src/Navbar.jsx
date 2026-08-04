@@ -85,9 +85,11 @@ function BrandBlock({
         <p className="font-serif font-semibold text-[#2A342D] text-base sm:text-lg truncate">
           {displayName}
         </p>
-        <p className={specialtyClass}>
-          {displaySpecialty}
-        </p>
+        {displaySpecialty ? (
+          <p className={specialtyClass}>
+            {displaySpecialty}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -103,9 +105,11 @@ function BrandBlock({
         <p className="font-serif font-semibold text-[#2A342D] text-base sm:text-lg truncate">
           {displayName}
         </p>
-        <p className={specialtyClass}>
-          {displaySpecialty}
-        </p>
+        {displaySpecialty ? (
+          <p className={specialtyClass}>
+            {displaySpecialty}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -164,7 +168,10 @@ export default function Navbar({
 
   const displayName = name || getLabel(labels, 'placeholders.psychologistName');
   const specialtyCase = data?.navSpecialtyCase === 'capitalize' ? 'capitalize' : 'uppercase';
-  const rawSpecialty = specialty || getLabel(labels, 'placeholders.specialty');
+  const showSpecialty = data?.navShowSpecialty !== false;
+  const rawSpecialty = showSpecialty
+    ? (specialty || getLabel(labels, 'placeholders.specialty'))
+    : '';
   const displaySpecialty = formatNavSpecialty(rawSpecialty, specialtyCase);
   const ctaLabel = getLabel(labels, 'nav.bookAppointment');
   const ctaBgColor = parseColorToHex(data?.navCtaBgColor, DEFAULT_NAV_CTA_BG_COLOR);

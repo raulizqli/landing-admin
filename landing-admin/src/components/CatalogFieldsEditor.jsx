@@ -7,6 +7,7 @@ import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 import VisualOptionPicker, { VISUAL_STYLE_PREVIEW_MAP } from './VisualOptionPicker';
 import SectionCustomStyleEditor from './SectionCustomStyleEditor';
+import ShowContentToggle from './ShowContentToggle';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function CatalogFieldsEditor({
@@ -72,25 +73,39 @@ export default function CatalogFieldsEditor({
           </p>
 
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Título de la sección</label>
-            <input
-              type="text"
-              value={formData.catalogSectionTitle || ''}
-              onChange={(e) => onChange({ ...formData, catalogSectionTitle: e.target.value })}
-              placeholder={titlePlaceholder}
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+            <ShowContentToggle
+              checked={formData.catalogShowTitle !== false}
+              onChange={(catalogShowTitle) => onChange({ ...formData, catalogShowTitle })}
+              label="Mostrar título de la sección"
+              hint="Desactivado = se omite el título (no usa el valor por defecto)."
             />
+            {formData.catalogShowTitle !== false && (
+              <input
+                type="text"
+                value={formData.catalogSectionTitle || ''}
+                onChange={(e) => onChange({ ...formData, catalogSectionTitle: e.target.value })}
+                placeholder={titlePlaceholder}
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto introductorio (opcional)</label>
-            <textarea
-              rows="3"
-              value={formData.catalogSectionText || ''}
-              onChange={(e) => onChange({ ...formData, catalogSectionText: e.target.value })}
-              placeholder={introPlaceholder}
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+            <ShowContentToggle
+              checked={formData.catalogShowIntro !== false}
+              onChange={(catalogShowIntro) => onChange({ ...formData, catalogShowIntro })}
+              label="Mostrar texto introductorio"
+              hint="Desactivado = se omite la introducción (no usa el texto por defecto)."
             />
+            {formData.catalogShowIntro !== false && (
+              <textarea
+                rows="3"
+                value={formData.catalogSectionText || ''}
+                onChange={(e) => onChange({ ...formData, catalogSectionText: e.target.value })}
+                placeholder={introPlaceholder}
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              />
+            )}
           </div>
 
           <div className="space-y-2">

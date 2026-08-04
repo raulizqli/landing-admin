@@ -101,28 +101,36 @@ export default function BlogSection({ data }) {
   const posts = getVisibleBlogPosts(data);
   const sectionTitle = String(data.blogSectionTitle ?? '').trim() || getLabel(labels, 'blog.defaultTitle');
   const introParagraphs = splitBlogText(data.blogSectionText);
+  const showTitle = data.blogShowTitle !== false;
+  const showIntro = data.blogShowIntro !== false;
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'blog'), { sectionKey: 'blog' });
   const imageAltFallback = getLabel(labels, 'blog.imageAlt');
 
   return (
     <section id={SECTION_IDS.blog} className="border-y border-[#2A342D]/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-          <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
-            {sectionTitle}
-          </h2>
-          {introParagraphs.length > 0 ? (
-            <div className="space-y-3 text-sm text-current/60 leading-relaxed">
-              {introParagraphs.map((paragraph, index) => (
-                <p key={`blog-intro-${index}`}>{paragraph}</p>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-current/60">
-              {getLabel(labels, 'blog.defaultIntro')}
-            </p>
-          )}
-        </div>
+        {(showTitle || showIntro) ? (
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+            {showTitle ? (
+              <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
+                {sectionTitle}
+              </h2>
+            ) : null}
+            {showIntro ? (
+              introParagraphs.length > 0 ? (
+                <div className="space-y-3 text-sm text-current/60 leading-relaxed">
+                  {introParagraphs.map((paragraph, index) => (
+                    <p key={`blog-intro-${index}`}>{paragraph}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-current/60">
+                  {getLabel(labels, 'blog.defaultIntro')}
+                </p>
+              )
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="space-y-12 sm:space-y-16">
           {posts.map((post, index) => (

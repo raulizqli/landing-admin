@@ -60,21 +60,40 @@ function getStripe(): Stripe {
   return new Stripe(key);
 }
 
-function stripePriceIdForPlan(planId: string): string {
-  const map: Record<string, string | undefined> = {
-    starter: process.env.STRIPE_PRICE_STARTER,
-    pro: process.env.STRIPE_PRICE_PRO,
-    agency: process.env.STRIPE_PRICE_AGENCY,
-    enterprise: process.env.STRIPE_PRICE_ENTERPRISE,
-  };
-  const priceId = String(map[planId] ?? "").trim();
-  if (!priceId) {
-    throw new HttpsError(
-      "failed-precondition",
-      `Falta STRIPE_PRICE_${planId.toUpperCase()} en el entorno de Functions.`,
-    );
+function stripePriceEnvCandidates(planId: string, currency: "usd" | "mxn" = "usd"): string[] {
+  const plan = planId.toUpperCase();
+  const cur = currency.toUpperCase();
+  // Prefer currency-specific prices (Prod USD/MXN), then legacy single-price env.
+  return [
+    `STRIPE_PRICE_${plan}_${cur}`,
+    `STRIPE_PRICE_${plan}`,
+  ];
+}
+
+function stripePriceIdForPlan(planId: string, currency: "usd" | "mxn" = "usd"): string {
+  for (const envKey of stripePriceEnvCandidates(planId, currency)) {
+    const priceId = String(process.env[envKey] ?? "").trim();
+    if (priceId) return priceId;
   }
-  return priceId;
+  throw new HttpsError(
+    "failed-precondition",
+    `Falta STRIPE_PRICE_${planId.toUpperCase()}_${currency.toUpperCase()} (o STRIPE_PRICE_${planId.toUpperCase()}) en Functions.`,
+  );
+}
+
+function allConfiguredStripePriceIds(): Array<[string, string]> {
+  const plans = ["starter", "pro", "agency", "enterprise"];
+  const currencies: Array<"usd" | "mxn"> = ["usd", "mxn"];
+  const entries: Array<[string, string]> = [];
+  for (const planId of plans) {
+    for (const currency of currencies) {
+      for (const envKey of stripePriceEnvCandidates(planId, currency)) {
+        const priceId = String(process.env[envKey] ?? "").trim();
+        if (priceId) entries.push([planId, priceId]);
+      }
+    }
+  }
+  return entries;
 }
 
 function mercadoPagoToken(): string {
@@ -96,7 +115,23 @@ async function getCallerProfile(uid: string) {
     email?: string;
     displayName?: string;
     accountId?: string;
+    assignedPageIds?: unknown;
+    pageId?: string;
   };
+}
+
+function normalizePageIdList(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+  return [...new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))];
+}
+
+function pageIdsFromProfile(profile: {
+  assignedPageIds?: unknown;
+  pageId?: string;
+}): string[] {
+  const fromList = normalizePageIdList(profile.assignedPageIds);
+  const single = String(profile.pageId ?? "").trim();
+  return normalizePageIdList([...fromList, single]);
 }
 
 async function loadOrCreateAccountForUser(profile: {
@@ -104,12 +139,15 @@ async function loadOrCreateAccountForUser(profile: {
   email?: string;
   displayName?: string;
   accountId?: string;
+  assignedPageIds?: unknown;
+  pageId?: string;
 }): Promise<BillingAccountRecord> {
   const db = getFirestore();
   const accountId = String(profile.accountId ?? profile.uid).trim();
   const ref = db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
   const snap = await ref.get();
   const now = new Date().toISOString();
+  const profilePageIds = pageIdsFromProfile(profile);
 
   if (!snap.exists) {
     const account = {
@@ -123,7 +161,7 @@ async function loadOrCreateAccountForUser(profile: {
       stripeSubscriptionId: "",
       mercadoPagoPreapprovalId: "",
       mercadoPagoPayerEmail: String(profile.email ?? "").trim().toLowerCase(),
-      pageIds: [],
+      pageIds: profilePageIds,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
       createdAt: now,
@@ -144,7 +182,24 @@ async function loadOrCreateAccountForUser(profile: {
     );
   }
 
-  return { id: accountId, ...(snap.data() ?? {}) };
+  const data = snap.data() ?? {};
+  const existingPageIds = normalizePageIdList(data.pageIds);
+  const mergedPageIds = normalizePageIdList([...existingPageIds, ...profilePageIds]);
+  const needsPageSync = mergedPageIds.length !== existingPageIds.length
+    || mergedPageIds.some((id) => !existingPageIds.includes(id));
+
+  if (needsPageSync) {
+    await ref.set(
+      {
+        pageIds: mergedPageIds,
+        updatedAt: now,
+      },
+      { merge: true },
+    );
+    return { id: accountId, ...data, pageIds: mergedPageIds, updatedAt: now };
+  }
+
+  return { id: accountId, ...data };
 }
 
 async function applyPlanToAccount(
@@ -234,7 +289,7 @@ export const createBillingCheckout = onCall(async (request: CallableRequest) => 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: stripePriceIdForPlan(planId), quantity: 1 }],
+      line_items: [{ price: stripePriceIdForPlan(planId, currency), quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: account.id,
@@ -243,11 +298,13 @@ export const createBillingCheckout = onCall(async (request: CallableRequest) => 
         accountId: account.id,
         planId,
         uid: profile.uid,
+        currency,
       },
       subscription_data: {
         metadata: {
           accountId: account.id,
           planId,
+          currency,
         },
       },
     });
@@ -280,7 +337,7 @@ export const createBillingCheckout = onCall(async (request: CallableRequest) => 
   }
 
   const body = {
-    reason: `Landing CMS — ${planId}`,
+    reason: `TapSite — ${planId}`,
     external_reference: `${account.id}:${planId}`,
     payer_email: payerEmail,
     back_url: successUrl,
@@ -333,13 +390,7 @@ export const createBillingCheckout = onCall(async (request: CallableRequest) => 
 });
 
 function planFromStripePrice(priceId: string): string | null {
-  const entries: Array<[string, string]> = [
-    ["starter", String(process.env.STRIPE_PRICE_STARTER ?? "").trim()],
-    ["pro", String(process.env.STRIPE_PRICE_PRO ?? "").trim()],
-    ["agency", String(process.env.STRIPE_PRICE_AGENCY ?? "").trim()],
-    ["enterprise", String(process.env.STRIPE_PRICE_ENTERPRISE ?? "").trim()],
-  ];
-  for (const [planId, envPrice] of entries) {
+  for (const [planId, envPrice] of allConfiguredStripePriceIds()) {
     if (envPrice && envPrice === priceId) return planId;
   }
   return null;

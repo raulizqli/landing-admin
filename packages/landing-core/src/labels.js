@@ -443,16 +443,30 @@ export function getDefaultLabelForPage(page = {}, key) {
 
 export function getCustomLabelValue(customLabels, language, key) {
   const lang = normalizeLabelLanguage(language);
-  const normalized = normalizeCustomLabels(customLabels);
-  return normalized[lang]?.[key] ?? '';
+  if (!customLabels || typeof customLabels !== 'object') return '';
+  if (isFlatCustomLabels(customLabels)) {
+    return customLabels[key] ?? '';
+  }
+  const bucket = customLabels[lang];
+  if (!bucket || typeof bucket !== 'object') return '';
+  return bucket[key] ?? '';
 }
 
 export function setCustomLabelValue(customLabels, language, key, value) {
   const lang = normalizeLabelLanguage(language);
-  const base = normalizeCustomLabels(customLabels);
+  const base = customLabels && typeof customLabels === 'object'
+    ? customLabels
+    : { es: {}, en: {} };
   const nextValue = String(value ?? '');
-  const nextBucket = { ...(base[lang] || {}) };
 
+  if (isFlatCustomLabels(base)) {
+    const next = { ...base };
+    if (nextValue.length === 0) delete next[key];
+    else next[key] = nextValue;
+    return next;
+  }
+
+  const nextBucket = { ...((base[lang] && typeof base[lang] === 'object') ? base[lang] : {}) };
   // Keep spaces while typing; only clear when the field is empty.
   if (nextValue.length === 0) {
     delete nextBucket[key];
@@ -461,8 +475,8 @@ export function setCustomLabelValue(customLabels, language, key, value) {
   }
 
   return {
-    es: { ...(base.es || {}) },
-    en: { ...(base.en || {}) },
+    es: { ...((base.es && typeof base.es === 'object') ? base.es : {}) },
+    en: { ...((base.en && typeof base.en === 'object') ? base.en : {}) },
     [lang]: nextBucket,
   };
 }

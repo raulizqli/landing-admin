@@ -23,25 +23,30 @@ import LocationFieldsEditor from './components/LocationFieldsEditor';
 import PhoneFieldsEditor from './components/PhoneFieldsEditor';
 import LegalDocumentsFieldsEditor from './components/LegalDocumentsFieldsEditor';
 import EditorSection from './components/EditorSection';
+import ShowContentToggle from './components/ShowContentToggle';
 import DevicePreviewPanel from './components/DevicePreviewPanel';
 import { resolvePreviewSectionId } from './utils/sectionAnchors';
 import SiteHostingFieldsEditor from './components/SiteHostingFieldsEditor';
 import UserManagement from './components/UserManagement';
 import CreatePageModal from './components/CreatePageModal';
+import PageStructureAssistSection from './components/PageStructureAssistSection';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
 import BillingPlansPanel from './components/BillingPlansPanel';
 import PlanGate from './components/PlanGate';
 import SubscriptionHealthCard from './components/SubscriptionHealthCard';
+import AdminFreeTierAdsBanner from './components/AdminFreeTierAdsBanner';
+import SavePublishAdGate from './components/SavePublishAdGate';
 import AiQuotaBadge from './components/AiQuotaBadge';
 import MarketingSiteFieldsEditor from './components/MarketingSiteFieldsEditor';
 import MarketingRoutesEditor from './components/MarketingRoutesEditor';
 import { hydrateFormSocial } from './utils/socialLinks';
-import { createPageInHub, loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
+import { loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
+import { resolvePageOpenUrl } from './utils/pageOpenUrl';
+import { createCmsPageRemote } from './utils/aiAssistFunctions';
 import { useAuth } from './contexts/AuthContext';
 import { useLocale, LanguageSwitcher } from './i18n/LocaleContext';
 import { useEntitlements } from './hooks/useEntitlements';
 import {
-  canAccessHostingSettings,
   canCreatePages,
   canEditPage,
   canManagePageLayout,
@@ -81,7 +86,7 @@ function hydrateForm(landing) {
 }
 
 export default function App() {
-  const { user, profile, loading: authLoading, signOut, hasAccess, authError } = useAuth();
+  const { user, profile, loading: authLoading, signOut, hasAccess, authError, refreshBillingAccount } = useAuth();
   const { t } = useLocale();
   const entitlements = useEntitlements();
   const [landings, setLandings] = useState([]);
@@ -96,6 +101,7 @@ export default function App() {
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [showBilling, setShowBilling] = useState(false);
+  const [showSaveAdGate, setShowSaveAdGate] = useState(false);
   const [creatingPage, setCreatingPage] = useState(false);
   const [accessError, setAccessError] = useState('');
   const [pagesSidebarCollapsed, setPagesSidebarCollapsed] = useState(readSidebarCollapsedDefault);
@@ -124,9 +130,12 @@ export default function App() {
   }, []);
 
   const canEditSelectedPage = canEditPage(profile, selectedId);
-  const canManageHosting = canAccessHostingSettings(profile);
-  const canCreateNewPages = canCreatePages(profile);
-  const canManageLayout = canManagePageLayout(profile);
+  const canCreateNewPages = canCreatePages(profile, { user, entitlements });
+  const canManageLayout = canManagePageLayout(profile, {
+    user,
+    billingAccount: entitlements.account,
+    entitlements,
+  });
   const previewScrollSectionId = resolvePreviewSectionId(previewSectionKey);
   const upgradeLabel = t('common.upgrade');
   const openBilling = () => setShowBilling(true);
@@ -137,6 +146,13 @@ export default function App() {
       : null),
     [formData, editingLanguage],
   );
+
+  const pageOpenUrl = resolvePageOpenUrl({
+    pageId: selectedId,
+    hostingPublicUrl: formData?.hostingPublicUrl,
+    customDomain: formData?.customDomain,
+    language: editingLanguage,
+  });
 
   const handleEditorChange = useCallback((nextEditorData) => {
     setFormData((current) => (
@@ -213,8 +229,8 @@ export default function App() {
           setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
           setLayoutBaseline(hydrated);
           setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
-        } else if (canCreatePages(profile)) {
-          // Root with an empty hub: stay in the editor shell and create the first landing.
+        } else if (canCreatePages(profile, { user, entitlements })) {
+          // Owner/root with empty list: stay in the editor shell and create the first landing.
           setSelectedId(null);
           setFormData(null);
           setLayoutBaseline(null);
@@ -233,7 +249,7 @@ export default function App() {
         }
       } catch (error) {
         console.error('Error al leer Firestore:', error);
-        if (canCreatePages(profile)) {
+        if (canCreatePages(profile, { user, entitlements })) {
           setSelectedId(null);
           setFormData(null);
           setLayoutBaseline(null);
@@ -261,8 +277,7 @@ export default function App() {
 
   const isDemoPreview = selectedId === DEMO_PREVIEW_ID;
 
-  const handleSaveChanges = async (e) => {
-    e.preventDefault();
+  const performSaveChanges = async () => {
     if (isDemoPreview) {
       alert('Modo demo: crea una landing con “Nueva landing” para guardar en Firestore.');
       return;
@@ -310,27 +325,55 @@ export default function App() {
     }
   };
 
-  const handleCreatePage = async ({ pageId, name, specialty, vertical, draft }) => {
+  const handleSaveChanges = async (e) => {
+    e.preventDefault();
+    if (isDemoPreview) {
+      alert('Modo demo: crea una landing con “Nueva landing” para guardar en Firestore.');
+      return;
+    }
+    if (!canEditSelectedPage) {
+      alert('No tienes permiso para guardar cambios en esta página.');
+      return;
+    }
+    if (entitlements.freeTier && !entitlements.bypass) {
+      setShowSaveAdGate(true);
+      return;
+    }
+    await performSaveChanges();
+  };
+
+  const handleSaveAdComplete = async () => {
+    setShowSaveAdGate(false);
+    await performSaveChanges();
+  };
+
+  const handleCreatePage = async ({ pageId, name, specialty, vertical }) => {
     setCreatingPage(true);
     try {
-      const created = await createPageInHub({
+      const response = await createCmsPageRemote({
         pageId,
         name,
         specialty,
         vertical,
-        draft,
       });
+      const created = response?.page || { id: pageId, name, specialty, vertical };
       setLandings((current) => {
         const next = [{ id: pageId, ...created }, ...current.filter((item) => item.id !== pageId)];
         return next;
       });
       setAccessError('');
       setSelectedId(pageId);
-      const hydrated = hydrateForm({ id: pageId, ...created });
+      const loaded = await loadPageForEditor(pageId, created);
+      const hydrated = hydrateForm({ id: pageId, ...loaded });
       setFormData(hydrated);
       setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
       setShowCreatePage(false);
+      try {
+        await refreshBillingAccount?.();
+      } catch (error) {
+        console.warn('Could not refresh billing after create:', error);
+      }
     } finally {
       setCreatingPage(false);
     }
@@ -411,7 +454,11 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh w-full max-w-full bg-gray-100 text-gray-800 overflow-hidden font-sans max-lg:pb-11">
+    <div className="flex h-dvh w-full max-w-full flex-col bg-gray-100 text-gray-800 overflow-hidden font-sans">
+      {entitlements.freeTier ? (
+        <AdminFreeTierAdsBanner onUpgrade={openBilling} />
+      ) : null}
+      <div className="flex min-h-0 flex-1 max-lg:pb-11">
       {/* 1. BARRA LATERAL */}
       <div
         className={`bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0 min-h-0 transition-[width] duration-200 ease-out ${
@@ -503,8 +550,16 @@ export default function App() {
                       type="button"
                       onClick={() => setShowCreatePage(true)}
                       className="flex-1 text-[10px] px-2 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-500 font-semibold"
+                      title={entitlements.pageLimit == null
+                        ? undefined
+                        : `${entitlements.pageCount} / ${entitlements.pageLimit}`}
                     >
                       {t('common.newLanding')}
+                      {entitlements.pageLimit != null && (
+                        <span className="ml-1 opacity-80">
+                          ({entitlements.pageCount}/{entitlements.pageLimit})
+                        </span>
+                      )}
                     </button>
                   )}
                   {canManageUsers(profile) && (
@@ -593,17 +648,43 @@ export default function App() {
                   {isDemoPreview && ' · modo demo'}
                 </p>
               </div>
-              <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0">
-                {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}
-              </button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+                {pageOpenUrl && !isDemoPreview && (
+                  <a
+                    href={pageOpenUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={t('common.openPageTitle')}
+                    className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    {t('common.openPage')} ↗
+                  </a>
+                )}
+                <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0">
+                  {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}
+                </button>
+              </div>
             </div>
+
+            <EditorSection
+              sectionKey="structure-ai"
+              title={t('ai.structure.sectionTitle')}
+              description={t('ai.structure.sectionDescription')}
+              defaultOpen
+              onActivate={activatePreviewSection}
+            >
+              <PageStructureAssistSection
+                formData={editorData}
+                onChange={handleEditorChange}
+                pageId={selectedId}
+              />
+            </EditorSection>
 
             <EditorSection
               sectionKey="identity"
               fillStatus={getEditorSectionFill('identity', editorData)}
               title="Identidad y apariencia"
               description="Nombre, tipo de negocio, idioma, fondo y textos de respaldo"
-              defaultOpen
               onActivate={activatePreviewSection}
             >
               <div className="space-y-2">
@@ -663,7 +744,13 @@ export default function App() {
               description="Layout, menú, CTA y colores"
               onActivate={activatePreviewSection}
             >
-              <NavFieldsEditor formData={editorData} onChange={handleEditorChange} pageId={selectedId} />
+              <NavFieldsEditor
+                formData={editorData}
+                onChange={handleEditorChange}
+                pageId={selectedId}
+                onUpgradePlan={openBilling}
+                upgradeLabel={upgradeLabel}
+              />
               <LabelsFieldsEditor key={`labels-navigation-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['navigation']} showLanguagePicker={false} compact language={editingLanguage} />
             </EditorSection>
 
@@ -865,18 +952,37 @@ export default function App() {
                 description="Ubicación, email, teléfono y etiquetas"
                 onActivate={activatePreviewSection}
               >
+                <div className="space-y-3 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+                  <ShowContentToggle
+                    checked={editorData.contactShowTitle !== false}
+                    onChange={(contactShowTitle) => handleEditorChange({ ...editorData, contactShowTitle })}
+                    label="Mostrar título de contacto"
+                    hint="Desactivado = se omite el título (no usa el valor por defecto)."
+                  />
+                  <ShowContentToggle
+                    checked={editorData.contactShowSubtitle !== false}
+                    onChange={(contactShowSubtitle) => handleEditorChange({ ...editorData, contactShowSubtitle })}
+                    label="Mostrar subtítulo de contacto"
+                    hint="Desactivado = se omite el subtítulo (no usa el valor por defecto)."
+                  />
+                </div>
                 <LocationFieldsEditor
                   formData={editorData}
                   onChange={handleEditorChange}
+                  locationLimit={entitlements.bypass ? null : entitlements.locationLimit}
                   canUseMapBeside={entitlements.canUseContactMapBeside}
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
-                <div className="space-y-2">
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase">Email Público</label>
-                  <input type="email" value={editorData.email || ''} onChange={e => handleEditorChange({...editorData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
-                </div>
-                <PhoneFieldsEditor formData={editorData} onChange={handleEditorChange} />
+                {(editorData.locationsContactMode || 'shared') !== 'per_location' && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-bold text-gray-400 uppercase">Email Público</label>
+                      <input type="email" value={editorData.email || ''} onChange={e => handleEditorChange({...editorData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
+                    </div>
+                    <PhoneFieldsEditor formData={editorData} onChange={handleEditorChange} />
+                  </>
+                )}
                 <LabelsFieldsEditor key={`labels-contact-messages-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['contact', 'messages']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
@@ -924,33 +1030,32 @@ export default function App() {
               sectionKey="footer"
               fillStatus={getEditorSectionFill('footer', editorData)}
               title="Hosting, analytics y pie"
-              description="Dominio, Firebase externo, GA4, documentos legales y colores del footer"
+              description="Dominio, deploy, GA4, documentos legales y colores del footer"
               onActivate={activatePreviewSection}
             >
-              {canManageHosting && (
+              <PlanGate
+                allowed={entitlements.canUseHostingDeploy || entitlements.bypass}
+                label={upgradeLabel}
+                onUpgrade={openBilling}
+                lockedTitle="Hosting y analytics (Pro+)"
+                lockedDescription="Publica tu landing en un dominio propio, dispara deploys y mide el tráfico con Google Analytics. Disponible desde el plan Pro."
+                lockedBenefits={[
+                  'Dominio personalizado y URL pública del sitio',
+                  'Deploy a Vercel, Netlify, Cloudflare, Firebase o GitHub Actions',
+                  'Google Analytics (GA4) por landing',
+                  'Firebase externo del cliente (Agency+)',
+                ]}
+              >
                 <SiteHostingFieldsEditor
                   formData={editorData}
                   onChange={handleEditorChange}
                   pageId={selectedId}
-                  canUseExternalFirebase={entitlements.canUseExternalFirebase}
-                  canUseHostingDeploy={entitlements.canUseHostingDeploy}
+                  canUseExternalFirebase={entitlements.canUseExternalFirebase || entitlements.bypass}
+                  canUseHostingDeploy={entitlements.canUseHostingDeploy || entitlements.bypass}
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
                 />
-              )}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase">Google Analytics (GA4)</label>
-                <p className="text-[10px] text-gray-400">
-                  ID de medición (ej. G-XXXXXXXX). Si lo dejas vacío, se usará el de <code className="bg-gray-100 px-1 rounded">VITE_FIREBASE_MEASUREMENT_ID</code> del deploy.
-                </p>
-                <input
-                  type="text"
-                  value={editorData.analyticsMeasurementId || ''}
-                  onChange={(e) => handleEditorChange({ ...editorData, analyticsMeasurementId: e.target.value.trim() })}
-                  placeholder="G-XXXXXXXXXX"
-                  className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none font-mono"
-                />
-              </div>
+              </PlanGate>
               <LegalDocumentsFieldsEditor formData={editorData} onChange={handleEditorChange} language={editingLanguage} />
               <PageAppearanceEditor formData={editorData} onChange={handleEditorChange} sections={['footer']} />
               <LabelsFieldsEditor key={`labels-footer-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['footer']} showLanguagePicker={false} compact language={editingLanguage} />
@@ -993,11 +1098,23 @@ export default function App() {
       <CreatePageModal
         open={showCreatePage}
         creating={creatingPage}
+        pageCount={entitlements.pageCount}
+        pageLimit={entitlements.bypass ? null : entitlements.pageLimit}
         onClose={() => setShowCreatePage(false)}
         onCreate={handleCreatePage}
       />
 
       <BillingPlansPanel open={showBilling} onClose={() => setShowBilling(false)} />
+      <SavePublishAdGate
+        open={showSaveAdGate}
+        onCancel={() => setShowSaveAdGate(false)}
+        onComplete={handleSaveAdComplete}
+        onUpgrade={() => {
+          setShowSaveAdGate(false);
+          openBilling();
+        }}
+      />
+    </div>
     </div>
   );
 }

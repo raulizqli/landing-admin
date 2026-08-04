@@ -21,6 +21,7 @@ import VisualOptionPicker, {
   VISUAL_STYLE_PREVIEW_MAP,
 } from './VisualOptionPicker';
 import SectionCustomStyleEditor from './SectionCustomStyleEditor';
+import ShowContentToggle from './ShowContentToggle';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function ServicesFieldsEditor({
@@ -85,25 +86,42 @@ export default function ServicesFieldsEditor({
       {enabled && (
         <>
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Título de la sección</label>
-            <input
-              type="text"
-              value={formData.servicesSectionTitle || ''}
-              onChange={(e) => onChange({ ...formData, servicesSectionTitle: e.target.value })}
-              placeholder={titlePlaceholder}
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+            <ShowContentToggle
+              checked={formData.servicesShowTitle !== false}
+              onChange={(servicesShowTitle) => onChange({ ...formData, servicesShowTitle })}
+              label="Mostrar título de la sección"
+              hint="Desactivado = se omite el título (no usa el valor por defecto)."
             />
+            {formData.servicesShowTitle !== false && (
+              <>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Título de la sección</label>
+                <input
+                  type="text"
+                  value={formData.servicesSectionTitle || ''}
+                  onChange={(e) => onChange({ ...formData, servicesSectionTitle: e.target.value })}
+                  placeholder={titlePlaceholder}
+                  className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </>
+            )}
           </div>
 
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto introductorio (opcional)</label>
-            <textarea
-              rows="3"
-              value={formData.servicesSectionText || ''}
-              onChange={(e) => onChange({ ...formData, servicesSectionText: e.target.value })}
-              placeholder={introPlaceholder}
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+            <ShowContentToggle
+              checked={formData.servicesShowIntro !== false}
+              onChange={(servicesShowIntro) => onChange({ ...formData, servicesShowIntro })}
+              label="Mostrar texto introductorio"
+              hint="Desactivado = se omite la introducción (no usa el texto por defecto)."
             />
+            {formData.servicesShowIntro !== false && (
+              <textarea
+                rows="3"
+                value={formData.servicesSectionText || ''}
+                onChange={(e) => onChange({ ...formData, servicesSectionText: e.target.value })}
+                placeholder={introPlaceholder}
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              />
+            )}
           </div>
 
           <div className="space-y-2">

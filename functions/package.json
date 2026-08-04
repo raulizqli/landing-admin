@@ -8,7 +8,10 @@
   "scripts": {
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions",
-    "deploy": "npm run build && firebase deploy --only functions"
+    "deploy": "npm run build && firebase deploy --only functions",
+    "stripe:catalog": "node scripts/ensure-stripe-catalog.mjs --env .env",
+    "stripe:catalog:prod": "node scripts/ensure-stripe-catalog.mjs --env .env.production",
+    "stripe:catalog:staging": "node scripts/ensure-stripe-catalog.mjs --env .env.staging"
   },
   "dependencies": {
     "firebase-admin": "^13.6.0",

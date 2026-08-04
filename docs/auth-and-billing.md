@@ -62,6 +62,35 @@ Un root puede crear usuarios desde el panel. La Function `createCmsUser`:
 
 `deleteCmsUser` elimina el perfil y la cuenta. La edición de email o contraseña requiere un flujo administrativo explícito; no debe hacerse escribiendo directamente en Firestore.
 
+## Invitaciones de usuario (enlace para contraseña)
+
+Root crea usuarios sin contraseña; el enlace de invitación es un **password reset** generado por Firebase Admin.
+
+El enlace tiene **dos dominios distintos**:
+
+| Parte | Ejemplo | Qué controla |
+|---|---|---|
+| **Host del enlace** (página de reset) | `landing-admin-9452e.firebaseapp.com/__/auth/action?...` | Dominio de Auth emails en Firebase |
+| **continueUrl** (vuelta al admin tras reset) | `admin.leftsidedev.site/login?email=...` | `ADMIN_PUBLIC_URL` + Authorized domains |
+
+Si ves `landing-admin-9452e` en el enlace, es **normal** mientras no configures dominio personalizado en Auth. Tras el fix de invitaciones, quitamos `linkDomain` automático porque rompía la generación; Firebase usa entonces su dominio por defecto del proyecto.
+
+Si `admin.leftsidedev.site` **no** está en *Authorized domains*, el `continueUrl` también cae a `landing-admin-9452e.web.app`.
+
+### Marca completa (`admin.leftsidedev.site` en el enlace)
+
+1. Firebase Console → **Authentication** → **Settings** → **Authorized domains** → añade `admin.leftsidedev.site`.
+2. **Authentication** → **Templates** → en cada plantilla → **Customize domain** → `admin.leftsidedev.site` → verifica registros DNS (TXT/CNAME).
+3. Cuando diga *Verification complete*, en `functions/.env`:
+
+   ```env
+   AUTH_LINK_DOMAIN=admin.leftsidedev.site
+   ```
+
+4. Redeploy: `firebase deploy --only functions:createCmsUser,functions:generateCmsUserInvitation`
+
+Hasta el paso 3, el enlace seguirá abriendo en `*.firebaseapp.com` pero el usuario volverá al admin correcto si el paso 1 está hecho.
+
 ## App Check
 
 Las operaciones sensibles deben exigir tokens válidos:
@@ -122,39 +151,53 @@ No dupliques reglas de entitlement en componentes.
 
 ## Variables de Functions
 
-Archivo local: `functions/.env`, basado en `functions/.env.example`.
+- **Prod** (`landing-admin-9452e`): `functions/.env` basado en `functions/.env.production.example` con claves **live**.
+- **Stage**: `functions/.env.staging` / `.env.landings-stage` con claves **test**.
 
 ```env
 ADMIN_PUBLIC_URL=https://admin.ejemplo.com
 
-STRIPE_SECRET_KEY=sk_test_...
+STRIPE_SECRET_KEY=sk_live_...   # Prod; Stage usa sk_test_
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_STARTER_USD=price_...
+STRIPE_PRICE_STARTER_MXN=price_...
+STRIPE_PRICE_PRO_USD=price_...
+STRIPE_PRICE_PRO_MXN=price_...
+STRIPE_PRICE_AGENCY_USD=price_...
+STRIPE_PRICE_AGENCY_MXN=price_...
+# Fallback si falta el precio por moneda:
 STRIPE_PRICE_STARTER=price_...
 STRIPE_PRICE_PRO=price_...
 STRIPE_PRICE_AGENCY=price_...
-STRIPE_PRICE_ENTERPRISE=price_...
 
-MERCADOPAGO_ACCESS_TOKEN=TEST-...
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-...
 ```
 
-Los nombres exactos disponibles están documentados en `functions/.env.example`.
+Los nombres exactos están en `functions/.env.example` y `functions/.env.production.example`.
 
 Nunca:
 
-- subas `functions/.env`;
+- subas `functions/.env` / `.env.production` / `.env.staging`;
 - pongas secretos en variables `VITE_`;
 - expongas Deploy Hooks o tokens en documentos públicos;
-- aceptes webhooks sin verificar su autenticidad.
+- aceptes webhooks sin verificar su autenticidad;
+- despliegues Prod con `sk_test_` (el guardrail `scripts/check-env.mjs --env prod` lo bloquea).
 
-## Configurar Stripe
+## Configurar Stripe (Stage / test)
 
-1. Crea productos y precios recurrentes en modo test.
-2. Asigna los IDs a `STRIPE_PRICE_*`.
-3. Configura `STRIPE_SECRET_KEY`.
-4. Crea el endpoint:
+1. Crea productos y precios recurrentes en modo **test**, o ejecuta:
+
+   ```bash
+   cd functions
+   node scripts/ensure-stripe-catalog.mjs --env .env.staging
+   ```
+
+2. Pega los `STRIPE_PRICE_*` generados en el `.env` de Stage.
+3. Configura `STRIPE_SECRET_KEY` (test).
+4. Crea el endpoint de webhook (modo test):
 
    ```text
-   https://us-central1-<project-id>.cloudfunctions.net/stripeBillingWebhook
+   https://us-central1-<stage-project-id>.cloudfunctions.net/stripeBillingWebhook
    ```
 
 5. Suscribe al menos:
@@ -164,8 +207,35 @@ Nunca:
 6. Guarda el signing secret en `STRIPE_WEBHOOK_SECRET`.
 7. Despliega Functions y ejecuta un checkout de prueba.
 
-No cambies a claves live hasta validar creación, actualización, cancelación y reintentos.
+## Configurar Stripe (Prod / live)
 
+1. En el Dashboard, cambia a **Live**.
+2. Copia la Secret key live a `functions/.env.production` (luego a `functions/.env` antes del deploy Prod).
+3. Genera el catálogo live:
+
+   ```bash
+   cd functions
+   node scripts/ensure-stripe-catalog.mjs --env .env.production
+   ```
+
+4. Pega los price IDs en `.env.production` / `.env`.
+5. Crea el webhook **en modo Live**:
+
+   ```text
+   https://us-central1-landing-admin-9452e.cloudfunctions.net/stripeBillingWebhook
+   ```
+
+   Mismos eventos que en Stage. Guarda `STRIPE_WEBHOOK_SECRET` live.
+6. Verifica:
+
+   ```bash
+   node scripts/check-env.mjs --mode production --env prod
+   ```
+
+7. `npm run deploy:functions` contra el proyecto Prod.
+8. Haz un checkout real pequeño (Starter) y confirma webhook → `billingAccounts` `status: active`.
+
+No mezcles customers/`price_` de test con claves live.
 ## Configurar Mercado Pago
 
 1. Obtén un Access Token de prueba.

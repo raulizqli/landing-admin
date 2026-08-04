@@ -8,8 +8,10 @@ exports.SITE_ACCESS_OFFLINE_AFTER_DAYS = exports.SITE_ACCESS_ADS_AFTER_DAYS = vo
 exports.normalizeMonetization = normalizeMonetization;
 exports.nextUnpaidSince = nextUnpaidSince;
 exports.resolveSiteAccessFromAccount = resolveSiteAccessFromAccount;
-exports.SITE_ACCESS_ADS_AFTER_DAYS = 180;
-exports.SITE_ACCESS_OFFLINE_AFTER_DAYS = 270;
+/** End of first unpaid month → ads. */
+exports.SITE_ACCESS_ADS_AFTER_DAYS = 30;
+/** After 6 unpaid months without confirmed ad revenue → offline. */
+exports.SITE_ACCESS_OFFLINE_AFTER_DAYS = 180;
 const DAY_MS = 24 * 60 * 60 * 1000;
 function parseTime(value, fallback) {
     if (!value)

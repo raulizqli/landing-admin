@@ -77,6 +77,14 @@ export default function SiteHostingFieldsEditor({
 
   return (
     <div className="space-y-4 pt-2 border-t">
+      <div className="rounded-lg border border-gray-100 bg-gray-50/80 p-3 space-y-1.5">
+        <p className="text-[11px] font-semibold text-[#2A342D]">Publicación y medición del sitio</p>
+        <p className="text-[10px] text-gray-500 leading-relaxed">
+          Aquí configuras el dominio, cómo se despliega el template (Vercel, Netlify, GitHub…),
+          Firebase externo si aplica, y Google Analytics para esta landing.
+        </p>
+      </div>
+
       <label className="block text-[11px] font-bold text-gray-400 uppercase">
         Dominio y proyecto Firebase
       </label>
@@ -278,6 +286,25 @@ export default function SiteHostingFieldsEditor({
           </p>
         )}
       </fieldset>
+
+      <div className="space-y-2">
+        <label className="block text-[11px] font-bold text-gray-400 uppercase">Google Analytics (GA4)</label>
+        <p className="text-[10px] text-gray-400 leading-relaxed">
+          Conecta tu propiedad GA4 para medir visitas de esta landing. ID de medición
+          (ej. G-XXXXXXXX). Si lo dejas vacío, se usará el de
+          {' '}
+          <code className="bg-gray-100 px-1 rounded">VITE_FIREBASE_MEASUREMENT_ID</code>
+          {' '}
+          del deploy.
+        </p>
+        <input
+          type="text"
+          value={formData.analyticsMeasurementId || ''}
+          onChange={(e) => onChange({ ...formData, analyticsMeasurementId: e.target.value.trim() })}
+          placeholder="G-XXXXXXXXXX"
+          className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none font-mono"
+        />
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { normalizeSectionThemes, parseColorToHex } from './sectionBackground';
 import { normalizeExternalFirebase } from './externalFirebase';
 import { normalizeHostname } from './hostname';
 import { normalizeContactMapLayout } from './maps';
+import { syncLegacyLocationFields } from './locations.js';
 import { normalizeCustomLabels, normalizeLabelLanguage } from './labels';
 import { normalizeCustomEmbeds, isCustomSectionVisible } from './customEmbeds';
 import { DEFAULT_VERTICAL, normalizeVertical } from './verticals';
@@ -52,6 +53,7 @@ export const EMPTY_PAGE = {
   navIconOnly: false,
   navSpecialty: '',
   navSpecialtyCase: 'uppercase',
+  navShowSpecialty: true,
   navShowCta: true,
   navShowMenu: false,
   navAlign: 'spread',
@@ -69,11 +71,15 @@ export const EMPTY_PAGE = {
   heroSectionEnabled: true,
   aboutTagline: '',
   aboutBio: '',
+  aboutShowTitle: true,
+  aboutShowTagline: true,
   aboutBioEnabled: true,
   aboutSectionEnabled: true,
   servicesSectionEnabled: false,
   servicesSectionTitle: '',
   servicesSectionText: '',
+  servicesShowTitle: true,
+  servicesShowIntro: true,
   servicesDisplayMode: 'stack',
   servicesCarouselPerView: 3,
   servicesCarouselAutoplay: false,
@@ -84,12 +90,16 @@ export const EMPTY_PAGE = {
   catalogSectionEnabled: false,
   catalogSectionTitle: '',
   catalogSectionText: '',
+  catalogShowTitle: true,
+  catalogShowIntro: true,
   catalogVisualStyle: 'cards',
   catalogCustomStyle: createEmptySectionCustomStyle(),
   catalogItems: [],
   gallerySectionEnabled: false,
   gallerySectionTitle: '',
   gallerySectionText: '',
+  galleryShowTitle: true,
+  galleryShowIntro: true,
   galleryPortfolioUrl: '',
   galleryPortfolioLabel: '',
   galleryItems: [],
@@ -99,15 +109,24 @@ export const EMPTY_PAGE = {
   videoSectionUrl: '',
   testimonialsEnabled: false,
   testimonialsSectionTitle: '',
+  testimonialsShowTitle: true,
+  testimonialsShowSubtitle: true,
   testimonials: [],
   blogSectionEnabled: false,
   blogSectionTitle: '',
   blogSectionText: '',
+  blogShowTitle: true,
+  blogShowIntro: true,
   blogPosts: [],
   contactSectionEnabled: true,
+  contactShowTitle: true,
+  contactShowSubtitle: true,
   location: '',
   locationMapsUrl: '',
   showLocationMap: false,
+  locations: [],
+  locationsContactMode: 'shared',
+  locationsDisplayMode: 'list',
   contactMapLayout: 'below',
   email: '',
   phone: '',
@@ -289,22 +308,37 @@ export function normalizePageData(data = {}) {
   next.navShowMenu = next.navShowMenu === true;
   next.navAlign = normalizeNavAlign(next.navAlign);
   next.navSpecialtyCase = normalizeNavSpecialtyCase(next.navSpecialtyCase);
+  next.navShowSpecialty = next.navShowSpecialty !== false;
   next.navCtaBgColor = parseColorToHex(next.navCtaBgColor, DEFAULT_NAV_CTA_BG_COLOR);
   next.navCtaTextColor = parseColorToHex(next.navCtaTextColor, DEFAULT_NAV_CTA_TEXT_COLOR);
   next.preHeroEnabled = next.preHeroEnabled === true;
   next.heroSectionEnabled = next.heroSectionEnabled !== false;
   next.aboutSectionEnabled = next.aboutSectionEnabled !== false;
+  next.aboutShowTitle = next.aboutShowTitle !== false;
+  next.aboutShowTagline = next.aboutShowTagline !== false;
   next.aboutBioEnabled = next.aboutBioEnabled !== false;
   next.servicesSectionEnabled = next.servicesSectionEnabled === true;
+  next.servicesShowTitle = next.servicesShowTitle !== false;
+  next.servicesShowIntro = next.servicesShowIntro !== false;
   next.catalogSectionEnabled = next.catalogSectionEnabled === true;
+  next.catalogShowTitle = next.catalogShowTitle !== false;
+  next.catalogShowIntro = next.catalogShowIntro !== false;
   next.gallerySectionEnabled = next.gallerySectionEnabled === true;
+  next.galleryShowTitle = next.galleryShowTitle !== false;
+  next.galleryShowIntro = next.galleryShowIntro !== false;
   next.videoSectionEnabled = next.videoSectionEnabled === true;
   next.testimonialsEnabled = next.testimonialsEnabled === true;
+  next.testimonialsShowTitle = next.testimonialsShowTitle !== false;
+  next.testimonialsShowSubtitle = next.testimonialsShowSubtitle !== false;
   next.blogSectionEnabled = next.blogSectionEnabled === true;
+  next.blogShowTitle = next.blogShowTitle !== false;
+  next.blogShowIntro = next.blogShowIntro !== false;
   next.contactSectionEnabled = next.contactSectionEnabled !== false;
+  next.contactShowTitle = next.contactShowTitle !== false;
+  next.contactShowSubtitle = next.contactShowSubtitle !== false;
   next.socialSectionEnabled = next.socialSectionEnabled !== false;
   next.footerSectionEnabled = next.footerSectionEnabled !== false;
-  next.showLocationMap = next.showLocationMap === true;
+  Object.assign(next, syncLegacyLocationFields(next));
   next.contactMapLayout = normalizeContactMapLayout(next.contactMapLayout);
   next.phoneIsWhatsapp = next.phoneIsWhatsapp === true;
   next.socialIconOnly = next.socialIconOnly === true;

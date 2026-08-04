@@ -71,9 +71,9 @@ export const CASE_STUDIES = [
   },
   {
     slug: 'firebase-multi-tenant-cms',
-    client: 'LeftSideDev Landing CMS',
+    client: 'TapSite',
     industry: 'Developer tools / SaaS',
-    title: 'Multi-tenant landing CMS on Firebase with zero-cost live preview',
+    title: 'Multi-tenant TapSite on Firebase with zero-cost live preview',
     summary:
       'Shipped a multi-tenant CMS where editors get instant mirror preview without Firestore writes per keystroke.',
     problem:

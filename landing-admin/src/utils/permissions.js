@@ -57,8 +57,25 @@ export function canManageUsers(profile) {
   return normalizeRole(profile?.role) === ROLES.ROOT;
 }
 
-export function canCreatePages(profile) {
-  return normalizeRole(profile?.role) === ROLES.ROOT;
+/**
+ * Billing account owner = accountId defaults to uid (owner's Firebase uid).
+ */
+export function isBillingAccountOwner(profile, uid) {
+  const userId = String(uid ?? '').trim();
+  if (!userId) return false;
+  const accountId = String(profile?.accountId || userId).trim();
+  return accountId === userId;
+}
+
+/**
+ * Root always can create. Pro/Agency account owners can create within pageLimit.
+ * Pass entitlements from useEntitlements() when available.
+ */
+export function canCreatePages(profile, { user, entitlements } = {}) {
+  if (normalizeRole(profile?.role) === ROLES.ROOT) return true;
+  if (!entitlements) return false;
+  if (!isBillingAccountOwner(profile, user?.uid)) return false;
+  return entitlements.canOwnerCreatePages === true;
 }
 
 export function canAccessHostingSettings(profile) {
@@ -66,9 +83,19 @@ export function canAccessHostingSettings(profile) {
   return role === ROLES.ROOT || role === ROLES.ADMIN;
 }
 
-/** Only root can enable/disable sections or add/remove custom blocks. */
-export function canManagePageLayout(profile) {
-  return normalizeRole(profile?.role) === ROLES.ROOT;
+/**
+ * Root or Pro/Agency account owners can manage section layout
+ * (needed so structure AI apply persists on save).
+ */
+export function canManagePageLayout(profile, { user, billingAccount, entitlements } = {}) {
+  if (normalizeRole(profile?.role) === ROLES.ROOT) return true;
+  if (!isBillingAccountOwner(profile, user?.uid)) return false;
+  const planId = String(
+    entitlements?.planId
+    || billingAccount?.plan
+    || '',
+  ).trim().toLowerCase();
+  return planId === 'pro' || planId === 'agency';
 }
 
 /** Root bypasses SaaS plan entitlements (ops / hub owner). */

@@ -42,11 +42,12 @@ npm run dev
 
 URLs locales:
 
-- Corporate site: `http://localhost:5175`
-- Marketing (CMS seed): `http://localhost:5174?pageId=leftsidedev`
+- Corporate sandbox: `http://localhost:5175`
+- Marketing (template `/`): `http://localhost:5174/` → `pages/leftsidedev`
+- Admin `/`: `VITE_CORPORATE_SITE_URL` si existe; si no, `VITE_MARKETING_URL` (template)
 - Login: `http://localhost:5173/login`
 - CMS: `http://localhost:5173/app`
-- Template: `http://localhost:5174?pageId=<page-id>`
+- Template con otra página: `http://localhost:5174?pageId=<page-id>`
 
 ## Flujo principal
 

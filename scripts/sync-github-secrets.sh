@@ -1,25 +1,35 @@
 #!/usr/bin/env bash
-# Sync Vite build secrets from landing-admin/.env.local to GitHub Actions.
+# Sync Vite build secrets from landing-admin/.env.local (+ template prod ads) to GitHub Actions.
 # Does not print secret values.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="${1:-$ROOT_DIR/landing-admin/.env.local}"
+TEMPLATE_PROD_ENV="${TEMPLATE_PROD_ENV:-$ROOT_DIR/landing-template/.env.production}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE"
   exit 1
 fi
 
-get_env() {
-  local key="$1"
+get_env_from() {
+  local file="$1"
+  local key="$2"
   local line
-  line="$(grep -E "^${key}=" "$ENV_FILE" | tail -n1 || true)"
+  if [[ ! -f "$file" ]]; then
+    echo ""
+    return
+  fi
+  line="$(grep -E "^${key}=" "$file" | tail -n1 || true)"
   if [[ -z "$line" ]]; then
     echo ""
     return
   fi
   printf '%s' "${line#*=}"
+}
+
+get_env() {
+  get_env_from "$ENV_FILE" "$1"
 }
 
 set_secret() {
@@ -47,6 +57,15 @@ if [[ -z "$RECAPTCHA" ]]; then
 fi
 PAGINA_ID="$(get_env VITE_PAGINA_ID)"
 
+# Template Prod: AdSense + admin public URL (from landing-template/.env.production)
+ADS_CLIENT="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_GOOGLE_ADS_CLIENT)"
+ADS_SLOT="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_GOOGLE_ADS_SLOT)"
+ADMIN_PUBLIC_URL="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_ADMIN_PUBLIC_URL)"
+ADMIN_ORIGIN="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_ADMIN_ORIGIN)"
+if [[ -z "$ADMIN_ORIGIN" ]]; then
+  ADMIN_ORIGIN="$ADMIN_PUBLIC_URL"
+fi
+
 set_secret VITE_FIREBASE_API_KEY "$API_KEY"
 set_secret VITE_FIREBASE_AUTH_DOMAIN "$AUTH_DOMAIN"
 set_secret VITE_FIREBASE_PROJECT_ID "$PROJECT_ID"
@@ -57,5 +76,9 @@ set_secret VITE_FIREBASE_MEASUREMENT_ID "$MEASUREMENT_ID"
 set_secret VITE_BOOTSTRAP_ROOT_EMAIL "$BOOTSTRAP_EMAIL"
 set_secret VITE_RECAPTCHA_SITE_KEY "$RECAPTCHA"
 set_secret VITE_PAGINA_ID "$PAGINA_ID"
+set_secret VITE_GOOGLE_ADS_CLIENT "$ADS_CLIENT"
+set_secret VITE_GOOGLE_ADS_SLOT "$ADS_SLOT"
+set_secret VITE_ADMIN_PUBLIC_URL "$ADMIN_PUBLIC_URL"
+set_secret VITE_ADMIN_ORIGIN "$ADMIN_ORIGIN"
 
 echo "Done. Redeploy with: git commit --allow-empty -m 'chore: rebuild with secrets' && git push"

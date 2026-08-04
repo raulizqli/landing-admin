@@ -9,6 +9,7 @@ import {
 import { setAiProviderConfigRemote } from '../utils/aiAssistFunctions';
 import { useEntitlements } from '../hooks/useEntitlements';
 import {
+  defaultBillingCurrencyForLocale,
   getBillingPlan,
   listBillingPlansForDisplay,
 } from '../utils/billingPlans';
@@ -38,7 +39,7 @@ export default function BillingPlansPanel({ open, onClose }) {
   const { t, locale } = useLocale();
   const { profile, billingAccount, refreshBillingAccount, user } = useAuth();
   const entitlements = useEntitlements();
-  const [currency, setCurrency] = useState('usd');
+  const [currency, setCurrency] = useState(() => defaultBillingCurrencyForLocale(locale));
   const [busyKey, setBusyKey] = useState('');
   const [error, setError] = useState('');
   const [banner, setBanner] = useState('');
@@ -52,6 +53,10 @@ export default function BillingPlansPanel({ open, onClose }) {
   const plans = listBillingPlansForDisplay();
   const currentPlan = getBillingPlan(billingAccount?.plan);
   const marketingAddonOn = billingAccount?.addons?.marketingSite === true;
+
+  useEffect(() => {
+    setCurrency(defaultBillingCurrencyForLocale(locale));
+  }, [locale]);
 
   useEffect(() => {
     if (!open) return;
@@ -255,7 +260,7 @@ export default function BillingPlansPanel({ open, onClose }) {
                   <p className="font-semibold text-[#2A342D]">
                     {currentPlan.features.unlimitedPages
                       ? t('billing.unlimited')
-                      : `${billingAccount?.pageIds?.length ?? 0} / ${currentPlan.pageLimit}`}
+                      : `${entitlements.pageCount} / ${currentPlan.pageLimit}`}
                   </p>
                 </div>
                 <div>

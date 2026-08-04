@@ -419,6 +419,8 @@ export default function ServicesSection({ data, interactive = true }) {
 
   const labels = resolvePageLabels(data);
   const items = getVisibleServices(data);
+  const showTitle = data.servicesShowTitle !== false;
+  const showIntro = data.servicesShowIntro !== false;
   const sectionTitle = String(data.servicesSectionTitle ?? '').trim() || getLabel(labels, 'services.defaultTitle');
   const introParagraphs = splitServicesSectionText(data.servicesSectionText);
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'services'), { sectionKey: 'services' });
@@ -426,22 +428,28 @@ export default function ServicesSection({ data, interactive = true }) {
   return (
     <section id={SECTION_IDS.services} className="border-y border-[#2A342D]/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-          <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
-            {sectionTitle}
-          </h2>
-          {introParagraphs.length > 0 ? (
-            <div className="space-y-3 text-sm text-current/60 leading-relaxed">
-              {introParagraphs.map((paragraph, index) => (
-                <p key={`services-intro-${index}`}>{paragraph}</p>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-[#2A342D]/60">
-              {getLabel(labels, 'services.defaultIntro')}
-            </p>
-          )}
-        </div>
+        {(showTitle || showIntro) ? (
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+            {showTitle ? (
+              <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
+                {sectionTitle}
+              </h2>
+            ) : null}
+            {showIntro ? (
+              introParagraphs.length > 0 ? (
+                <div className="space-y-3 text-sm text-current/60 leading-relaxed">
+                  {introParagraphs.map((paragraph, index) => (
+                    <p key={`services-intro-${index}`}>{paragraph}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#2A342D]/60">
+                  {getLabel(labels, 'services.defaultIntro')}
+                </p>
+              )
+            ) : null}
+          </div>
+        ) : null}
 
         <ServicesItemsLayout
           items={items}

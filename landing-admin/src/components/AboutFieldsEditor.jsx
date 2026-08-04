@@ -1,5 +1,6 @@
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 import AiAssistButton from './AiAssistButton';
+import ShowContentToggle from './ShowContentToggle';
 import {
   getCatalogLabel,
   getCustomLabelValue,
@@ -10,6 +11,8 @@ export default function AboutFieldsEditor({ formData, onChange, language: langua
   const language = languageProp === 'en' || formData.labelLanguage === 'en' ? 'en' : 'es';
   const titleCustom = getCustomLabelValue(formData.customLabels, language, 'about.title');
   const titleDefault = getCatalogLabel(language, 'about.title');
+  const showTitle = formData.aboutShowTitle !== false;
+  const showTagline = formData.aboutShowTagline !== false;
   const showBio = formData.aboutBioEnabled !== false;
 
   const updateTitle = (value) => {
@@ -22,38 +25,56 @@ export default function AboutFieldsEditor({ formData, onChange, language: langua
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="block text-[10px] font-bold text-gray-400 uppercase">Título de la sección</label>
-        <input
-          type="text"
-          value={titleCustom}
-          onChange={(e) => updateTitle(e.target.value)}
-          placeholder={titleDefault}
-          className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+        <ShowContentToggle
+          checked={showTitle}
+          onChange={(aboutShowTitle) => onChange({ ...formData, aboutShowTitle })}
+          label="Mostrar título de la sección"
+          hint="Si lo desactivas, se omite el título (no usa el valor por defecto)."
         />
-        <p className="text-[10px] text-gray-400">
-          Aparece al inicio del bloque. Por defecto: «{titleDefault}». Déjalo vacío para usar el valor por defecto.
-        </p>
+        {showTitle && (
+          <>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">Título de la sección</label>
+            <input
+              type="text"
+              value={titleCustom}
+              onChange={(e) => updateTitle(e.target.value)}
+              placeholder={titleDefault}
+              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+            />
+            <p className="text-[10px] text-gray-400">
+              Por defecto: «{titleDefault}». Déjalo vacío para usar ese valor.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <label className="block text-[10px] font-bold text-gray-400 uppercase">Frase / destacado</label>
-          <AiAssistButton
-            formData={formData}
-            onChange={onChange}
-            pageId={pageId}
-            fieldPath="aboutTagline"
-            action="polish_tagline"
-            currentValue={formData.aboutTagline || ''}
+          <ShowContentToggle
+            checked={showTagline}
+            onChange={(aboutShowTagline) => onChange({ ...formData, aboutShowTagline })}
+            label="Mostrar frase / destacado"
           />
+          {showTagline && (
+            <AiAssistButton
+              formData={formData}
+              onChange={onChange}
+              pageId={pageId}
+              fieldPath="aboutTagline"
+              action="polish_tagline"
+              currentValue={formData.aboutTagline || ''}
+            />
+          )}
         </div>
-        <input
-          type="text"
-          value={formData.aboutTagline || ''}
-          onChange={(e) => onChange({ ...formData, aboutTagline: e.target.value })}
-          placeholder="Una propuesta clara, cercana y profesional..."
-          className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
-        />
+        {showTagline && (
+          <input
+            type="text"
+            value={formData.aboutTagline || ''}
+            onChange={(e) => onChange({ ...formData, aboutTagline: e.target.value })}
+            placeholder="Una propuesta clara, cercana y profesional..."
+            className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+          />
+        )}
       </div>
 
       <div className="space-y-3 rounded-lg border border-gray-100 bg-gray-50/80 p-3">

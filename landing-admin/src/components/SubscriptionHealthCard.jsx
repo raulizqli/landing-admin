@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLocale } from '../i18n/LocaleContext';
 
 function formatPeriodEnd(value, locale) {
@@ -35,6 +36,7 @@ export default function SubscriptionHealthCard({
   compact = false,
 }) {
   const { t, locale } = useLocale();
+  const [freeDetailsOpen, setFreeDetailsOpen] = useState(true);
   if (!health) return null;
 
   const style = STATE_STYLES[health.state] || STATE_STYLES.incomplete;
@@ -108,21 +110,37 @@ export default function SubscriptionHealthCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-wide">
-            {health.paid || health.state === 'bypass'
-              ? t('billing.health.paidBadge')
-              : t('billing.health.freeTierBadge')}
+            {t('billing.health.freeTierBadge')}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold leading-snug">{title}</p>
         </div>
-        {!compact && onOpenBilling && (
-          <button
-            type="button"
-            onClick={onOpenBilling}
-            className="shrink-0 rounded border border-current/30 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide opacity-90 hover:opacity-100"
-          >
-            {t('common.billing')}
-          </button>
-        )}
+        <div className="flex shrink-0 flex-col items-stretch gap-1">
+          {!compact && onOpenBilling && (
+            <button
+              type="button"
+              onClick={onOpenBilling}
+              className="rounded border border-current/30 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide opacity-90 hover:opacity-100"
+            >
+              {t('common.billing')}
+            </button>
+          )}
+          {health.freeTier && (
+            <button
+              type="button"
+              onClick={() => setFreeDetailsOpen((open) => !open)}
+              aria-expanded={freeDetailsOpen}
+              className="rounded border border-current/30 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide opacity-75 hover:opacity-100"
+            >
+              {t('billing.health.details')}
+              <span
+                className={`ml-1 inline-block transition-transform ${freeDetailsOpen ? 'rotate-180' : ''}`}
+                aria-hidden
+              >
+                ⌄
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="mt-1.5 text-[10px] leading-relaxed opacity-90">{body}</p>
@@ -156,7 +174,7 @@ export default function SubscriptionHealthCard({
         </p>
       )}
 
-      {health.freeTier && (
+      {health.freeTier && freeDetailsOpen && (
         <ul className="mt-2 space-y-0.5 border-t border-current/20 pt-2 text-[10px] leading-snug opacity-90">
           <li>· {t('billing.health.freeKeepPages')}</li>
           <li>· {t('billing.health.freeEditBasics')}</li>

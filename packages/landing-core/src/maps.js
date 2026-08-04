@@ -25,8 +25,8 @@ function buildEmbedFromLink(url) {
 }
 
 export function resolveMapsUrls(data) {
-  const stored = extractMapsInput(data?.locationMapsUrl);
-  const fallbackQuery = String(data?.location ?? '').trim();
+  const stored = extractMapsInput(data?.locationMapsUrl ?? data?.mapsUrl);
+  const fallbackQuery = String(data?.location ?? data?.address ?? '').trim();
 
   if (!stored && !fallbackQuery) {
     return { embedUrl: '', linkUrl: '' };
@@ -51,9 +51,21 @@ export function resolveMapsUrls(data) {
   };
 }
 
+export function resolveMapsUrlsForLocation(location = {}) {
+  return resolveMapsUrls({
+    location: location.address,
+    locationMapsUrl: location.mapsUrl,
+  });
+}
+
 export function shouldShowMapsEmbed(data, maps = resolveMapsUrls(data)) {
-  if (data?.showLocationMap !== true) return false;
+  if (data?.showLocationMap !== true && data?.showMap !== true) return false;
   return Boolean(maps.embedUrl);
+}
+
+export function shouldShowLocationMap(location = {}) {
+  if (location?.showMap !== true) return false;
+  return Boolean(resolveMapsUrlsForLocation(location).embedUrl);
 }
 
 export const CONTACT_MAP_LAYOUTS = [

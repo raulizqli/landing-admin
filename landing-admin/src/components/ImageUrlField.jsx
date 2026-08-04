@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { uploadPageImage } from '../utils/uploadImage';
+import { useEntitlements } from '../hooks/useEntitlements';
+import { useLocale } from '../i18n/LocaleContext';
 
 export default function ImageUrlField({
   label,
@@ -12,8 +14,13 @@ export default function ImageUrlField({
   previewClassName = 'h-16 w-16 object-cover border bg-white rounded',
   previewAlt = 'Vista previa',
   helperText,
+  onUpgradePlan,
+  upgradeLabel,
 }) {
   const fileInputRef = useRef(null);
+  const { t } = useLocale();
+  const entitlements = useEntitlements();
+  const canUpload = entitlements.bypass || entitlements.has('imageUpload');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,6 +28,12 @@ export default function ImageUrlField({
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
+
+    if (!canUpload) {
+      setError(t('billing.features.imageUploadLocked'));
+      onUpgradePlan?.();
+      return;
+    }
 
     setError('');
     setUploading(true);
@@ -52,11 +65,19 @@ export default function ImageUrlField({
         />
         <button
           type="button"
-          disabled={uploading}
-          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading || (!canUpload && !onUpgradePlan)}
+          onClick={() => {
+            if (!canUpload) {
+              setError(t('billing.features.imageUploadLocked'));
+              onUpgradePlan?.();
+              return;
+            }
+            fileInputRef.current?.click();
+          }}
+          title={canUpload ? undefined : t('billing.features.imageUploadLocked')}
           className="shrink-0 px-3 py-2 text-[11px] font-semibold rounded-lg border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {uploading ? 'Subiendo...' : 'Subir'}
+          {uploading ? 'Subiendo...' : (canUpload ? 'Subir' : (upgradeLabel || t('common.upgrade')))}
         </button>
         <input
           ref={fileInputRef}
@@ -68,6 +89,11 @@ export default function ImageUrlField({
       </div>
       {error && (
         <p className="text-[10px] text-red-600">{error}</p>
+      )}
+      {!canUpload && (
+        <p className="text-[10px] text-amber-700">
+          {t('billing.features.imageUploadLocked')}
+        </p>
       )}
       {value && (
         <div className="flex items-center gap-2 text-[10px] text-gray-500">

@@ -19,6 +19,9 @@ describe('normalizePageData', () => {
     expect(normalized.name).toBe('Ana');
     expect(normalized.specialty).toBe('Psicología');
     expect(normalized.aboutTagline).toBe('Un espacio seguro');
+    expect(normalized.navShowSpecialty).toBe(true);
+    expect(normalized.servicesShowTitle).toBe(true);
+    expect(normalized.contactShowSubtitle).toBe(true);
     expect(normalized.aboutBio).toBe('Bio larga');
     expect(normalized.location).toBe('CDMX');
     expect(normalized.phone).toBe('555');

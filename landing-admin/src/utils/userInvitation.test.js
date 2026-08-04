@@ -21,6 +21,7 @@ describe('userInvitation', () => {
     const message = buildUserInvitationMessage(invitation);
     expect(message).toContain('Hola, Ana.');
     expect(message).toContain(invitation.invitationLink);
+    expect(message).toContain('establecer tu contraseña');
     expect(message).not.toContain('contraseña:');
   });
 

@@ -10,7 +10,12 @@ export function normalizeWhatsAppPhone(value) {
 
 export function buildUserInvitationMessage({ displayName, email, invitationLink }) {
   const greetingName = String(displayName ?? '').trim() || String(email ?? '').trim();
-  return `Hola, ${greetingName}. Se creó tu acceso al administrador de tu landing. Usa este enlace para establecer tu contraseña e iniciar sesión: ${invitationLink}. Por seguridad, el enlace es temporal.`;
+  return [
+    `Hola, ${greetingName}.`,
+    'Te compartimos el acceso al administrador de tu landing.',
+    `Usa este enlace para establecer tu contraseña e iniciar sesión: ${invitationLink}.`,
+    'Por seguridad, el enlace es temporal.',
+  ].join(' ');
 }
 
 export function buildUserInvitationUrl({
@@ -23,7 +28,7 @@ export function buildUserInvitationUrl({
   const message = buildUserInvitationMessage({ displayName, email, invitationLink });
 
   if (channel === INVITATION_CHANNELS.EMAIL) {
-    const subject = 'Tu acceso al administrador de tu landing';
+    const subject = 'Tu acceso al administrador LeftSideDev';
     return `mailto:${encodeURIComponent(String(email ?? '').trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
   }
 

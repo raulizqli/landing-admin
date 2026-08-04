@@ -69,19 +69,27 @@ export default function TestimonialsSection({ data }) {
   const labels = resolvePageLabels(data);
   const items = getVisibleTestimonials(data);
   const sectionTitle = String(data.testimonialsSectionTitle ?? '').trim() || getLabel(labels, 'testimonials.defaultTitle');
+  const showTitle = data.testimonialsShowTitle !== false;
+  const showSubtitle = data.testimonialsShowSubtitle !== false;
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'testimonials'), { sectionKey: 'testimonials' });
 
   return (
     <section id={SECTION_IDS.testimonials} className="border-y border-[#2A342D]/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
-        <div className="text-center mb-10 sm:mb-12">
-          <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
-            {sectionTitle}
-          </h2>
-          <p className="text-sm text-current/60 max-w-md mx-auto">
-            {getLabel(labels, 'testimonials.subtitle')}
-          </p>
-        </div>
+        {(showTitle || showSubtitle) ? (
+          <div className="text-center mb-10 sm:mb-12">
+            {showTitle ? (
+              <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
+                {sectionTitle}
+              </h2>
+            ) : null}
+            {showSubtitle ? (
+              <p className="text-sm text-current/60 max-w-md mx-auto">
+                {getLabel(labels, 'testimonials.subtitle')}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className={`grid gap-5 sm:gap-6 ${items.length === 1 ? 'max-w-lg mx-auto' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
           {items.map((item, index) => (

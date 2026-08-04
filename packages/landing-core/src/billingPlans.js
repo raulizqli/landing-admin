@@ -1,5 +1,5 @@
 /**
- * SaaS billing plans / entitlements for the landings CMS.
+ * SaaS billing plans / entitlements for TapSite.
  * Keep in sync with Cloud Functions checkout price mapping (env).
  */
 
@@ -14,6 +14,7 @@ export const BILLING_PLANS = [
     id: 'starter',
     rank: 1,
     pageLimit: 1,
+    locationLimit: 1,
     monthlyPriceUsd: 19,
     monthlyPriceMxn: 349,
     aiMonthlyGenerationsLite: 30,
@@ -28,6 +29,7 @@ export const BILLING_PLANS = [
       contactMapBeside: false,
       externalFirebase: false,
       hostingDeploy: false,
+      imageUpload: false,
       prioritySupport: false,
       support247: false,
       unlimitedPages: false,
@@ -36,11 +38,13 @@ export const BILLING_PLANS = [
       aiAssist: false,
       aiByok: false,
     },
+    aiLogoMonthlyLimit: 0,
   },
   {
     id: 'pro',
     rank: 2,
     pageLimit: 1,
+    locationLimit: null,
     monthlyPriceUsd: 49,
     monthlyPriceMxn: 899,
     aiMonthlyGenerationsLite: 30,
@@ -54,7 +58,8 @@ export const BILLING_PLANS = [
       customSectionVisualStyle: true,
       contactMapBeside: true,
       externalFirebase: false,
-      hostingDeploy: false,
+      hostingDeploy: true,
+      imageUpload: true,
       prioritySupport: false,
       support247: false,
       unlimitedPages: false,
@@ -63,11 +68,13 @@ export const BILLING_PLANS = [
       aiAssist: true,
       aiByok: false,
     },
+    aiLogoMonthlyLimit: 3,
   },
   {
     id: 'agency',
     rank: 3,
     pageLimit: 5,
+    locationLimit: null,
     monthlyPriceUsd: 129,
     monthlyPriceMxn: 2499,
     aiMonthlyGenerationsLite: 30,
@@ -82,6 +89,7 @@ export const BILLING_PLANS = [
       contactMapBeside: true,
       externalFirebase: true,
       hostingDeploy: true,
+      imageUpload: true,
       prioritySupport: true,
       support247: false,
       unlimitedPages: false,
@@ -90,11 +98,13 @@ export const BILLING_PLANS = [
       aiAssist: true,
       aiByok: true,
     },
+    aiLogoMonthlyLimit: null,
   },
   {
     id: 'enterprise',
     rank: 4,
     pageLimit: null,
+    locationLimit: null,
     monthlyPriceUsd: null,
     monthlyPriceMxn: null,
     aiMonthlyGenerationsLite: 30,
@@ -109,6 +119,7 @@ export const BILLING_PLANS = [
       contactMapBeside: true,
       externalFirebase: true,
       hostingDeploy: true,
+      imageUpload: true,
       prioritySupport: true,
       support247: true,
       unlimitedPages: true,
@@ -117,6 +128,7 @@ export const BILLING_PLANS = [
       aiAssist: true,
       aiByok: true,
     },
+    aiLogoMonthlyLimit: null,
   },
 ];
 
@@ -150,10 +162,10 @@ export function isBillingAccountActive(account) {
  * When payment lapses: existing pages are kept (public sites stay up),
  * but the account falls to free-tier CMS access (basic edit only, no new pages).
  */
-export function getSubscriptionHealth(account, { bypass = false } = {}) {
+export function getSubscriptionHealth(account, { bypass = false, extraPageIds = [] } = {}) {
   const plan = getBillingPlan(account?.plan);
   const status = normalizeBillingStatus(account?.status);
-  const pageCount = Array.isArray(account?.pageIds) ? account.pageIds.length : 0;
+  const pageCount = getAccountPageCount(account, { extraPageIds, bypass: false });
   const pageLimit = getAccountPageLimit(account, { bypass });
   const periodEnd = account?.currentPeriodEnd
     ? String(account.currentPeriodEnd)
@@ -290,6 +302,15 @@ export function normalizeBillingCurrency(value) {
   return currency === 'mxn' ? 'mxn' : 'usd';
 }
 
+/**
+ * Default checkout/display currency from admin UI locale.
+ * English → USD; Spanish (and any other) → MXN.
+ */
+export function defaultBillingCurrencyForLocale(locale) {
+  const lang = String(locale ?? '').trim().toLowerCase().slice(0, 2);
+  return lang === 'en' ? 'usd' : 'mxn';
+}
+
 export function normalizeBillingAccount(id, data = {}) {
   return createEmptyBillingAccount({ ...data, id: id || data.id });
 }
@@ -329,12 +350,88 @@ export function getAccountPageLimit(account, { bypass = false } = {}) {
   return plan.pageLimit;
 }
 
+/** Max contact locations. Free/Starter = 1; Pro+ = unlimited (null). */
+export function getAccountLocationLimit(account, { bypass = false } = {}) {
+  if (bypass) return null;
+  // Free-tier / unpaid: keep a single location (same as Starter).
+  if (!isBillingAccountActive(account)) return 1;
+  const plan = getBillingPlan(account?.plan);
+  if (plan.locationLimit == null) return null;
+  return Number(plan.locationLimit) || 0;
+}
+
+/**
+ * Monthly AI logo generations.
+ * Pro = 3; Agency/Enterprise = unlimited (null); Starter = 0.
+ */
+export function getAccountAiLogoLimit(account, { bypass = false } = {}) {
+  if (bypass) return null;
+  if (!isBillingAccountActive(account)) return 0;
+  const plan = getBillingPlan(account?.plan);
+  if (plan.aiLogoMonthlyLimit == null) return null;
+  return Number(plan.aiLogoMonthlyLimit) || 0;
+}
+
+/**
+ * Canonical page id list for quota UI / enforcement.
+ * Prefers billingAccounts.pageIds and merges any extra ids (e.g. profile assignments)
+ * so legacy pages assigned before pageIds tracking still count.
+ */
+export function normalizeAccountPageIds(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((id) => String(id ?? '').trim()).filter(Boolean))];
+}
+
+export function resolveAccountPageIds(account, extraPageIds = []) {
+  return normalizeAccountPageIds([
+    ...(Array.isArray(account?.pageIds) ? account.pageIds : []),
+    ...(Array.isArray(extraPageIds) ? extraPageIds : []),
+  ]);
+}
+
+export function getAccountPageCount(account, { extraPageIds = [], bypass = false } = {}) {
+  if (bypass) return 0;
+  return resolveAccountPageIds(account, extraPageIds).length;
+}
+
+/**
+ * Page ids known on a CMS user profile (admin list + single-page user).
+ */
+export function pageIdsFromUserProfile(profile = {}) {
+  const fromList = normalizeAccountPageIds(profile?.assignedPageIds);
+  const single = String(profile?.pageId ?? '').trim();
+  return normalizeAccountPageIds([...fromList, single]);
+}
+
 export function canAccountCreatePage(account, currentPageCount = 0, { bypass = false } = {}) {
   if (bypass) return true;
   if (!isBillingAccountActive(account)) return false;
   const limit = getAccountPageLimit(account);
   if (limit == null) return true;
   return Number(currentPageCount) < limit;
+}
+
+/** Plans whose account owner may self-serve create pages (within pageLimit). */
+export const PAGE_SELF_SERVE_PLAN_IDS = ['pro', 'agency'];
+const PAGE_SELF_SERVE_PLAN_SET = new Set(PAGE_SELF_SERVE_PLAN_IDS);
+
+export function isPageSelfServePlan(planId) {
+  return PAGE_SELF_SERVE_PLAN_SET.has(String(planId ?? '').trim().toLowerCase());
+}
+
+/**
+ * Pro/Agency account owners may create pages up to plan pageLimit.
+ * Root bypass remains unlimited.
+ */
+export function canOwnerSelfServeCreatePage(
+  account,
+  currentPageCount = 0,
+  { isOwner = false, bypass = false } = {},
+) {
+  if (bypass) return true;
+  if (!isOwner) return false;
+  if (!isPageSelfServePlan(getBillingPlan(account?.plan).id)) return false;
+  return canAccountCreatePage(account, currentPageCount, { bypass: false });
 }
 
 export function listBillingPlansForDisplay() {

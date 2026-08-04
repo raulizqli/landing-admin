@@ -82,4 +82,37 @@ describe('updatePageTranslation', () => {
     expect(next.defaultLanguage).toBe('es');
     expect(next.enabledLanguages).toContain('es');
   });
+
+  it('preserves trailing spaces and blank values while editing the default language', () => {
+    let page = {
+      name: 'Ana',
+      specialty: 'Psicología',
+      navSpecialty: 'OLD',
+      defaultLanguage: 'es',
+      enabledLanguages: ['es', 'en'],
+      translations: {
+        es: { specialty: 'Psicología', navSpecialty: 'OLD' },
+        en: {},
+      },
+      heroSlides: [],
+      services: [],
+      catalogItems: [],
+      galleryItems: [],
+      testimonials: [],
+      blogPosts: [],
+      customEmbeds: [],
+    };
+
+    const type = (value) => {
+      const editor = resolvePageLanguage(page, 'es', { fallback: false });
+      page = updatePageTranslation(page, { ...editor, navSpecialty: value }, 'es');
+      return resolvePageLanguage(page, 'es', { fallback: false }).navSpecialty;
+    };
+
+    expect(type('Servicios')).toBe('Servicios');
+    expect(type('Servicios ')).toBe('Servicios ');
+    expect(type('Servicios de Construccion')).toBe('Servicios de Construccion');
+    expect(type('')).toBe('');
+    expect(type(' ')).toBe(' ');
+  });
 });

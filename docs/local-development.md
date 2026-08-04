@@ -33,7 +33,8 @@ Archivo: `landing-admin/.env.local`
 | `VITE_FIREBASE_APP_ID` | Sí | ID de la aplicación web |
 | `VITE_FIREBASE_MEASUREMENT_ID` | No | GA4 por defecto |
 | `VITE_TEMPLATE_PREVIEW_URL` | Dev | Template para preview Local; normalmente `http://localhost:5174` |
-| `VITE_MARKETING_URL` | No | Destino de `/` sin sesión |
+| `VITE_CORPORATE_SITE_URL` | No | Destino preferido de `/` (admin) → sitio corporativo |
+| `VITE_MARKETING_URL` | No | Fallback de `/` (admin) → template/marketing configurado |
 | `VITE_BOOTSTRAP_ROOT_EMAIL` | Inicial | Email autorizado para crear el primer perfil root |
 | `VITE_RECAPTCHA_SITE_KEY` | Producción | Site key de reCAPTCHA v3 para App Check |
 | `VITE_APP_CHECK_DEBUG_TOKEN` | Dev | Token debug registrado en App Check |
@@ -50,6 +51,7 @@ VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_TEMPLATE_PREVIEW_URL=http://localhost:5174
+VITE_CORPORATE_SITE_URL=http://localhost:5175
 VITE_MARKETING_URL=http://localhost:5174?pageId=leftsidedev
 ```
 

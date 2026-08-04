@@ -52,6 +52,8 @@ jobs:
           VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
           # Guest `/` on the admin host redirects here (sales landing).
           VITE_MARKETING_URL: https://landing-template-9452e.web.app/?pageId=leftsidedev
+          VITE_CORPORATE_SITE_URL: ${{ vars.VITE_CORPORATE_SITE_URL }}
+          VITE_APP_ENV: prod
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -81,7 +83,11 @@ jobs:
           VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
           # Opcional: fallback si visitas *.web.app sin customDomain ni ?pageId=
-          VITE_PAGINA_ID: ${{ secrets.VITE_PAGINA_ID }}
+          VITE_PAGINA_ID: ${{ secrets.VITE_PAGINA_ID || 'leftsidedev' }}
+          VITE_ADMIN_PUBLIC_URL: ${{ secrets.VITE_ADMIN_PUBLIC_URL }}
+          VITE_ADMIN_ORIGIN: ${{ secrets.VITE_ADMIN_ORIGIN }}
+          VITE_GOOGLE_ADS_CLIENT: ${{ secrets.VITE_GOOGLE_ADS_CLIENT }}
+          VITE_GOOGLE_ADS_SLOT: ${{ secrets.VITE_GOOGLE_ADS_SLOT }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

@@ -5,6 +5,7 @@ import {
 } from '../utils/blog';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
+import ShowContentToggle from './ShowContentToggle';
 import { getDefaultLabelForPage } from '../utils/labels';
 
 export default function BlogFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
@@ -70,24 +71,39 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
           </p>
 
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Título de la sección</label>
-            <input
-              type="text"
-              value={formData.blogSectionTitle || ''}
-              onChange={(e) => onChange({ ...formData, blogSectionTitle: e.target.value })}
-              placeholder={titlePlaceholder}
-              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+            <ShowContentToggle
+              checked={formData.blogShowTitle !== false}
+              onChange={(blogShowTitle) => onChange({ ...formData, blogShowTitle })}
+              label="Mostrar título de la sección"
+              hint="Desactivado = se omite el título (no usa el valor por defecto)."
             />
+            {formData.blogShowTitle !== false && (
+              <input
+                type="text"
+                value={formData.blogSectionTitle || ''}
+                onChange={(e) => onChange({ ...formData, blogSectionTitle: e.target.value })}
+                placeholder={titlePlaceholder}
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto introductorio (opcional)</label>
-            <textarea
-              rows="3"
-              value={formData.blogSectionText || ''}
-              onChange={(e) => onChange({ ...formData, blogSectionText: e.target.value })}
-              placeholder={introPlaceholder}              className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+            <ShowContentToggle
+              checked={formData.blogShowIntro !== false}
+              onChange={(blogShowIntro) => onChange({ ...formData, blogShowIntro })}
+              label="Mostrar texto introductorio"
+              hint="Desactivado = se omite la introducción (no usa el texto por defecto)."
             />
+            {formData.blogShowIntro !== false && (
+              <textarea
+                rows="3"
+                value={formData.blogSectionText || ''}
+                onChange={(e) => onChange({ ...formData, blogSectionText: e.target.value })}
+                placeholder={introPlaceholder}
+                className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+              />
+            )}
           </div>
 
           <div className="flex items-center justify-between">

@@ -111,7 +111,11 @@ export function getEditorSectionFill(sectionKey, data) {
       const bits = [];
       if (hasText(data.email)) bits.push('Email');
       if (hasText(data.phone)) bits.push('Teléfono');
-      if (hasText(data.location)) bits.push('Ubicación');
+      if (Array.isArray(data.locations) && data.locations.some((item) => hasText(item?.address) || hasText(item?.mapsUrl))) {
+        bits.push('Ubicaciones');
+      } else if (hasText(data.location)) {
+        bits.push('Ubicación');
+      }
       return bits.length ? filled(bits.join(' · ')) : empty();
     }
     case 'services': {
