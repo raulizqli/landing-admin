@@ -15,8 +15,8 @@ export const BILLING_PLANS = [
     rank: 1,
     pageLimit: 1,
     locationLimit: 1,
-    monthlyPriceUsd: 19,
-    monthlyPriceMxn: 349,
+    monthlyPriceUsd: 10,
+    monthlyPriceMxn: 189,
     aiMonthlyGenerationsLite: 30,
     aiMonthlyGenerations: 0,
     features: {
@@ -45,8 +45,8 @@ export const BILLING_PLANS = [
     rank: 2,
     pageLimit: 1,
     locationLimit: null,
-    monthlyPriceUsd: 49,
-    monthlyPriceMxn: 899,
+    monthlyPriceUsd: 25,
+    monthlyPriceMxn: 469,
     aiMonthlyGenerationsLite: 30,
     aiMonthlyGenerations: 50,
     features: {
@@ -75,8 +75,8 @@ export const BILLING_PLANS = [
     rank: 3,
     pageLimit: 5,
     locationLimit: null,
-    monthlyPriceUsd: 129,
-    monthlyPriceMxn: 2499,
+    monthlyPriceUsd: 75,
+    monthlyPriceMxn: 1399,
     aiMonthlyGenerationsLite: 30,
     aiMonthlyGenerations: 200,
     features: {

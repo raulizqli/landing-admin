@@ -14,9 +14,9 @@ const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
 const VALID_PLANS = new Set(["starter", "pro", "agency", "enterprise"]);
 
 const PLAN_AMOUNTS_MXN: Record<string, number> = {
-  starter: 349,
-  pro: 899,
-  agency: 2499,
+  starter: 189,
+  pro: 469,
+  agency: 1399,
 };
 
 type BillingProvider = "stripe" | "mercadopago" | "manual";
@@ -294,6 +294,7 @@ export const createBillingCheckout = onCall(async (request: CallableRequest) => 
       cancel_url: cancelUrl,
       client_reference_id: account.id,
       locale: locale === "en" ? "en" : "es",
+      // Promotion codes are applied privately (Dashboard / Payment Links), not shown on Checkout.
       metadata: {
         accountId: account.id,
         planId,

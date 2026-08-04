@@ -18,27 +18,28 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Stripe from 'stripe';
 
+// Keep in sync with packages/landing-core/src/billingPlans.js (+ MXN Mercado Pago amounts).
 const CATALOG = [
   {
     planId: 'starter',
     name: 'TapSite Starter',
     description: '1 page, basic sections, AI Assist Lite.',
-    usd: 1900,
-    mxn: 34900,
+    usd: 1000,
+    mxn: 18900,
   },
   {
     planId: 'pro',
     name: 'TapSite Pro',
     description: 'Blog, gallery, embeds, hosting deploy, AI Assist.',
-    usd: 4900,
-    mxn: 89900,
+    usd: 2500,
+    mxn: 46900,
   },
   {
     planId: 'agency',
     name: 'TapSite Agency',
     description: 'Up to 5 pages, external Firebase, priority support.',
-    usd: 12900,
-    mxn: 249900,
+    usd: 7500,
+    mxn: 139900,
   },
 ];
 
@@ -74,24 +75,35 @@ async function findProduct(stripe, planId) {
   return listed.data[0] || null;
 }
 
-async function findPrice(stripe, productId, planId, currency) {
+async function listPlanPrices(stripe, productId, planId, currency) {
   const prices = await stripe.prices.list({
     product: productId,
     active: true,
     type: 'recurring',
     limit: 100,
   });
-  return prices.data.find((price) => (
+  return prices.data.filter((price) => (
     price.currency === currency
     && price.recurring?.interval === 'month'
     && price.metadata?.tapsite_plan === planId
     && price.metadata?.tapsite_currency === currency
-  )) || null;
+  ));
 }
 
 async function ensurePrice(stripe, productId, plan, currency, unitAmount) {
-  const existing = await findPrice(stripe, productId, plan.planId, currency);
-  if (existing) return existing;
+  const matches = await listPlanPrices(stripe, productId, plan.planId, currency);
+  const exact = matches.find((price) => price.unit_amount === unitAmount);
+  if (exact) return exact;
+
+  // Stripe prices are immutable — archive outdated amounts, then create the new one.
+  for (const outdated of matches) {
+    try {
+      await stripe.prices.update(outdated.id, { active: false });
+      console.error(`  archived old ${currency} price ${outdated.id} (${outdated.unit_amount})`);
+    } catch (error) {
+      console.error(`  could not archive ${outdated.id}:`, error.message || error);
+    }
+  }
 
   return stripe.prices.create({
     product: productId,
