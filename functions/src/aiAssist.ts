@@ -31,6 +31,7 @@ const FULL_ACTIONS = new Set([
   "seo_meta",
   "blog_draft",
   "suggest_page_structure",
+  "generate_page_content",
   "generate_logo",
 ]);
 
@@ -209,6 +210,64 @@ function buildUserPrompt(payload: {
       payload.context.name ? `Brand/name: ${payload.context.name}` : "",
       payload.context.specialty ? `Specialty: ${payload.context.specialty}` : "",
       payload.brief ? `User note:\n${payload.brief}` : "User note: (none)",
+    ].filter(Boolean).join("\n");
+  }
+
+  if (payload.action === "generate_page_content") {
+    const targets = Array.isArray(payload.context.targets)
+      ? payload.context.targets.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
+    const shape: Record<string, unknown> = {};
+    if (targets.includes("seo")) shape.seo = { title: "string", description: "string" };
+    if (targets.includes("hero")) shape.hero = { title: "string", text: "string" };
+    if (targets.includes("preHero")) shape.preHero = { title: "string", text: "string" };
+    if (targets.includes("about")) shape.about = { tagline: "string", bio: "string" };
+    if (targets.includes("services")) {
+      shape.services = {
+        sectionTitle: "string",
+        sectionText: "string",
+        items: [{ title: "string", description: "string" }],
+      };
+    }
+    if (targets.includes("catalog")) {
+      shape.catalog = {
+        sectionTitle: "string",
+        sectionText: "string",
+        items: [{ title: "string", description: "string" }],
+      };
+    }
+    if (targets.includes("testimonials")) {
+      shape.testimonials = {
+        sectionTitle: "string",
+        items: [{ title: "optional attribution", quote: "string" }],
+      };
+    }
+    if (targets.includes("blog")) {
+      shape.blog = {
+        sectionTitle: "string",
+        sectionText: "string",
+        posts: [{ title: "string", excerpt: "string", body: "string" }],
+      };
+    }
+    const lang = payload.context.language === "en" ? "English" : "Spanish";
+    return [
+      "Action: generate_page_content",
+      "Write starter copy to pre-fill a landing page form.",
+      `Language: ${lang}.`,
+      `Vertical: ${payload.context.vertical || "generic"}.`,
+      `Generate ONLY these content blocks: ${targets.join(", ") || "(none)"}.`,
+      "Do not invent phone numbers, emails, addresses, prices, credentials, or medical claims.",
+      'For testimonials use generic attribution (e.g. "Paciente", "Cliente") — no real names.',
+      "Services/catalog: 2-4 concise items when requested.",
+      "Blog: at most 1 post when requested.",
+      payload.context.structureSummary
+        ? `Structure rationale:\n${payload.context.structureSummary}`
+        : "",
+      payload.context.name ? `Brand/name: ${payload.context.name}` : "",
+      payload.context.specialty ? `Specialty: ${payload.context.specialty}` : "",
+      payload.brief ? `User note:\n${payload.brief}` : "User note: (none)",
+      "Return ONLY one valid JSON object matching this shape (omit keys not requested):",
+      JSON.stringify(shape),
     ].filter(Boolean).join("\n");
   }
 
@@ -550,6 +609,7 @@ export const runAiAssist = onCall(longCallableOptions, async (request: CallableR
 
   let result: Record<string, unknown> | null = null;
   let usedProvider: string = providerChain[0] || "gemini";
+  let usedModel = "";
   const failures: string[] = [];
 
   try {
@@ -568,6 +628,7 @@ export const runAiAssist = onCall(longCallableOptions, async (request: CallableR
         }
         result = out.result;
         usedProvider = out.provider;
+        usedModel = out.model || model || "";
         if (index > 0) {
           console.warn("runAiAssist fell back after provider failure", {
             usedProvider,
@@ -614,6 +675,7 @@ export const runAiAssist = onCall(longCallableOptions, async (request: CallableR
     lane,
     action,
     provider: usedProvider,
+    model: usedModel,
     result,
     usage: {
       period: currentPeriod(),

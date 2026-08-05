@@ -8,6 +8,8 @@ import MirrorPreviewFrame from './components/MirrorPreviewFrame.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { LocaleProvider } from './i18n/LocaleContext.jsx'
 import { auth } from './firebase.js'
+// Side-effect: set FIREBASE_APPCHECK_DEBUG_TOKEN before any initializeAppCheck().
+import './utils/appCheck.js'
 
 const isPreviewFrame = window.location.pathname.startsWith('/app/preview-frame')
 

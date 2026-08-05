@@ -181,7 +181,7 @@ export async function runLocalAssistant({
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `El motor local no responde en ${resolvedBase}. Comprueba que Ollama esté en marcha (ollama serve) y el modelo disponible. (${detail})`,
+      `El motor local no responde en ${resolvedBase}. Arranca Ollama con «npm run ollama:serve» (incluye CORS para Vite), verifica el modelo («ollama pull llama3.2») o cambia a motor Plataforma. (${detail})`,
     );
   }
   const raw = await response.text();

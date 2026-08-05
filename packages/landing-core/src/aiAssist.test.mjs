@@ -25,6 +25,7 @@ describe('aiAssist lanes and apply', () => {
     assert.equal(isAiActionAllowed('full', 'seo_meta'), true);
     assert.equal(isAiActionAllowed('full', 'suggest_page_structure'), true);
     assert.equal(isAiActionAllowed('lite', 'suggest_page_structure'), false);
+    assert.equal(isAiActionAllowed('full', 'generate_page_content'), true);
   });
 
   it('applies bio polish into formData without HTML', () => {
@@ -76,5 +77,30 @@ describe('aiAssist lanes and apply', () => {
     assert.equal(next.servicesSectionEnabled, true);
     assert.equal(next.gallerySectionEnabled, true);
     assert.equal(next.blogSectionEnabled, false);
+  });
+
+  it('normalizes and applies generate_page_content', () => {
+    const next = applyAiAssistResult(
+      {
+        aboutTagline: '',
+        aboutBio: '',
+        heroSlides: [{ title: '', text: '' }],
+        seo: { defaultTitle: '', defaultDescription: '' },
+      },
+      {
+        action: 'generate_page_content',
+        result: {
+          targets: ['about', 'hero', 'seo'],
+          content: {
+            about: { tagline: 'Tag', bio: 'Bio text' },
+            hero: { title: 'Hero title', text: 'Hero text' },
+            seo: { title: 'SEO title', description: 'SEO desc' },
+          },
+        },
+      },
+    );
+    assert.equal(next.aboutTagline, 'Tag');
+    assert.equal(next.heroSlides[0].title, 'Hero title');
+    assert.equal(next.seo.defaultTitle, 'SEO title');
   });
 });

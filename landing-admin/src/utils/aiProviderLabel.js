@@ -15,3 +15,12 @@ export function getAiProviderDisplayName(provider, language = 'es') {
   const locale = language === 'en' ? 'en' : 'es';
   return PROVIDER_LABELS[id]?.[locale] || (id ? 'LeftSide AI' : '');
 }
+
+/** Human-readable "Provider · model-id" for AI generation badges. */
+export function formatAiGenerationLabel({ provider, model, language = 'es' } = {}) {
+  const name = getAiProviderDisplayName(provider, language);
+  const modelId = String(model ?? '').trim();
+  if (name && modelId) return `${name} · ${modelId}`;
+  if (modelId) return modelId;
+  return name;
+}

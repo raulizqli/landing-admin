@@ -10,6 +10,7 @@ exports.chatGroq = chatGroq;
 exports.chatGemini = chatGemini;
 exports.chatAnthropic = chatAnthropic;
 exports.runProviderChat = runProviderChat;
+exports.resolveModelForProvider = resolveModelForProvider;
 exports.isQuotaOrRateLimitError = isQuotaOrRateLimitError;
 exports.isProviderConnectivityError = isProviderConnectivityError;
 exports.isLoopbackOllamaBaseUrl = isLoopbackOllamaBaseUrl;
@@ -235,30 +236,55 @@ async function chatAnthropic(request) {
     return extractJsonObject(content);
 }
 async function runProviderChat(provider, request) {
+    const model = resolveModelForProvider(provider, request);
     let result;
     switch (provider) {
         case "ollama":
-            result = await chatOllama(request);
+            result = await chatOllama(Object.assign(Object.assign({}, request), { model }));
             break;
         case "gemini":
-            result = await chatGemini(request);
+            result = await chatGemini(Object.assign(Object.assign({}, request), { model }));
             break;
         case "groq":
-            result = await chatGroq(request);
+            result = await chatGroq(Object.assign(Object.assign({}, request), { model }));
             break;
         case "anthropic":
-            result = await chatAnthropic(request);
+            result = await chatAnthropic(Object.assign(Object.assign({}, request), { model }));
             break;
         case "openai_compatible":
-            result = await chatOpenAiCompatible(request, request.baseUrl || "https://api.openai.com/v1", request.model || "gpt-4o-mini");
+            result = await chatOpenAiCompatible(Object.assign(Object.assign({}, request), { model }), request.baseUrl || "https://api.openai.com/v1", model);
             break;
         case "openai":
         default:
-            result = await chatOpenAi(request);
+            result = await chatOpenAi(Object.assign(Object.assign({}, request), { model }));
             break;
     }
     const usedMock = result.provider === "mock";
-    return { result, provider: usedMock ? "mock" : provider };
+    return { result, provider: usedMock ? "mock" : provider, model };
+}
+/** Default model id for a provider (for UI / telemetry). */
+function resolveModelForProvider(provider, request = {}) {
+    var _a;
+    const fromRequest = String((_a = request.model) !== null && _a !== void 0 ? _a : "").trim();
+    if (fromRequest)
+        return fromRequest;
+    switch (provider) {
+        case "ollama":
+            return process.env.AI_OLLAMA_MODEL
+                || process.env.AI_LITE_MODEL
+                || "llama3.2";
+        case "gemini":
+            return resolveGeminiModel(request);
+        case "groq":
+            return "llama-3.3-70b-versatile";
+        case "anthropic":
+            return "claude-3-5-haiku-latest";
+        case "openai_compatible":
+            return process.env.AI_MODEL || "gpt-4o-mini";
+        case "openai":
+        default:
+            return process.env.AI_MODEL || "gpt-4o-mini";
+    }
 }
 function tryAsProviderId(value) {
     const id = String(value !== null && value !== void 0 ? value : "").trim().toLowerCase();

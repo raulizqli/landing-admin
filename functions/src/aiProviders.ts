@@ -271,35 +271,62 @@ export async function chatAnthropic(request: ChatJsonRequest): Promise<Record<st
 export async function runProviderChat(
   provider: AiProviderId,
   request: ChatJsonRequest,
-): Promise<{ result: Record<string, unknown>; provider: AiProviderId | "mock" }> {
+): Promise<{ result: Record<string, unknown>; provider: AiProviderId | "mock"; model: string }> {
+  const model = resolveModelForProvider(provider, request);
   let result: Record<string, unknown>;
   switch (provider) {
     case "ollama":
-      result = await chatOllama(request);
+      result = await chatOllama({ ...request, model });
       break;
     case "gemini":
-      result = await chatGemini(request);
+      result = await chatGemini({ ...request, model });
       break;
     case "groq":
-      result = await chatGroq(request);
+      result = await chatGroq({ ...request, model });
       break;
     case "anthropic":
-      result = await chatAnthropic(request);
+      result = await chatAnthropic({ ...request, model });
       break;
     case "openai_compatible":
       result = await chatOpenAiCompatible(
-        request,
+        { ...request, model },
         request.baseUrl || "https://api.openai.com/v1",
-        request.model || "gpt-4o-mini",
+        model,
       );
       break;
     case "openai":
     default:
-      result = await chatOpenAi(request);
+      result = await chatOpenAi({ ...request, model });
       break;
   }
   const usedMock = result.provider === "mock";
-  return { result, provider: usedMock ? "mock" : provider };
+  return { result, provider: usedMock ? "mock" : provider, model };
+}
+
+/** Default model id for a provider (for UI / telemetry). */
+export function resolveModelForProvider(
+  provider: AiProviderId,
+  request: Pick<ChatJsonRequest, "model"> & Partial<ChatJsonRequest> = {},
+): string {
+  const fromRequest = String(request.model ?? "").trim();
+  if (fromRequest) return fromRequest;
+  switch (provider) {
+    case "ollama":
+      return process.env.AI_OLLAMA_MODEL
+        || process.env.AI_LITE_MODEL
+        || "llama3.2";
+    case "gemini":
+      return resolveGeminiModel(request as ChatJsonRequest);
+    case "groq":
+      return "llama-3.3-70b-versatile";
+    case "anthropic":
+      return "claude-3-5-haiku-latest";
+    case "openai_compatible":
+      return process.env.AI_MODEL || "gpt-4o-mini";
+    case "openai":
+    default:
+      return process.env.AI_MODEL || "gpt-4o-mini";
+  }
 }
 
 function tryAsProviderId(value: string): AiProviderId | null {

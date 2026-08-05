@@ -6,7 +6,14 @@ import { getHubApp } from './firebaseClients';
 let initialized = false;
 let appCheckInstance = null;
 
-function configureDebugToken() {
+/**
+ * MUST run before any initializeAppCheck(). The Firebase SDK reads
+ * FIREBASE_APPCHECK_DEBUG_TOKEN only once during initializeDebugMode();
+ * setting it later leaves debug mode off and forces reCAPTCHA (which breaks
+ * localhost unless every domain is allowlisted).
+ */
+function applyDebugTokenGlobal() {
+  if (typeof window === 'undefined') return;
   if (!import.meta.env.DEV) return;
 
   const debugToken = String(import.meta.env.VITE_APP_CHECK_DEBUG_TOKEN ?? '').trim();
@@ -14,8 +21,42 @@ function configureDebugToken() {
     globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     return;
   }
-
   globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+}
+
+// Eager: import this module early from main.jsx so the flag is set before Auth/callables.
+applyDebugTokenGlobal();
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function formatAppCheckTokenError(detail) {
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  const hasDebugEnv = Boolean(String(import.meta.env.VITE_APP_CHECK_DEBUG_TOKEN ?? '').trim());
+  const lines = [
+    `App Check no pudo emitir un token (${detail}).`,
+  ];
+
+  if (import.meta.env.DEV || isLocal) {
+    lines.push(
+      'En local:',
+      '1) Confirma que VITE_APP_CHECK_DEBUG_TOKEN está en .env.local y reinicia Vite.',
+      '2) Registra ese UUID en Firebase Console → App Check → Manage debug tokens.',
+      '3) La site key de VITE_RECAPTCHA_SITE_KEY debe ser reCAPTCHA v3 (no v2) y tener localhost / 127.0.0.1 en dominios permitidos.',
+      '4) Desactiva bloqueadores que corten www.google.com/recaptcha.',
+    );
+    if (!hasDebugEnv) {
+      lines.push('Falta VITE_APP_CHECK_DEBUG_TOKEN en el entorno de Vite.');
+    }
+  } else {
+    lines.push(
+      'En producción: comprueba VITE_RECAPTCHA_SITE_KEY, que el dominio esté en reCAPTCHA v3, y que App Check use la misma site key para esta app web.',
+    );
+  }
+
+  return lines.join(' ');
 }
 
 /**
@@ -24,7 +65,7 @@ function configureDebugToken() {
  * (see AuthContext.signOut) so the next login is not blocked by Auth+App Check.
  */
 export function initHubAppCheck() {
-  if (initialized || typeof window === 'undefined') return null;
+  if (initialized || typeof window === 'undefined') return appCheckInstance;
 
   const siteKey = String(import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim();
   if (!siteKey) {
@@ -36,7 +77,7 @@ export function initHubAppCheck() {
     return null;
   }
 
-  configureDebugToken();
+  applyDebugTokenGlobal();
 
   appCheckInstance = initializeAppCheck(getHubApp(), {
     provider: new ReCaptchaV3Provider(siteKey),
@@ -47,13 +88,14 @@ export function initHubAppCheck() {
 
   const configuredDebug = String(import.meta.env.VITE_APP_CHECK_DEBUG_TOKEN ?? '').trim();
   if (import.meta.env.DEV) {
+    const debugActive = Boolean(globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN);
     if (configuredDebug) {
       console.info(
-        '[App Check] Usando VITE_APP_CHECK_DEBUG_TOKEN. Debe estar registrado en Firebase Console → App Check → Manage debug tokens.',
+        `[App Check] Debug token configurado (activo=${debugActive}). Debe estar registrado en Firebase Console → App Check → Manage debug tokens.`,
       );
     } else {
       console.info(
-        '[App Check] Modo debug activo. Copia el token de la consola del navegador y regístralo en Firebase Console → App Check → Manage debug tokens. O define VITE_APP_CHECK_DEBUG_TOKEN en .env.local.',
+        '[App Check] Modo debug activo (token auto). Copia el UUID de la consola y regístralo en Firebase → App Check → Manage debug tokens, o define VITE_APP_CHECK_DEBUG_TOKEN.',
       );
     }
   }
@@ -110,25 +152,35 @@ export async function ensureCallableSession(auth) {
   }
 
   if (appCheckInstance) {
-    try {
-      await getToken(appCheckInstance, /* forceRefresh */ false);
-    } catch (firstError) {
+    const attempts = [
+      { force: false, waitMs: 0 },
+      { force: false, waitMs: 400 },
+      { force: true, waitMs: 0 },
+    ];
+    let lastError = null;
+    for (const attempt of attempts) {
+      if (attempt.waitMs) await sleep(attempt.waitMs);
       try {
-        // First exchange often races with reCAPTCHA bootstrap; one forced retry avoids
-        // Cloud Functions returning HTTP 401 (unauthenticated / missing App Check).
-        await getToken(appCheckInstance, /* forceRefresh */ true);
+        await getToken(appCheckInstance, attempt.force);
+        lastError = null;
+        break;
       } catch (error) {
-        const detail = error?.message || firstError?.message || error;
-        if (import.meta.env.DEV) {
-          console.warn('[App Check] No se pudo obtener token antes del callable:', detail);
-        }
-        throw Object.assign(
-          new Error(
-            `App Check no pudo emitir un token (${detail}). Comprueba VITE_RECAPTCHA_SITE_KEY y que el dominio esté autorizado en reCAPTCHA v3 / App Check.`,
-          ),
-          { code: 'app-check/token-error', cause: error },
+        lastError = error;
+      }
+    }
+    if (lastError) {
+      const detail = lastError?.message || lastError;
+      if (import.meta.env.DEV) {
+        console.warn('[App Check] No se pudo obtener token antes del callable:', detail);
+        console.warn(
+          '[App Check] FIREBASE_APPCHECK_DEBUG_TOKEN =',
+          globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN,
         );
       }
+      throw Object.assign(
+        new Error(formatAppCheckTokenError(detail)),
+        { code: 'app-check/token-error', cause: lastError },
+      );
     }
   }
 
@@ -137,5 +189,5 @@ export async function ensureCallableSession(auth) {
 
 export function appCheckDevHint() {
   if (!import.meta.env.DEV) return '';
-  return ' En local, App Check suele causar "Unauthenticated": registra VITE_APP_CHECK_DEBUG_TOKEN (o el token de la consola) en Firebase → App Check → Manage debug tokens y reinicia Vite.';
+  return ' En local: VITE_APP_CHECK_DEBUG_TOKEN registrado en Firebase → App Check → Manage debug tokens, reinicia Vite, y autoriza localhost en reCAPTCHA v3.';
 }

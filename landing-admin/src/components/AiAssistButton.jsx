@@ -8,7 +8,7 @@ import {
 } from '../utils/aiAssist';
 import { runAiAssistRemote, runLocalAssistant } from '../utils/aiAssistFunctions';
 import { getDefaultAiEngine, getLocalOllamaConfig } from '../utils/aiEngine';
-import { getAiProviderDisplayName } from '../utils/aiProviderLabel';
+import { getAiProviderDisplayName, formatAiGenerationLabel } from '../utils/aiProviderLabel';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useLocale } from '../i18n/LocaleContext';
 import AiWorkingBanner from './AiWorkingBanner';
@@ -93,7 +93,7 @@ export default function AiAssistButton({
         });
         const ollama = getLocalOllamaConfig();
         result = await runLocalAssistant({ system, user, ...ollama });
-        meta = { lane: 'lite', provider: 'local_ollama' };
+        meta = { lane: 'lite', provider: 'local_ollama', model: ollama.model };
       } else {
         const data = await runAiAssistRemote({
           pageId,
@@ -107,7 +107,12 @@ export default function AiAssistButton({
           // Let Cloud Functions pick AI_LITE_PROVIDER and fall back (Gemini) on quota.
         });
         result = data.result;
-        meta = { lane: data.lane, provider: data.provider, usage: data.usage };
+        meta = {
+          lane: data.lane,
+          provider: data.provider,
+          model: data.model,
+          usage: data.usage,
+        };
       }
       setPreview({
         action: item.action,
@@ -189,7 +194,11 @@ export default function AiAssistButton({
           {preview && (
             <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
               <p className="text-[10px] text-gray-400">
-                {getAiProviderDisplayName(preview.meta?.provider, locale)}
+                {formatAiGenerationLabel({
+                  provider: preview.meta?.provider,
+                  model: preview.meta?.model,
+                  language: locale,
+                }) || getAiProviderDisplayName(preview.meta?.provider, locale)}
                 {' · '}
                 {t('ai.reviewHint')}
               </p>

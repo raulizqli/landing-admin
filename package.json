@@ -32,7 +32,8 @@
     "extract:template-repo": "bash scripts/extract-template-repo.sh",
     "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui",
     "test": "npm test -w @raulizqli/landing-core && npm test --prefix landing-admin && npm test --prefix landing-template",
-    "test:core": "npm run test -w @raulizqli/landing-core"
+    "test:core": "npm run test -w @raulizqli/landing-core",
+    "ollama:serve": "bash scripts/ollama-serve.sh"
   },
 
   "devDependencies": {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAiProviderDisplayName } from './aiProviderLabel';
+import { getAiProviderDisplayName, formatAiGenerationLabel } from './aiProviderLabel';
 
 describe('getAiProviderDisplayName', () => {
   it('presents technical providers using end-user labels', () => {
@@ -11,5 +11,20 @@ describe('getAiProviderDisplayName', () => {
 
   it('does not expose unknown technical identifiers', () => {
     expect(getAiProviderDisplayName('custom_internal_engine', 'es')).toBe('LeftSide AI');
+  });
+});
+
+describe('formatAiGenerationLabel', () => {
+  it('combines provider label and model id', () => {
+    expect(formatAiGenerationLabel({
+      provider: 'gemini',
+      model: 'gemini-2.0-flash',
+      language: 'es',
+    })).toBe('Google Gemini · gemini-2.0-flash');
+    expect(formatAiGenerationLabel({
+      provider: 'local_ollama',
+      model: 'llama3.2',
+      language: 'es',
+    })).toBe('LeftSide AI Local · llama3.2');
   });
 });
