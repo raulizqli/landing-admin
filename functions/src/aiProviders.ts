@@ -474,6 +474,41 @@ function mockLogoDataUrl(name: string, specialty: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+type LogoImageProvider = "openai" | "mock" | "gemini";
+
+function parseLogoImageFallbackChain(raw?: string): LogoImageProvider[] {
+  const text = String(raw ?? process.env.AI_IMAGE_FALLBACK_CHAIN ?? "openai,mock,gemini").trim();
+  const parsed = text
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  const allowed = new Set<LogoImageProvider>(["openai", "mock", "gemini"]);
+  const chain = parsed.filter((item): item is LogoImageProvider => allowed.has(item as LogoImageProvider));
+  return chain.length ? chain : ["openai", "mock", "gemini"];
+}
+
+function buildLogoPrompt(input: {
+  name?: string;
+  specialty?: string;
+  vertical?: string;
+  brief?: string;
+  language?: string;
+}): string {
+  const name = String(input.name ?? "").trim();
+  const specialty = String(input.specialty ?? "").trim();
+  const vertical = String(input.vertical ?? "generic").trim();
+  const brief = String(input.brief ?? "").trim();
+  const language = input.language === "en" ? "English" : "Spanish";
+  return [
+    `Minimal professional logo mark for a ${vertical || "services"} brand.`,
+    name ? `Brand name: ${name}.` : "",
+    specialty ? `Specialty: ${specialty}.` : "",
+    brief ? `Brief: ${brief}.` : "",
+    "Flat vector style, centered icon, cream (#F4F1EA) and sage green (#4A5D4E), no text clutter, no watermark, square composition.",
+    `Design notes may be in ${language}.`,
+  ].filter(Boolean).join(" ");
+}
+
 /** GPT Image models always return base64 and reject `response_format`. */
 function isGptImageModel(model = ""): boolean {
   return /^gpt-image/i.test(String(model).trim());
@@ -492,43 +527,29 @@ function buildOpenAiImageGenerationBody(model: string, prompt: string): Record<s
   return body;
 }
 
-/**
- * Generate a simple brand mark / logo image.
- * Uses OpenAI Images when OPENAI_API_KEY is set; otherwise returns an SVG data URL.
- */
-export async function generateLogoImage(input: {
-  name?: string;
-  specialty?: string;
-  vertical?: string;
-  brief?: string;
-  language?: string;
-  apiKey?: string;
-}): Promise<{ imageUrl: string; provider: string; prompt: string }> {
-  const name = String(input.name ?? "").trim();
-  const specialty = String(input.specialty ?? "").trim();
-  const vertical = String(input.vertical ?? "generic").trim();
-  const brief = String(input.brief ?? "").trim();
-  const language = input.language === "en" ? "English" : "Spanish";
-  const prompt = [
-    `Minimal professional logo mark for a ${vertical || "services"} brand.`,
-    name ? `Brand name: ${name}.` : "",
-    specialty ? `Specialty: ${specialty}.` : "",
-    brief ? `Brief: ${brief}.` : "",
-    "Flat vector style, centered icon, cream (#F4F1EA) and sage green (#4A5D4E), no text clutter, no watermark, square composition.",
-    `Design notes may be in ${language}.`,
-  ].filter(Boolean).join(" ");
-
-  const apiKey = String(input.apiKey || process.env.OPENAI_API_KEY || "").trim();
-  if (!apiKey) {
+function logoResultFromOpenAiPayload(
+  payload: { data?: Array<{ url?: string; b64_json?: string }> },
+  prompt: string,
+) {
+  const first = payload?.data?.[0];
+  if (first?.url) {
+    return { imageUrl: first.url, provider: "openai", prompt };
+  }
+  if (first?.b64_json) {
     return {
-      imageUrl: mockLogoDataUrl(name, specialty),
-      provider: "mock",
+      imageUrl: `data:image/png;base64,${first.b64_json}`,
+      provider: "openai",
       prompt,
     };
   }
+  return null;
+}
 
+async function generateLogoWithOpenAi(
+  apiKey: string,
+  prompt: string,
+): Promise<{ imageUrl: string; provider: string; prompt: string }> {
   const imageModel = process.env.OPENAI_IMAGE_MODEL || "dall-e-3";
-
   const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
@@ -544,20 +565,190 @@ export async function generateLogoImage(input: {
   }
 
   const payload = await response.json() as { data?: Array<{ url?: string; b64_json?: string }> };
-  const first = payload?.data?.[0];
-  if (first?.url) {
-    return { imageUrl: first.url, provider: "openai", prompt };
+  const result = logoResultFromOpenAiPayload(payload, prompt);
+  if (!result) {
+    throw new Error("OpenAI images returned no image data.");
   }
-  if (first?.b64_json) {
-    return {
-      imageUrl: `data:image/png;base64,${first.b64_json}`,
-      provider: "openai",
-      prompt,
-    };
-  }
+  return result;
+}
+
+function generateLogoWithMock(
+  name: string,
+  specialty: string,
+  prompt: string,
+): { imageUrl: string; provider: string; prompt: string } {
   return {
     imageUrl: mockLogoDataUrl(name, specialty),
     provider: "mock",
     prompt,
   };
+}
+
+function extractGeminiInlineImage(payload: {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        inlineData?: { mimeType?: string; data?: string };
+        inline_data?: { mime_type?: string; data?: string };
+        thought?: boolean;
+      }>;
+    };
+  }>;
+}): string | null {
+  const parts = payload.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    if (part.thought === true) continue;
+    const inline = part.inlineData || part.inline_data;
+    const data = String(inline?.data ?? "").trim();
+    if (!data) continue;
+    const mimeType = (inline && "mimeType" in inline && inline.mimeType)
+      || (inline && "mime_type" in inline && inline.mime_type)
+      || "image/png";
+    return `data:${mimeType};base64,${data}`;
+  }
+  return null;
+}
+
+async function generateLogoWithGeminiImagen(
+  apiKey: string,
+  model: string,
+  prompt: string,
+): Promise<{ imageUrl: string; provider: string; prompt: string }> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:predict?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        instances: [{ prompt: prompt.slice(0, 480) }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: "1:1",
+        },
+      }),
+    },
+  );
+  const raw = await response.text();
+  if (!response.ok) {
+    throw new Error(`Gemini Imagen (${model}) respondió ${response.status}: ${raw.slice(0, 200)}`);
+  }
+
+  const payload = JSON.parse(raw) as {
+    predictions?: Array<{
+      bytesBase64Encoded?: string;
+      mimeType?: string;
+      image?: { bytesBase64Encoded?: string; mimeType?: string };
+    }>;
+  };
+  const first = payload.predictions?.[0];
+  const encoded = first?.bytesBase64Encoded
+    || first?.image?.bytesBase64Encoded
+    || "";
+  if (!encoded) {
+    throw new Error(`Gemini Imagen (${model}) returned no image data.`);
+  }
+  const mimeType = first?.mimeType || first?.image?.mimeType || "image/png";
+  return {
+    imageUrl: `data:${mimeType};base64,${encoded}`,
+    provider: "gemini",
+    prompt,
+  };
+}
+
+async function generateLogoWithGeminiNative(
+  apiKey: string,
+  model: string,
+  prompt: string,
+): Promise<{ imageUrl: string; provider: string; prompt: string }> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt.slice(0, 3500) }] }],
+        generationConfig: {
+          responseModalities: ["IMAGE"],
+        },
+      }),
+    },
+  );
+  const raw = await response.text();
+  if (!response.ok) {
+    throw new Error(`Gemini image (${model}) respondió ${response.status}: ${raw.slice(0, 200)}`);
+  }
+
+  const payload = JSON.parse(raw) as Parameters<typeof extractGeminiInlineImage>[0];
+  const imageUrl = extractGeminiInlineImage(payload);
+  if (!imageUrl) {
+    throw new Error(`Gemini image (${model}) returned no image data.`);
+  }
+  return { imageUrl, provider: "gemini", prompt };
+}
+
+async function generateLogoWithGemini(
+  prompt: string,
+): Promise<{ imageUrl: string; provider: string; prompt: string }> {
+  const apiKey = String(process.env.GEMINI_API_KEY || "").trim();
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured.");
+  }
+
+  const model = String(process.env.GEMINI_IMAGE_MODEL || "imagen-4.0-generate-001").trim();
+  if (/^imagen-/i.test(model)) {
+    return generateLogoWithGeminiImagen(apiKey, model, prompt);
+  }
+  return generateLogoWithGeminiNative(apiKey, model, prompt);
+}
+
+/**
+ * Generate a simple brand mark / logo image.
+ * Fallback chain defaults to OpenAI → mock SVG → Gemini Imagen.
+ */
+export async function generateLogoImage(input: {
+  name?: string;
+  specialty?: string;
+  vertical?: string;
+  brief?: string;
+  language?: string;
+  apiKey?: string;
+}): Promise<{ imageUrl: string; provider: string; prompt: string }> {
+  const name = String(input.name ?? "").trim();
+  const specialty = String(input.specialty ?? "").trim();
+  const prompt = buildLogoPrompt({
+    name,
+    specialty,
+    vertical: input.vertical,
+    brief: input.brief,
+    language: input.language,
+  });
+
+  const openaiKey = String(input.apiKey || process.env.OPENAI_API_KEY || "").trim();
+  const chain = parseLogoImageFallbackChain();
+  const errors: string[] = [];
+
+  for (const step of chain) {
+    try {
+      if (step === "openai") {
+        if (!openaiKey) continue;
+        return await generateLogoWithOpenAi(openaiKey, prompt);
+      }
+      if (step === "mock") {
+        if (process.env.AI_IMAGE_SKIP_MOCK === "true") continue;
+        return generateLogoWithMock(name, specialty, prompt);
+      }
+      if (step === "gemini") {
+        return await generateLogoWithGemini(prompt);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`${step}: ${message}`);
+    }
+  }
+
+  if (errors.length) {
+    throw new Error(errors.join(" | "));
+  }
+
+  return generateLogoWithMock(name, specialty, prompt);
 }
