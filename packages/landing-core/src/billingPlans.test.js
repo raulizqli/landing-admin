@@ -44,6 +44,15 @@ describe('hostingDeploy entitlement', () => {
   });
 });
 
+describe('qrCodes entitlement', () => {
+  it('unlocks QR codes from Pro onward', () => {
+    expect(accountHasFeature({ plan: 'starter', status: 'active' }, 'qrCodes')).toBe(false);
+    expect(accountHasFeature({ plan: 'pro', status: 'active' }, 'qrCodes')).toBe(true);
+    expect(accountHasFeature({ plan: 'agency', status: 'active' }, 'qrCodes')).toBe(true);
+    expect(accountHasFeature({ plan: 'enterprise', status: 'active' }, 'qrCodes')).toBe(true);
+  });
+});
+
 describe('imageUpload and AI logo limits', () => {
   it('gates uploads to Pro+', () => {
     expect(accountHasFeature({ plan: 'starter', status: 'active' }, 'imageUpload')).toBe(false);

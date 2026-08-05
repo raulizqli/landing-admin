@@ -25,7 +25,9 @@ export default function PublicityAdsBanner({
   useEffect(() => {
     if (!adsClient || typeof window === 'undefined') return undefined;
 
-    const existing = document.querySelector('script[data-platform-ads="1"]');
+    const existing = document.querySelector(
+      'script[data-platform-ads="1"], script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
+    );
     if (!existing) {
       const script = document.createElement('script');
       script.async = true;

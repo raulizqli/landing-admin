@@ -54,6 +54,9 @@ jobs:
           VITE_MARKETING_URL: https://landing-template-9452e.web.app/?pageId=leftsidedev
           VITE_CORPORATE_SITE_URL: ${{ vars.VITE_CORPORATE_SITE_URL }}
           VITE_APP_ENV: prod
+          VITE_GOOGLE_ADS_CLIENT: ${{ secrets.VITE_GOOGLE_ADS_CLIENT }}
+          # CMS interstitial / free-tier bar — distinct from public landings slot
+          VITE_GOOGLE_ADS_SLOT: ${{ secrets.VITE_GOOGLE_ADS_SLOT_ADMIN }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

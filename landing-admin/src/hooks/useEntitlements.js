@@ -67,6 +67,7 @@ export function useEntitlements() {
       canUseCustomSectionVisualStyle: has('customSectionVisualStyle'),
       canUseContactMapBeside: has('contactMapBeside'),
       canUseMarketingSite: has('marketingSite'),
+      canUseQrCodes: has('qrCodes'),
       hasSupport247: has('support247'),
       aiLane,
       canUseAiAssistLite: aiLane === 'lite' || aiLane === 'full',

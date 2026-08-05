@@ -5,6 +5,7 @@ import { createEmptySlide } from './utils/heroSlides';
 import { hydratePageForm } from './utils/pageModel';
 import HeroSlidesEditor from './components/HeroSlidesEditor';
 import SocialFieldsEditor from './components/SocialFieldsEditor';
+import QrCodesSection from './components/QrCodesSection';
 import CustomEmbedsFieldsEditor from './components/CustomEmbedsFieldsEditor';
 import NavFieldsEditor from './components/NavFieldsEditor';
 import SectionVisibilityFieldsEditor from './components/SectionVisibilityFieldsEditor';
@@ -999,6 +1000,27 @@ export default function App() {
                 <LabelsFieldsEditor key={`labels-social-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['social']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
+
+            <PlanGate
+              allowed={entitlements.canUseQrCodes}
+              label={upgradeLabel}
+              onUpgrade={openBilling}
+              lockedTitle={t('billing.features.qrCodes')}
+              lockedDescription="Genera y descarga códigos QR del sitio y de tus redes sociales (Pro+)."
+            >
+              <EditorSection
+                sectionKey="qrCodes"
+                title="Códigos QR"
+                description="Sitio público y redes — solo admin"
+                onActivate={activatePreviewSection}
+              >
+                <QrCodesSection
+                  formData={editorData}
+                  pageId={selectedId}
+                  pageOpenUrl={pageOpenUrl}
+                />
+              </EditorSection>
+            </PlanGate>
 
             {(canManageLayout || hasActiveCustomEmbeds) && (
               <PlanGate

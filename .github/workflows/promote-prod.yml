@@ -57,6 +57,8 @@ jobs:
           VITE_CORPORATE_SITE_URL: ${{ vars.VITE_CORPORATE_SITE_URL }}
           VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
           VITE_APP_ENV: prod
+          VITE_GOOGLE_ADS_CLIENT: ${{ secrets.VITE_GOOGLE_ADS_CLIENT }}
+          VITE_GOOGLE_ADS_SLOT: ${{ secrets.VITE_GOOGLE_ADS_SLOT_ADMIN }}
 
       - name: Build template
         run: npm run build:template

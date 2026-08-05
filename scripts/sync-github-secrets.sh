@@ -6,6 +6,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="${1:-$ROOT_DIR/landing-admin/.env.local}"
 TEMPLATE_PROD_ENV="${TEMPLATE_PROD_ENV:-$ROOT_DIR/landing-template/.env.production}"
+ADMIN_PROD_ENV="${ADMIN_PROD_ENV:-$ROOT_DIR/landing-admin/.env.production}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE"
@@ -60,6 +61,12 @@ PAGINA_ID="$(get_env VITE_PAGINA_ID)"
 # Template Prod: AdSense + admin public URL (from landing-template/.env.production)
 ADS_CLIENT="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_GOOGLE_ADS_CLIENT)"
 ADS_SLOT="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_GOOGLE_ADS_SLOT)"
+# Admin CMS AdSense slot (free-tier bar + save/publish gate) — distinct from landings
+ADMIN_ADS_CLIENT="$(get_env_from "$ADMIN_PROD_ENV" VITE_GOOGLE_ADS_CLIENT)"
+ADMIN_ADS_SLOT="$(get_env_from "$ADMIN_PROD_ENV" VITE_GOOGLE_ADS_SLOT)"
+if [[ -z "$ADS_CLIENT" && -n "$ADMIN_ADS_CLIENT" ]]; then
+  ADS_CLIENT="$ADMIN_ADS_CLIENT"
+fi
 ADMIN_PUBLIC_URL="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_ADMIN_PUBLIC_URL)"
 ADMIN_ORIGIN="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_ADMIN_ORIGIN)"
 if [[ -z "$ADMIN_ORIGIN" ]]; then
@@ -78,6 +85,7 @@ set_secret VITE_RECAPTCHA_SITE_KEY "$RECAPTCHA"
 set_secret VITE_PAGINA_ID "$PAGINA_ID"
 set_secret VITE_GOOGLE_ADS_CLIENT "$ADS_CLIENT"
 set_secret VITE_GOOGLE_ADS_SLOT "$ADS_SLOT"
+set_secret VITE_GOOGLE_ADS_SLOT_ADMIN "$ADMIN_ADS_SLOT"
 set_secret VITE_ADMIN_PUBLIC_URL "$ADMIN_PUBLIC_URL"
 set_secret VITE_ADMIN_ORIGIN "$ADMIN_ORIGIN"
 

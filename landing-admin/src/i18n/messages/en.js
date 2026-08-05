@@ -210,6 +210,7 @@ export default {
       contactMapBeside: 'Side-by-side contact map',
       support247: '24/7 support',
       marketingSite: 'Marketing Site',
+      qrCodes: 'QR codes (site & socials)',
     },
   },
   ai: {
