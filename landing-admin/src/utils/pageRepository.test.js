@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const setDoc = vi.fn(async () => undefined);
+const getDoc = vi.fn(async () => ({ exists: () => false, data: () => ({}) }));
 const getDocs = vi.fn(async () => ({ empty: true, docs: [] }));
 const collection = vi.fn((...args) => ({ path: args.join('/') }));
 const doc = vi.fn((...args) => ({ path: args.join('/') }));
@@ -22,6 +23,7 @@ const assertMarketingSiteAccessRemote = vi.fn(async () => undefined);
 
 vi.mock('firebase/firestore', () => ({
   setDoc: (...args) => setDoc(...args),
+  getDoc: (...args) => getDoc(...args),
   getDocs: (...args) => getDocs(...args),
   collection: (...args) => collection(...args),
   doc: (...args) => doc(...args),
@@ -49,6 +51,7 @@ const { createPageInHub, loadPageForEditor, savePageFromEditor } = await import(
 describe('savePageFromEditor', () => {
   beforeEach(() => {
     setDoc.mockClear();
+    getDoc.mockClear();
     getDocs.mockClear();
     getHubDb.mockClear();
     getDbForConfig.mockClear();
@@ -59,6 +62,7 @@ describe('savePageFromEditor', () => {
       snapshot: { exists: () => true, data: () => ({}) },
       collectionName: 'pages',
     });
+    getDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
   });
 
   it('writes English keys and syncs heroTitle/heroSubtitle from the first slide', async () => {
@@ -88,11 +92,13 @@ describe('savePageFromEditor', () => {
     const result = await savePageFromEditor('dra-ana', formData);
 
     expect(result.migratedToExternal).toBe(false);
-    expect(setDoc).toHaveBeenCalledTimes(1);
+    expect(setDoc).toHaveBeenCalledTimes(2);
     const [, payload, options] = setDoc.mock.calls[0];
     expect(options).toEqual({ merge: true });
     expect(payload).not.toHaveProperty('id');
     expect(payload).not.toHaveProperty('marketingRoutes');
+    expect(payload).not.toHaveProperty('siteAccess');
+    expect(payload.hostingDeployHookUrl).toBe('');
     expect(payload.name).toBe('Ana');
     expect(payload.specialty).toBe('Psicología');
     expect(payload.heroTitle).toBe('Bienvenida');
@@ -102,6 +108,8 @@ describe('savePageFromEditor', () => {
       'dra-ana',
       'pages',
     );
+    const privatePayload = setDoc.mock.calls[1][1];
+    expect(privatePayload).toHaveProperty('hostingDeployHookUrl');
   });
 
   it('clears heroTitle/heroSubtitle when slide text flags are off', async () => {

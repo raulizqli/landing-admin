@@ -1,11 +1,19 @@
 /**
- * HTTPS bridge to Ollama Cloud so the browser never sees the API token.
+ * Authenticated bridge to Ollama Cloud so the browser never sees the API token.
  * Source of truth: this file (compiled to lib/askOllamaCloud.js).
+ *
+ * P0: callable requires a signed-in root user (no public HTTP proxy).
  */
+import { initializeApp, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
-import { onRequest } from "firebase-functions/v2/https";
+import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { Ollama } from "ollama";
+
+if (getApps().length === 0) {
+  initializeApp();
+}
 
 /** Secret Manager key — set with: firebase functions:secrets:set OLLAMA_CLOUD_TOKEN */
 const ollamaCloudToken = defineSecret("OLLAMA_CLOUD_TOKEN");
@@ -13,48 +21,67 @@ const ollamaCloudToken = defineSecret("OLLAMA_CLOUD_TOKEN");
 /** Official Ollama Cloud host (docs: https://docs.ollama.com/cloud). */
 const OLLAMA_CLOUD_HOST = "https://ollama.com";
 const OLLAMA_CLOUD_MODEL = "glm-5:cloud";
+const USERS_COLLECTION = "users";
+const MAX_PROMPT_CHARS = 8000;
 
-function readPrompt(body: unknown): string {
-  if (!body || typeof body !== "object") return "";
-  const prompt = (body as { prompt?: unknown }).prompt;
+interface AskOllamaCloudPayload {
+  prompt?: string;
+}
+
+function readPrompt(data: unknown): string {
+  if (!data || typeof data !== "object") return "";
+  const prompt = (data as AskOllamaCloudPayload).prompt;
   return typeof prompt === "string" ? prompt.trim() : "";
 }
 
-export const askOllamaCloud = onRequest(
+async function assertRootCaller(request: CallableRequest) {
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+  }
+
+  const callerDoc = await getFirestore()
+    .collection(USERS_COLLECTION)
+    .doc(request.auth.uid)
+    .get();
+
+  if (!callerDoc.exists || callerDoc.data()?.role !== "root") {
+    throw new HttpsError("permission-denied", "Solo un usuario root puede usar askOllamaCloud.");
+  }
+
+  return request.auth.uid;
+}
+
+export const askOllamaCloud = onCall(
   {
     secrets: [ollamaCloudToken],
-    cors: true, // Allow POST + Content-Type from local Vite and production hosting
+    cors: true,
+    invoker: "public",
     timeoutSeconds: 120,
     memory: "512MiB",
   },
-  async (req, res) => {
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
+  async (request: CallableRequest<AskOllamaCloudPayload>) => {
+    await assertRootCaller(request);
 
-    if (req.method !== "POST") {
-      res.status(405).json({ error: "Method not allowed. Use POST." });
-      return;
-    }
-
-    const prompt = readPrompt(req.body);
+    const prompt = readPrompt(request.data);
     if (!prompt) {
-      res.status(400).json({ error: "Missing required field: prompt" });
-      return;
+      throw new HttpsError("invalid-argument", "Missing required field: prompt");
+    }
+    if (prompt.length > MAX_PROMPT_CHARS) {
+      throw new HttpsError(
+        "invalid-argument",
+        `El prompt supera el máximo de ${MAX_PROMPT_CHARS} caracteres.`,
+      );
     }
 
-    // Bound secret (deploy) or .env / emulator fallback for local.
     const token = String(
       ollamaCloudToken.value() || process.env.OLLAMA_CLOUD_TOKEN || "",
     ).trim();
     if (!token) {
       logger.error("askOllamaCloud: OLLAMA_CLOUD_TOKEN is not configured");
-      res.status(500).json({
-        error: "OLLAMA_CLOUD_TOKEN no está configurado en Functions/Secret Manager.",
-        detail: "Configura el secreto OLLAMA_CLOUD_TOKEN y vuelve a desplegar askOllamaCloud.",
-      });
-      return;
+      throw new HttpsError(
+        "failed-precondition",
+        "OLLAMA_CLOUD_TOKEN no está configurado en Functions/Secret Manager.",
+      );
     }
 
     try {
@@ -71,14 +98,14 @@ export const askOllamaCloud = onRequest(
         stream: false,
       });
 
-      res.status(200).json({ response: response.response });
+      return { response: response.response };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.error("askOllamaCloud failed", { message, error });
-      res.status(502).json({
-        error: `Ollama Cloud (${OLLAMA_CLOUD_MODEL}) no respondió.`,
-        detail: message.slice(0, 240),
-      });
+      logger.error("askOllamaCloud failed", { message });
+      throw new HttpsError(
+        "internal",
+        `Ollama Cloud (${OLLAMA_CLOUD_MODEL}) no respondió: ${message.slice(0, 240)}`,
+      );
     }
   },
 );

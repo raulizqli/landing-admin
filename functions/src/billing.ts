@@ -405,10 +405,19 @@ export const stripeBillingWebhook = onRequest({ cors: false }, async (req, res) 
 
   const stripe = getStripe();
   const webhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET ?? "").trim();
+  const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
   let event: Stripe.Event;
 
   try {
-    if (webhookSecret) {
+    if (!webhookSecret) {
+      // Fail closed outside the emulator (F05): unsigned events must never mutate billing.
+      if (!isEmulator) {
+        console.error("Stripe webhook rejected: STRIPE_WEBHOOK_SECRET is not configured");
+        res.status(500).send("Webhook secret not configured");
+        return;
+      }
+      event = req.body as Stripe.Event;
+    } else {
       const signature = req.headers["stripe-signature"];
       if (!signature || Array.isArray(signature)) {
         res.status(400).send("Missing stripe-signature");
@@ -417,8 +426,6 @@ export const stripeBillingWebhook = onRequest({ cors: false }, async (req, res) 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawBody = (req as any).rawBody ?? JSON.stringify(req.body);
       event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    } else {
-      event = req.body as Stripe.Event;
     }
   } catch (error) {
     console.error("Stripe webhook signature error", error);

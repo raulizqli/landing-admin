@@ -1,6 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 import { getHubAuth, getHubFunctions } from './firebaseClients';
 import { normalizeHostingDeployFields } from './hostingDeploy';
+import { savePrivateHostingConfig } from './pageRepository';
 
 async function assertCallableAuthSession() {
   const auth = getHubAuth();
@@ -44,11 +45,19 @@ function mapCallableError(error) {
 export async function triggerHostingDeploy(pageId, formData = {}) {
   try {
     await assertCallableAuthSession();
+    // Persist deploy hook to private/hosting before the callable reads it.
+    await savePrivateHostingConfig(pageId, formData);
     const hosting = normalizeHostingDeployFields(formData);
     const callable = httpsCallable(getHubFunctions(), 'triggerHostingDeploy');
+    // Do not send hostingDeployHookUrl — server reads pages/{id}/private/hosting (F03/F07).
     const result = await callable({
       pageId,
-      ...hosting,
+      hostingProvider: hosting.hostingProvider,
+      hostingGithubOwner: hosting.hostingGithubOwner,
+      hostingGithubRepo: hosting.hostingGithubRepo,
+      hostingGithubWorkflow: hosting.hostingGithubWorkflow,
+      hostingGithubRef: hosting.hostingGithubRef,
+      hostingPublicUrl: hosting.hostingPublicUrl,
     });
     return result.data;
   } catch (error) {

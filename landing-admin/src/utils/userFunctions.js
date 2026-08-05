@@ -22,7 +22,7 @@ function mapCallableError(error) {
     return new Error('Debes iniciar sesión para gestionar usuarios.');
   }
   if (code === 'functions/permission-denied') {
-    return new Error('Solo un usuario root puede gestionar cuentas.');
+    return new Error(text || 'No tienes permiso para esta operación.');
   }
   if (code === 'functions/already-exists') {
     return new Error('Ya existe un usuario con ese email.');
@@ -93,6 +93,18 @@ export async function listCmsUsersRemote() {
     const callable = httpsCallable(getHubFunctions(), 'listCmsUsers');
     const result = await callable({});
     return result.data?.users || [];
+  } catch (error) {
+    throw mapCallableError(error);
+  }
+}
+
+/** First-root / allowlisted bootstrap via Admin SDK (see ensureBootstrapRoot Cloud Function). */
+export async function ensureBootstrapRootRemote() {
+  try {
+    await assertCallableAuthSession();
+    const callable = httpsCallable(getHubFunctions(), 'ensureBootstrapRoot');
+    const result = await callable({});
+    return result.data;
   } catch (error) {
     throw mapCallableError(error);
   }

@@ -37,4 +37,5 @@ export {
   getAiAssistUsage,
 } from "./aiAssist.js";
 export { createCmsPage } from "./cmsPages.js";
+export { ensureBootstrapRoot } from "./bootstrapRoot.js";
 export { askOllamaCloud } from "./askOllamaCloud.js";

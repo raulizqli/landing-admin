@@ -9,6 +9,7 @@ if ((0, app_1.getApps)().length === 0) {
 }
 const USERS_COLLECTION = "users";
 const PAGES_COLLECTIONS = ["pages", "paginas"];
+const PRIVATE_HOSTING_DOC = "hosting";
 function normalizeProvider(value) {
     const provider = String(value !== null && value !== void 0 ? value : "").trim();
     if (provider === "webhook" || provider === "github")
@@ -36,10 +37,25 @@ async function loadHubPage(pageId) {
     for (const collectionName of PAGES_COLLECTIONS) {
         const snap = await db.collection(collectionName).doc(pageId).get();
         if (snap.exists) {
-            return ((_a = snap.data()) !== null && _a !== void 0 ? _a : {});
+            return {
+                collectionName,
+                page: ((_a = snap.data()) !== null && _a !== void 0 ? _a : {}),
+            };
         }
     }
     throw new https_1.HttpsError("not-found", `No existe la página "${pageId}" en el hub.`);
+}
+async function loadPrivateHosting(collectionName, pageId) {
+    var _a;
+    const snap = await (0, firestore_1.getFirestore)()
+        .collection(collectionName)
+        .doc(pageId)
+        .collection("private")
+        .doc(PRIVATE_HOSTING_DOC)
+        .get();
+    if (!snap.exists)
+        return {};
+    return ((_a = snap.data()) !== null && _a !== void 0 ? _a : {});
 }
 function resolveWebhookUrl(page, provider) {
     var _a, _b;
@@ -114,15 +130,19 @@ const callableOptions = {
     invoker: "public",
 };
 exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
     await assertHostingCaller(request);
     const pageId = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.pageId) !== null && _b !== void 0 ? _b : "").trim();
     if (!pageId) {
         throw new https_1.HttpsError("invalid-argument", "El pageId es obligatorio.");
     }
-    const page = await loadHubPage(pageId);
+    const { collectionName, page } = await loadHubPage(pageId);
+    const privateHosting = await loadPrivateHosting(collectionName, pageId);
     const overrides = ((_c = request.data) !== null && _c !== void 0 ? _c : {});
-    const effective = Object.assign(Object.assign({}, page), { hostingProvider: overrides.hostingProvider || page.hostingProvider, hostingDeployHookUrl: (_d = overrides.hostingDeployHookUrl) !== null && _d !== void 0 ? _d : page.hostingDeployHookUrl, hostingGithubOwner: (_e = overrides.hostingGithubOwner) !== null && _e !== void 0 ? _e : page.hostingGithubOwner, hostingGithubRepo: (_f = overrides.hostingGithubRepo) !== null && _f !== void 0 ? _f : page.hostingGithubRepo, hostingGithubWorkflow: (_g = overrides.hostingGithubWorkflow) !== null && _g !== void 0 ? _g : page.hostingGithubWorkflow, hostingGithubRef: (_h = overrides.hostingGithubRef) !== null && _h !== void 0 ? _h : page.hostingGithubRef, hostingPublicUrl: (_j = overrides.hostingPublicUrl) !== null && _j !== void 0 ? _j : page.hostingPublicUrl });
+    // Prefer private/hosting secrets; fall back to legacy public page field (migration).
+    // Never trust client-supplied hostingDeployHookUrl (SSRF / secret exfil mitigation).
+    const storedHook = String((_e = (_d = privateHosting.hostingDeployHookUrl) !== null && _d !== void 0 ? _d : page.hostingDeployHookUrl) !== null && _e !== void 0 ? _e : "").trim();
+    const effective = Object.assign(Object.assign({}, page), { hostingProvider: overrides.hostingProvider || page.hostingProvider || privateHosting.hostingProvider, hostingDeployHookUrl: storedHook, hostingGithubOwner: (_g = (_f = overrides.hostingGithubOwner) !== null && _f !== void 0 ? _f : privateHosting.hostingGithubOwner) !== null && _g !== void 0 ? _g : page.hostingGithubOwner, hostingGithubRepo: (_j = (_h = overrides.hostingGithubRepo) !== null && _h !== void 0 ? _h : privateHosting.hostingGithubRepo) !== null && _j !== void 0 ? _j : page.hostingGithubRepo, hostingGithubWorkflow: (_l = (_k = overrides.hostingGithubWorkflow) !== null && _k !== void 0 ? _k : privateHosting.hostingGithubWorkflow) !== null && _l !== void 0 ? _l : page.hostingGithubWorkflow, hostingGithubRef: (_o = (_m = overrides.hostingGithubRef) !== null && _m !== void 0 ? _m : privateHosting.hostingGithubRef) !== null && _o !== void 0 ? _o : page.hostingGithubRef, hostingPublicUrl: (_q = (_p = overrides.hostingPublicUrl) !== null && _p !== void 0 ? _p : privateHosting.hostingPublicUrl) !== null && _q !== void 0 ? _q : page.hostingPublicUrl });
     const provider = normalizeProvider(effective.hostingProvider);
     const payload = {
         pageId,
@@ -132,14 +152,14 @@ exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (reque
         triggeredAt: new Date().toISOString(),
     };
     if (provider === "github") {
-        const token = String((_k = process.env.GITHUB_DEPLOY_TOKEN) !== null && _k !== void 0 ? _k : "").trim();
+        const token = String((_r = process.env.GITHUB_DEPLOY_TOKEN) !== null && _r !== void 0 ? _r : "").trim();
         const result = await dispatchGithubWorkflow(effective, pageId, token);
         return {
             ok: true,
             provider,
             pageId,
             message: `Workflow ${result.workflow} disparado en ${result.owner}/${result.repo}@${result.ref}.`,
-            publicUrl: String((_l = effective.hostingPublicUrl) !== null && _l !== void 0 ? _l : "").trim() || null,
+            publicUrl: String((_s = effective.hostingPublicUrl) !== null && _s !== void 0 ? _s : "").trim() || null,
             detail: result,
         };
     }
@@ -155,7 +175,7 @@ exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (reque
         provider,
         pageId,
         message: "Deploy Hook disparado correctamente.",
-        publicUrl: String((_m = effective.hostingPublicUrl) !== null && _m !== void 0 ? _m : "").trim() || null,
+        publicUrl: String((_t = effective.hostingPublicUrl) !== null && _t !== void 0 ? _t : "").trim() || null,
         detail: result,
     };
 });

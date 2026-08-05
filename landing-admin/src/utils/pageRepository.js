@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   writeBatch,
@@ -12,6 +13,7 @@ import {
   ROUTES_SUBCOLLECTION,
   stripMarketingEditorFields,
 } from '@raulizqli/landing-core/marketingSite';
+import { getPrivateHostingFields } from '@raulizqli/landing-core/hostingDeploy';
 import { buildMarketingSeoArtifacts } from '@raulizqli/landing-core/marketingSeo';
 import { assertMarketingSiteAccessRemote } from './billingFunctions';
 import { getHubDb, getDbForConfig } from './firebaseClients';
@@ -22,6 +24,51 @@ import {
 } from './externalFirebase';
 import { getPageSnapshot, pageDocRef, primaryPagesCollection } from './firestoreAccess';
 import { hydratePageForm, normalizePageData } from './pageModel';
+
+const PRIVATE_SUBCOLLECTION = 'private';
+const PRIVATE_HOSTING_DOC = 'hosting';
+
+function privateHostingRef(db, pageId, collectionName) {
+  return doc(db, collectionName, pageId, PRIVATE_SUBCOLLECTION, PRIVATE_HOSTING_DOC);
+}
+
+async function loadPrivateHostingHook(db, pageId, collectionName) {
+  try {
+    const snapshot = await getDoc(privateHostingRef(db, pageId, collectionName));
+    if (!snapshot.exists()) return '';
+    return String(snapshot.data()?.hostingDeployHookUrl ?? '').trim();
+  } catch (error) {
+    console.warn('Could not load private hosting config:', error);
+    return '';
+  }
+}
+
+export async function savePrivateHostingConfig(pageId, formData) {
+  const hubDb = getHubDb();
+  const { collectionName } = await getPageSnapshot(hubDb, pageId);
+  const hubCollection = collectionName || primaryPagesCollection();
+  const payload = getPrivateHostingFields(formData);
+  await setDoc(privateHostingRef(hubDb, pageId, hubCollection), payload, { merge: true });
+  return payload;
+}
+
+async function savePrivateHosting(db, pageId, collectionName, formData) {
+  const payload = getPrivateHostingFields(formData);
+  await setDoc(privateHostingRef(db, pageId, collectionName), payload, { merge: true });
+}
+
+function stripServerOwnedPageFields(data) {
+  const next = { ...data };
+  delete next.id;
+  delete next.marketingRoutes;
+  delete next.activeMarketingRouteId;
+  // Owned by billing sync (Cloud Functions), not the page editor.
+  delete next.siteAccess;
+  delete next.unpaidSince;
+  // Deploy hook lives under private/hosting — clear public field on save (migration).
+  next.hostingDeployHookUrl = '';
+  return next;
+}
 
 async function loadMarketingRoutes(db, pageId, collectionName) {
   try {
@@ -59,6 +106,14 @@ async function saveMarketingRoutes(db, pageId, collectionName, routes) {
   return normalized;
 }
 
+function mergeHostingHook(pageData, privateHook) {
+  const legacyHook = String(pageData.hostingDeployHookUrl ?? '').trim();
+  return {
+    ...pageData,
+    hostingDeployHookUrl: privateHook || legacyHook,
+  };
+}
+
 export async function loadPageForEditor(pageId, hubRouteData = {}) {
   const hubDb = getHubDb();
   const route = normalizePageData(hubRouteData);
@@ -70,7 +125,11 @@ export async function loadPageForEditor(pageId, hubRouteData = {}) {
     }
     const data = snapshot.data();
     const marketingRoutes = await loadMarketingRoutes(hubDb, pageId, collectionName);
-    return hydratePageForm({ id: pageId, ...data, marketingRoutes });
+    const privateHook = await loadPrivateHostingHook(hubDb, pageId, collectionName);
+    return hydratePageForm(mergeHostingHook(
+      { id: pageId, ...data, marketingRoutes },
+      privateHook,
+    ));
   }
 
   const externalDb = getDbForConfig(route.externalFirebase);
@@ -81,7 +140,12 @@ export async function loadPageForEditor(pageId, hubRouteData = {}) {
 
   const merged = mergeHubRouteWithExternalContent(route, externalSnapshot.data());
   const marketingRoutes = await loadMarketingRoutes(externalDb, pageId, collectionName);
-  return hydratePageForm({ ...merged, id: pageId, marketingRoutes });
+  const hubCollection = primaryPagesCollection();
+  const privateHook = await loadPrivateHostingHook(hubDb, pageId, hubCollection);
+  return hydratePageForm(mergeHostingHook(
+    { ...merged, id: pageId, marketingRoutes },
+    privateHook,
+  ));
 }
 
 export async function savePageFromEditor(pageId, formData) {
@@ -89,12 +153,8 @@ export async function savePageFromEditor(pageId, formData) {
   const marketingRoutes = normalizeMarketingRoutes(formData.marketingRoutes);
   const withoutRoutes = stripMarketingEditorFields(formData);
   const payload = splitPageSavePayload(withoutRoutes);
-  const dataToUpdate = { ...payload.contentData };
-  delete dataToUpdate.id;
-  delete dataToUpdate.marketingRoutes;
-  delete dataToUpdate.activeMarketingRouteId;
-  // siteAccess is owned by billing sync (Cloud Functions), not the page editor.
-  delete dataToUpdate.siteAccess;
+  const dataToUpdate = stripServerOwnedPageFields({ ...payload.contentData });
+  const hubData = stripServerOwnedPageFields({ ...payload.hubData });
 
   const firstSlide = dataToUpdate.heroSlides?.[0];
   if (firstSlide) {
@@ -122,12 +182,14 @@ export async function savePageFromEditor(pageId, formData) {
     if (dataToUpdate.siteMode === 'marketing' || marketingRoutes.length) {
       await saveMarketingRoutes(externalDb, pageId, collectionName || 'pages', marketingRoutes);
     }
-    await setDoc(pageDocRef(hubDb, pageId, hubCollection), payload.hubData, { merge: true });
+    await setDoc(pageDocRef(hubDb, pageId, hubCollection), hubData, { merge: true });
+    await savePrivateHosting(hubDb, pageId, hubCollection, formData);
     return { migratedToExternal: true, marketingRoutes, seoArtifacts };
   }
 
   const { collectionName } = await getPageSnapshot(hubDb, pageId);
   await setDoc(pageDocRef(hubDb, pageId, hubCollection), dataToUpdate, { merge: true });
+  await savePrivateHosting(hubDb, pageId, collectionName || hubCollection, formData);
   if (dataToUpdate.siteMode === 'marketing' || marketingRoutes.length) {
     await saveMarketingRoutes(hubDb, pageId, collectionName || hubCollection, marketingRoutes);
   }
@@ -161,6 +223,8 @@ export async function createPageInHub({
   });
   delete initial.id;
   delete initial.marketingRoutes;
+  // Do not seed public docs with deploy secrets.
+  initial.hostingDeployHookUrl = '';
 
   await setDoc(pageDocRef(hubDb, id, primaryPagesCollection()), initial, { merge: false });
   return hydratePageForm({ id, ...initial, marketingRoutes: [] });

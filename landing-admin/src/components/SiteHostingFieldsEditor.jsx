@@ -277,7 +277,8 @@ export default function SiteHostingFieldsEditor({
             </button>
           )}
           <span className="text-[10px] text-gray-500">
-            Guarda la página para persistir estos campos; el botón también envía la config actual.
+            Guarda la página para persistir el Deploy Hook en almacenamiento privado del hub;
+            el botón usa esa config (no reenvía la URL desde el cliente).
           </span>
         </div>
         {deployMessage && (

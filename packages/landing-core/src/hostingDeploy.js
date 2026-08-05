@@ -36,14 +36,34 @@ export function normalizeHostingDeployFields(data = {}) {
   };
 }
 
+/**
+ * Fields safe to persist on the publicly readable page document.
+ * Deploy hook URL lives in pages/{id}/private/hosting (F03).
+ */
+export function getHostingDeployRoutingFields(pageData = {}) {
+  const fields = normalizeHostingDeployFields(pageData);
+  return {
+    hostingProvider: fields.hostingProvider,
+    hostingGithubOwner: fields.hostingGithubOwner,
+    hostingGithubRepo: fields.hostingGithubRepo,
+    hostingGithubWorkflow: fields.hostingGithubWorkflow,
+    hostingGithubRef: fields.hostingGithubRef,
+    hostingPublicUrl: fields.hostingPublicUrl,
+  };
+}
+
+/** Secret hosting fields for pages/{id}/private/hosting. */
+export function getPrivateHostingFields(pageData = {}) {
+  const fields = normalizeHostingDeployFields(pageData);
+  return {
+    hostingDeployHookUrl: fields.hostingDeployHookUrl,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function getHostingProviderMeta(value) {
   const provider = normalizeHostingProvider(value);
   return HOSTING_PROVIDERS.find((item) => item.value === provider) ?? HOSTING_PROVIDERS[0];
-}
-
-/** Fields that must live on the hub even when content is external. */
-export function getHostingDeployRoutingFields(pageData = {}) {
-  return normalizeHostingDeployFields(pageData);
 }
 
 export function canTriggerPageHostingDeploy(pageData = {}) {

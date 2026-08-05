@@ -40,36 +40,32 @@ export async function getUserProfile(db, uid) {
 
 /**
  * Ensures the configured bootstrap email always has role `root`.
- * Safe for demo: only upgrades the matching email; never demotes other roots.
+ * Writes go through Cloud Function Admin SDK (F01) — clients cannot create root in rules.
  */
 export async function ensureBootstrapRootProfile(db, authUser) {
-  if (!authUser?.uid || !BOOTSTRAP_ROOT_EMAIL) {
-    return authUser?.uid ? getUserProfile(db, authUser.uid) : null;
-  }
-
-  const email = String(authUser.email ?? '').trim().toLowerCase();
-  if (!email || email !== BOOTSTRAP_ROOT_EMAIL) {
-    return getUserProfile(db, authUser.uid);
-  }
+  if (!authUser?.uid) return null;
 
   const existing = await getUserProfile(db, authUser.uid);
   if (existing?.role === 'root') {
     return existing;
   }
 
-  const now = new Date().toISOString();
-  const profile = {
-    email,
-    displayName: String(authUser.displayName ?? existing?.displayName ?? '').trim(),
-    role: 'root',
-    assignedPageIds: [],
-    pageId: '',
-    createdAt: existing?.createdAt || now,
-    updatedAt: now,
-  };
+  const email = String(authUser.email ?? '').trim().toLowerCase();
+  const needsBootstrapWrite = Boolean(
+    BOOTSTRAP_ROOT_EMAIL
+    && email
+    && email === BOOTSTRAP_ROOT_EMAIL,
+  );
 
-  await setDoc(doc(db, USERS_COLLECTION, authUser.uid), profile, { merge: true });
-  return normalizeUserProfile(authUser.uid, profile);
+  if (needsBootstrapWrite) {
+    const { ensureBootstrapRootRemote } = await import('./userFunctions.js');
+    const remote = await ensureBootstrapRootRemote();
+    if (remote?.uid) {
+      return normalizeUserProfile(remote.uid, remote);
+    }
+  }
+
+  return existing;
 }
 
 export async function bootstrapRootProfileIfNeeded(db, authUser) {

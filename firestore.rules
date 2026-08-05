@@ -40,38 +40,48 @@ service cloud.firestore {
           && userData().pageId == pageId);
     }
 
-    // Primer root: el usuario autenticado crea su propio perfil una sola vez.
-    function canBootstrapOwnRootProfile(userId) {
-      return isSignedIn()
-        && request.auth.uid == userId
-        && !exists(/databases/$(database)/documents/users/$(userId))
-        && request.resource.data.role == 'root'
-        && request.resource.data.email == request.auth.token.email;
+    /**
+     * Billing-owned + deploy-secret fields must not be changed by page editors.
+     * siteAccess / unpaidSince: only Admin SDK (Cloud Functions).
+     * hostingDeployHookUrl: only clearable on the public doc (migration); real value lives under private/hosting.
+     */
+    function pageUpdateAllowed(pageId) {
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      let siteAccessLocked = !affected.hasAny(['siteAccess', 'unpaidSince']);
+      let hookOk = !affected.hasAny(['hostingDeployHookUrl'])
+        || request.resource.data.get('hostingDeployHookUrl', '') == '';
+      return canEditPage(pageId) && siteAccessLocked && hookOk;
     }
 
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isRoot());
-      allow create: if isRoot() || canBootstrapOwnRootProfile(userId);
+      // Root profiles are created via Admin SDK (ensureBootstrapRoot / createCmsUser), never by client self-bootstrap.
+      allow create: if isRoot();
       allow update, delete: if isRoot();
     }
 
     match /pages/{pageId} {
       allow read: if true;
       allow create: if isRoot();
-      allow update: if canEditPage(pageId);
+      allow update: if pageUpdateAllowed(pageId);
       allow delete: if isRoot();
 
       match /routes/{routeId} {
         allow read: if true;
         allow create, update: if canEditPage(pageId);
         allow delete: if canEditPage(pageId) || isRoot();
+      }
+
+      // Deploy hooks and other hub secrets — editors of the page only; never public.
+      match /private/{docId} {
+        allow read, write: if canEditPage(pageId);
       }
     }
 
     match /paginas/{pageId} {
       allow read: if true;
       allow create: if isRoot();
-      allow update: if canEditPage(pageId);
+      allow update: if pageUpdateAllowed(pageId);
       allow delete: if isRoot();
 
       match /routes/{routeId} {
@@ -79,7 +89,12 @@ service cloud.firestore {
         allow create, update: if canEditPage(pageId);
         allow delete: if canEditPage(pageId) || isRoot();
       }
+
+      match /private/{docId} {
+        allow read, write: if canEditPage(pageId);
+      }
     }
+
     match /billingAccounts/{accountId} {
       allow read: if isSignedIn()
         && (isRoot()
