@@ -143,6 +143,7 @@ export async function createCmsPageRemote(payload) {
 
 export async function setAiProviderConfigRemote(payload) {
   try {
+    await ensureCallableSession(getHubAuth());
     const callable = httpsCallable(getHubFunctions(), 'setAiProviderConfig');
     const result = await callable(payload);
     return result.data;

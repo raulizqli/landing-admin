@@ -1,15 +1,9 @@
 import { httpsCallable } from 'firebase/functions';
+import { ensureCallableSession } from './appCheck';
 import { getHubAuth, getHubFunctions } from './firebaseClients';
 
 async function assertCallableAuthSession() {
-  const auth = getHubAuth();
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    throw new Error('Debes iniciar sesión para gestionar usuarios.');
-  }
-
-  await currentUser.getIdToken(true);
-  return currentUser;
+  return ensureCallableSession(getHubAuth());
 }
 
 function mapCallableError(error) {
@@ -18,8 +12,8 @@ function mapCallableError(error) {
   const message = String(error?.message ?? '').trim() || 'No se pudo completar la operación.';
   const text = details || message;
 
-  if (code === 'functions/unauthenticated') {
-    return new Error('Debes iniciar sesión para gestionar usuarios.');
+  if (code === 'functions/unauthenticated' || code === 'app-check/token-error') {
+    return new Error(error?.message || 'Debes iniciar sesión para gestionar usuarios.');
   }
   if (code === 'functions/permission-denied') {
     return new Error(text || 'No tienes permiso para esta operación.');

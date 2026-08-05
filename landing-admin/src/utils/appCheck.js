@@ -112,9 +112,22 @@ export async function ensureCallableSession(auth) {
   if (appCheckInstance) {
     try {
       await getToken(appCheckInstance, /* forceRefresh */ false);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.warn('[App Check] No se pudo obtener token antes del callable:', error?.message || error);
+    } catch (firstError) {
+      try {
+        // First exchange often races with reCAPTCHA bootstrap; one forced retry avoids
+        // Cloud Functions returning HTTP 401 (unauthenticated / missing App Check).
+        await getToken(appCheckInstance, /* forceRefresh */ true);
+      } catch (error) {
+        const detail = error?.message || firstError?.message || error;
+        if (import.meta.env.DEV) {
+          console.warn('[App Check] No se pudo obtener token antes del callable:', detail);
+        }
+        throw Object.assign(
+          new Error(
+            `App Check no pudo emitir un token (${detail}). Comprueba VITE_RECAPTCHA_SITE_KEY y que el dominio esté autorizado en reCAPTCHA v3 / App Check.`,
+          ),
+          { code: 'app-check/token-error', cause: error },
+        );
       }
     }
   }

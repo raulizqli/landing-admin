@@ -1,16 +1,14 @@
 import { httpsCallable } from 'firebase/functions';
+import { ensureCallableSession } from './appCheck';
 import { getHubAuth, getHubFunctions } from './firebaseClients';
 import { normalizeHostingDeployFields } from './hostingDeploy';
 import { savePrivateHostingConfig } from './pageRepository';
 
 async function assertCallableAuthSession() {
-  const auth = getHubAuth();
-  const currentUser = auth.currentUser;
+  const currentUser = await ensureCallableSession(getHubAuth());
   if (!currentUser) {
     throw new Error('Debes iniciar sesión para publicar hosting.');
   }
-
-  await currentUser.getIdToken(true);
   return currentUser;
 }
 

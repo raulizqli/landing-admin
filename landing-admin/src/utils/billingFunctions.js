@@ -1,10 +1,11 @@
 import { httpsCallable } from 'firebase/functions';
-import { getHubFunctions } from './firebaseClients';
+import { ensureCallableSession } from './appCheck';
+import { getHubAuth, getHubFunctions } from './firebaseClients';
 
 function mapBillingCallableError(error) {
   const code = String(error?.code ?? '');
-  if (code.includes('unauthenticated')) {
-    return 'Debes iniciar sesión.';
+  if (code.includes('unauthenticated') || code === 'app-check/token-error') {
+    return error?.message || 'Debes iniciar sesión.';
   }
   if (code.includes('failed-precondition') || code.includes('unimplemented')) {
     return error?.message || 'Billing no está configurado en el servidor.';
@@ -13,6 +14,11 @@ function mapBillingCallableError(error) {
     return 'Cloud Functions de billing no desplegadas. Despliega createBillingCheckout.';
   }
   return error?.message || 'No se pudo iniciar el checkout.';
+}
+
+async function withBillingSession(run) {
+  await ensureCallableSession(getHubAuth());
+  return run();
 }
 
 export async function createBillingCheckout({
@@ -24,16 +30,18 @@ export async function createBillingCheckout({
   cancelPath = '/?billing=cancel',
 } = {}) {
   try {
-    const callable = httpsCallable(getHubFunctions(), 'createBillingCheckout');
-    const result = await callable({
-      planId,
-      provider,
-      locale,
-      currency,
-      successPath,
-      cancelPath,
+    return await withBillingSession(async () => {
+      const callable = httpsCallable(getHubFunctions(), 'createBillingCheckout');
+      const result = await callable({
+        planId,
+        provider,
+        locale,
+        currency,
+        successPath,
+        cancelPath,
+      });
+      return result.data;
     });
-    return result.data;
   } catch (error) {
     throw new Error(mapBillingCallableError(error));
   }
@@ -41,9 +49,11 @@ export async function createBillingCheckout({
 
 export async function ensureBillingAccountRemote() {
   try {
-    const callable = httpsCallable(getHubFunctions(), 'ensureBillingAccount');
-    const result = await callable({});
-    return result.data?.account ?? null;
+    return await withBillingSession(async () => {
+      const callable = httpsCallable(getHubFunctions(), 'ensureBillingAccount');
+      const result = await callable({});
+      return result.data?.account ?? null;
+    });
   } catch (error) {
     throw new Error(mapBillingCallableError(error));
   }
@@ -52,9 +62,11 @@ export async function ensureBillingAccountRemote() {
 /** Root-only: set plan without payment (ops / enterprise). */
 export async function setBillingPlanManual({ accountId, planId, status = 'active' } = {}) {
   try {
-    const callable = httpsCallable(getHubFunctions(), 'setBillingPlanManual');
-    const result = await callable({ accountId, planId, status });
-    return result.data?.account ?? null;
+    return await withBillingSession(async () => {
+      const callable = httpsCallable(getHubFunctions(), 'setBillingPlanManual');
+      const result = await callable({ accountId, planId, status });
+      return result.data?.account ?? null;
+    });
   } catch (error) {
     throw new Error(mapBillingCallableError(error));
   }
@@ -63,9 +75,11 @@ export async function setBillingPlanManual({ accountId, planId, status = 'active
 /** Hard server gate before publishing Marketing Site content. */
 export async function assertMarketingSiteAccessRemote(pageId) {
   try {
-    const callable = httpsCallable(getHubFunctions(), 'assertMarketingSiteAccess');
-    const result = await callable({ pageId });
-    return result.data;
+    return await withBillingSession(async () => {
+      const callable = httpsCallable(getHubFunctions(), 'assertMarketingSiteAccess');
+      const result = await callable({ pageId });
+      return result.data;
+    });
   } catch (error) {
     const code = String(error?.code ?? '');
     if (code.includes('permission-denied')) {
@@ -81,9 +95,11 @@ export async function assertMarketingSiteAccessRemote(pageId) {
 /** Root-only: toggle Agency Marketing Site add-on (and future add-ons). */
 export async function setBillingAccountAddonsRemote({ accountId, addons } = {}) {
   try {
-    const callable = httpsCallable(getHubFunctions(), 'setBillingAccountAddons');
-    const result = await callable({ accountId, addons });
-    return result.data?.account ?? null;
+    return await withBillingSession(async () => {
+      const callable = httpsCallable(getHubFunctions(), 'setBillingAccountAddons');
+      const result = await callable({ accountId, addons });
+      return result.data?.account ?? null;
+    });
   } catch (error) {
     throw new Error(mapBillingCallableError(error));
   }
@@ -92,9 +108,11 @@ export async function setBillingAccountAddonsRemote({ accountId, addons } = {}) 
 /** Root-only: confirm ad revenue or force grace/ads/offline stage. */
 export async function setBillingMonetizationRemote({ accountId, monetization } = {}) {
   try {
-    const callable = httpsCallable(getHubFunctions(), 'setBillingMonetization');
-    const result = await callable({ accountId, monetization });
-    return result.data?.account ?? null;
+    return await withBillingSession(async () => {
+      const callable = httpsCallable(getHubFunctions(), 'setBillingMonetization');
+      const result = await callable({ accountId, monetization });
+      return result.data?.account ?? null;
+    });
   } catch (error) {
     throw new Error(mapBillingCallableError(error));
   }
