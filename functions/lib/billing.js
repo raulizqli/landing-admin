@@ -94,8 +94,8 @@ function headerValue(req, name) {
  * Fail closed outside the emulator when MERCADOPAGO_WEBHOOK_SECRET is unset (F06).
  */
 function assertMercadoPagoWebhookSignature(req) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
-    const secret = String((_a = process.env.MERCADOPAGO_WEBHOOK_SECRET) !== null && _a !== void 0 ? _a : "").trim();
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    const secret = String((_b = (_a = process.env.MERCADOPAGO_WEBHOOK_SECRET) !== null && _a !== void 0 ? _a : process.env.MERCADOPAGO_ACCESS_WEBHOOK_TOKEN) !== null && _b !== void 0 ? _b : "").trim();
     const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
     if (!secret) {
         if (isEmulator)
@@ -111,12 +111,12 @@ function assertMercadoPagoWebhookSignature(req) {
         const [key, ...rest] = part.trim().split("=");
         return [String(key || "").trim(), rest.join("=").trim()];
     }));
-    const ts = String((_b = parts.ts) !== null && _b !== void 0 ? _b : "").trim();
-    const v1 = String((_c = parts.v1) !== null && _c !== void 0 ? _c : "").trim();
+    const ts = String((_c = parts.ts) !== null && _c !== void 0 ? _c : "").trim();
+    const v1 = String((_d = parts.v1) !== null && _d !== void 0 ? _d : "").trim();
     if (!ts || !v1) {
         throw new Error("Invalid x-signature format");
     }
-    let dataId = String((_h = (_g = (_d = req.query["data.id"]) !== null && _d !== void 0 ? _d : (_f = (_e = req.body) === null || _e === void 0 ? void 0 : _e.data) === null || _f === void 0 ? void 0 : _f.id) !== null && _g !== void 0 ? _g : req.query.id) !== null && _h !== void 0 ? _h : "").trim();
+    let dataId = String((_j = (_h = (_e = req.query["data.id"]) !== null && _e !== void 0 ? _e : (_g = (_f = req.body) === null || _f === void 0 ? void 0 : _f.data) === null || _g === void 0 ? void 0 : _g.id) !== null && _h !== void 0 ? _h : req.query.id) !== null && _j !== void 0 ? _j : "").trim();
     if (dataId && /^[a-zA-Z0-9]+$/.test(dataId)) {
         dataId = dataId.toLowerCase();
     }

@@ -121,7 +121,11 @@ function assertMercadoPagoWebhookSignature(req: {
   query: Record<string, unknown>;
   body?: { data?: { id?: unknown } };
 }): void {
-  const secret = String(process.env.MERCADOPAGO_WEBHOOK_SECRET ?? "").trim();
+  const secret = String(
+    process.env.MERCADOPAGO_WEBHOOK_SECRET
+      ?? process.env.MERCADOPAGO_ACCESS_WEBHOOK_TOKEN
+      ?? "",
+  ).trim();
   const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
 
   if (!secret) {
