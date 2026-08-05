@@ -53,6 +53,7 @@ import {
   canManagePageLayout,
   canManageUsers,
   filterAccessiblePages,
+  getAccessiblePageIds,
   getRoleLabel,
   isSinglePageUser,
 } from './utils/permissions';
@@ -66,7 +67,7 @@ import {
   updatePageTranslation,
 } from '@raulizqli/landing-core/pageTranslations';
 import { isMarketingSite, normalizeMarketingRoutes } from '@raulizqli/landing-core/marketingSite';
-
+import { syncDomainIndexesRemote } from './utils/domainFunctions';
 const DEMO_PREVIEW_ID = 'preview-demo';
 const SIDEBAR_COLLAPSED_KEY = 'landing-admin:pages-sidebar-collapsed';
 
@@ -216,8 +217,18 @@ export default function App() {
       setAccessError('');
 
       try {
-        const list = await listPageDocuments(db);
+        const allowedIds = getAccessiblePageIds(profile);
+        const list = allowedIds === null
+          ? await listPageDocuments(db)
+          : await listPageDocuments(db, { pageIds: allowedIds });
         setLandings(list);
+
+        // Root: heal domainIndex after F03 Step B so custom domains keep resolving.
+        if (allowedIds === null) {
+          void syncDomainIndexesRemote().catch((error) => {
+            console.warn('domainIndex sync skipped:', error?.message || error);
+          });
+        }
 
         const allowed = filterAccessiblePages(list, profile);
 

@@ -30,6 +30,7 @@ export * from './contentIds.js';
 export * from './legalDocuments.js';
 export * from './externalFirebase.js';
 export * from './hostingDeploy.js';
+export * from './domainIndex.js';
 export * from './billingPlans.js';
 export * from './marketingSite.js';
 export * from './marketingSeo.js';

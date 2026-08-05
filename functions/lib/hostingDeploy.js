@@ -218,7 +218,7 @@ async function dispatchGithubWorkflow(page, pageId, token) {
 }
 const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
     const pageId = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.pageId) !== null && _b !== void 0 ? _b : "").trim();
     if (!pageId) {
         throw new https_1.HttpsError("invalid-argument", "El pageId es obligatorio.");
@@ -228,9 +228,11 @@ exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (reque
     const privateHosting = await loadPrivateHosting(collectionName, pageId);
     const overrides = ((_c = request.data) !== null && _c !== void 0 ? _c : {});
     // Prefer private/hosting secrets; fall back to legacy public page field (migration).
-    // Never trust client-supplied hostingDeployHookUrl (SSRF / secret exfil mitigation).
+    // Never trust client-supplied deploy hook / GitHub targets (F03/F07).
     const storedHook = String((_e = (_d = privateHosting.hostingDeployHookUrl) !== null && _d !== void 0 ? _d : page.hostingDeployHookUrl) !== null && _e !== void 0 ? _e : "").trim();
-    const effective = Object.assign(Object.assign({}, page), { hostingProvider: overrides.hostingProvider || page.hostingProvider || privateHosting.hostingProvider, hostingDeployHookUrl: storedHook, hostingGithubOwner: (_g = (_f = overrides.hostingGithubOwner) !== null && _f !== void 0 ? _f : privateHosting.hostingGithubOwner) !== null && _g !== void 0 ? _g : page.hostingGithubOwner, hostingGithubRepo: (_j = (_h = overrides.hostingGithubRepo) !== null && _h !== void 0 ? _h : privateHosting.hostingGithubRepo) !== null && _j !== void 0 ? _j : page.hostingGithubRepo, hostingGithubWorkflow: (_l = (_k = overrides.hostingGithubWorkflow) !== null && _k !== void 0 ? _k : privateHosting.hostingGithubWorkflow) !== null && _l !== void 0 ? _l : page.hostingGithubWorkflow, hostingGithubRef: (_o = (_m = overrides.hostingGithubRef) !== null && _m !== void 0 ? _m : privateHosting.hostingGithubRef) !== null && _o !== void 0 ? _o : page.hostingGithubRef, hostingPublicUrl: (_q = (_p = overrides.hostingPublicUrl) !== null && _p !== void 0 ? _p : privateHosting.hostingPublicUrl) !== null && _q !== void 0 ? _q : page.hostingPublicUrl });
+    const effective = Object.assign(Object.assign({}, page), { hostingProvider: overrides.hostingProvider
+            || privateHosting.hostingProvider
+            || page.hostingProvider, hostingDeployHookUrl: storedHook, hostingGithubOwner: (_f = privateHosting.hostingGithubOwner) !== null && _f !== void 0 ? _f : page.hostingGithubOwner, hostingGithubRepo: (_g = privateHosting.hostingGithubRepo) !== null && _g !== void 0 ? _g : page.hostingGithubRepo, hostingGithubWorkflow: (_h = privateHosting.hostingGithubWorkflow) !== null && _h !== void 0 ? _h : page.hostingGithubWorkflow, hostingGithubRef: (_j = privateHosting.hostingGithubRef) !== null && _j !== void 0 ? _j : page.hostingGithubRef, hostingPublicUrl: (_l = (_k = overrides.hostingPublicUrl) !== null && _k !== void 0 ? _k : page.hostingPublicUrl) !== null && _l !== void 0 ? _l : privateHosting.hostingPublicUrl });
     const provider = normalizeProvider(effective.hostingProvider);
     const payload = {
         pageId,
@@ -240,14 +242,14 @@ exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (reque
         triggeredAt: new Date().toISOString(),
     };
     if (provider === "github") {
-        const token = String((_r = process.env.GITHUB_DEPLOY_TOKEN) !== null && _r !== void 0 ? _r : "").trim();
+        const token = String((_m = process.env.GITHUB_DEPLOY_TOKEN) !== null && _m !== void 0 ? _m : "").trim();
         const result = await dispatchGithubWorkflow(effective, pageId, token);
         return {
             ok: true,
             provider,
             pageId,
             message: `Workflow ${result.workflow} disparado en ${result.owner}/${result.repo}@${result.ref}.`,
-            publicUrl: String((_s = effective.hostingPublicUrl) !== null && _s !== void 0 ? _s : "").trim() || null,
+            publicUrl: String((_o = effective.hostingPublicUrl) !== null && _o !== void 0 ? _o : "").trim() || null,
             detail: result,
         };
     }
@@ -264,7 +266,7 @@ exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (reque
         provider,
         pageId,
         message: "Deploy Hook disparado correctamente.",
-        publicUrl: String((_t = effective.hostingPublicUrl) !== null && _t !== void 0 ? _t : "").trim() || null,
+        publicUrl: String((_p = effective.hostingPublicUrl) !== null && _p !== void 0 ? _p : "").trim() || null,
         detail: result,
     };
 });

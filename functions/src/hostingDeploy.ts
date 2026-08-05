@@ -300,7 +300,7 @@ export const triggerHostingDeploy = onCall(
     const overrides = (request.data ?? {}) as PageHostingFields;
 
     // Prefer private/hosting secrets; fall back to legacy public page field (migration).
-    // Never trust client-supplied hostingDeployHookUrl (SSRF / secret exfil mitigation).
+    // Never trust client-supplied deploy hook / GitHub targets (F03/F07).
     const storedHook = String(
       privateHosting.hostingDeployHookUrl
         ?? page.hostingDeployHookUrl
@@ -309,28 +309,19 @@ export const triggerHostingDeploy = onCall(
 
     const effective: PageHostingFields = {
       ...page,
-      hostingProvider: overrides.hostingProvider || page.hostingProvider || privateHosting.hostingProvider,
+      hostingProvider:
+        overrides.hostingProvider
+        || privateHosting.hostingProvider
+        || page.hostingProvider,
       hostingDeployHookUrl: storedHook,
-      hostingGithubOwner:
-        overrides.hostingGithubOwner
-        ?? privateHosting.hostingGithubOwner
-        ?? page.hostingGithubOwner,
-      hostingGithubRepo:
-        overrides.hostingGithubRepo
-        ?? privateHosting.hostingGithubRepo
-        ?? page.hostingGithubRepo,
-      hostingGithubWorkflow:
-        overrides.hostingGithubWorkflow
-        ?? privateHosting.hostingGithubWorkflow
-        ?? page.hostingGithubWorkflow,
-      hostingGithubRef:
-        overrides.hostingGithubRef
-        ?? privateHosting.hostingGithubRef
-        ?? page.hostingGithubRef,
+      hostingGithubOwner: privateHosting.hostingGithubOwner ?? page.hostingGithubOwner,
+      hostingGithubRepo: privateHosting.hostingGithubRepo ?? page.hostingGithubRepo,
+      hostingGithubWorkflow: privateHosting.hostingGithubWorkflow ?? page.hostingGithubWorkflow,
+      hostingGithubRef: privateHosting.hostingGithubRef ?? page.hostingGithubRef,
       hostingPublicUrl:
         overrides.hostingPublicUrl
-        ?? privateHosting.hostingPublicUrl
-        ?? page.hostingPublicUrl,
+        ?? page.hostingPublicUrl
+        ?? privateHosting.hostingPublicUrl,
     };
     const provider = normalizeProvider(effective.hostingProvider);
     const payload = {

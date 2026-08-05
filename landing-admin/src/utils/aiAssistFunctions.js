@@ -93,19 +93,36 @@ export async function createCmsPageRemote(payload) {
     return result.data;
   } catch (error) {
     const code = String(error?.code ?? '');
+    const detail = extractCallableErrorDetail(error);
+    const raw = String(error?.message ?? '');
+
     if (code.includes('already-exists')) {
-      throw new Error(error?.message || 'Ya existe una página con ese ID.');
+      throw new Error(detail || 'Ya existe una página con ese ID.');
     }
     if (code.includes('resource-exhausted')) {
-      throw new Error(error?.message || 'Límite de páginas alcanzado.');
+      throw new Error(detail || 'Límite de páginas alcanzado para tu plan.');
     }
     if (code.includes('permission-denied')) {
-      throw new Error(error?.message || 'No tienes permiso para crear páginas.');
+      throw new Error(detail || 'No tienes permiso para crear páginas.');
+    }
+    if (code.includes('invalid-argument')) {
+      throw new Error(detail || 'Revisa el ID y el nombre de la página.');
+    }
+    if (code.includes('failed-precondition')) {
+      if (/app check|appcheck|recaptcha/i.test(`${raw} ${detail}`)) {
+        throw new Error(
+          'App Check rechazó la petición. En local: registra el debug token de la consola en Firebase → App Check. En prod: verifica reCAPTCHA y el dominio del admin.',
+        );
+      }
+      throw new Error(detail || 'No se pudo crear la página (suscripción o precondiciones).');
+    }
+    if (code.includes('unauthenticated')) {
+      throw new Error(detail || 'Debes iniciar sesión de nuevo para crear páginas.');
     }
     if (code.includes('not-found') || code.includes('functions/not-found')) {
       throw new Error('Cloud Function createCmsPage no desplegada.');
     }
-    throw new Error(error?.message || 'No se pudo crear la página.');
+    throw new Error(detail || raw || 'No se pudo crear la página.');
   }
 }
 

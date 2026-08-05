@@ -149,7 +149,12 @@ export const createCmsPage = onCall(
     const accountRef = db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
     const userRef = db.collection(USERS_COLLECTION).doc(uid);
 
+    // HttpsError thrown inside runTransaction can be wrapped; capture and rethrow after.
+    let denial: HttpsError | null = null;
+
     await db.runTransaction(async (tx) => {
+      if (denial) return;
+
       const [pageSnap, accountSnap, userSnap] = await Promise.all([
         tx.get(pageRef),
         tx.get(accountRef),
@@ -157,7 +162,8 @@ export const createCmsPage = onCall(
       ]);
 
       if (pageSnap.exists) {
-        throw new HttpsError("already-exists", `Ya existe una página con ID "${pageId}".`);
+        denial = new HttpsError("already-exists", `Ya existe una página con ID "${pageId}".`);
+        return;
       }
 
       const accountData = accountSnap.exists ? (accountSnap.data() ?? {}) : {};
@@ -167,28 +173,39 @@ export const createCmsPage = onCall(
 
       if (!isRoot) {
         if (!isOwner) {
-          throw new HttpsError(
+          denial = new HttpsError(
             "permission-denied",
             "Solo el dueño de la cuenta puede crear páginas.",
           );
+          return;
         }
         if (!PAGE_SELF_SERVE_PLANS.has(planId)) {
-          throw new HttpsError(
+          denial = new HttpsError(
             "permission-denied",
             "Crear páginas requiere plan Pro o Agency.",
           );
+          return;
         }
         if (!isActiveStatus(accountData.status)) {
-          throw new HttpsError(
+          denial = new HttpsError(
             "failed-precondition",
             "Tu suscripción no está activa. Reactiva el plan para crear páginas.",
           );
+          return;
         }
         if (pageLimit != null && pageIds.length >= pageLimit) {
-          throw new HttpsError(
+          denial = new HttpsError(
             "resource-exhausted",
             `Límite de páginas alcanzado (${pageIds.length}/${pageLimit}).`,
           );
+          return;
+        }
+        if (!accountSnap.exists) {
+          denial = new HttpsError(
+            "failed-precondition",
+            "No hay cuenta de billing. Abre Facturación o contacta soporte.",
+          );
+          return;
         }
       }
 
@@ -203,11 +220,6 @@ export const createCmsPage = onCall(
             updatedAt: new Date().toISOString(),
           },
           { merge: true },
-        );
-      } else if (!isRoot) {
-        throw new HttpsError(
-          "failed-precondition",
-          "No hay cuenta de billing. Abre Facturación o contacta soporte.",
         );
       }
 
@@ -233,6 +245,10 @@ export const createCmsPage = onCall(
 
       tx.set(userRef, patch, { merge: true });
     });
+
+    if (denial) {
+      throw denial;
+    }
 
     const createdSnap = await pageRef.get();
     return {

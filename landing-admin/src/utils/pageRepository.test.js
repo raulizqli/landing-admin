@@ -99,6 +99,8 @@ describe('savePageFromEditor', () => {
     expect(payload).not.toHaveProperty('marketingRoutes');
     expect(payload).not.toHaveProperty('siteAccess');
     expect(payload.hostingDeployHookUrl).toBe('');
+    expect(payload.hostingGithubOwner).toBe('');
+    expect(payload.hostingGithubRepo).toBe('');
     expect(payload.name).toBe('Ana');
     expect(payload.specialty).toBe('Psicología');
     expect(payload.heroTitle).toBe('Bienvenida');
@@ -110,6 +112,7 @@ describe('savePageFromEditor', () => {
     );
     const privatePayload = setDoc.mock.calls[1][1];
     expect(privatePayload).toHaveProperty('hostingDeployHookUrl');
+    expect(privatePayload).toHaveProperty('hostingGithubOwner');
   });
 
   it('clears heroTitle/heroSubtitle when slide text flags are off', async () => {

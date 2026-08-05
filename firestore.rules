@@ -40,17 +40,38 @@ service cloud.firestore {
           && userData().pageId == pageId);
     }
 
+    function isEmptyString(value) {
+      return value == null || value == '';
+    }
+
     /**
      * Billing-owned + deploy-secret fields must not be changed by page editors.
      * siteAccess / unpaidSince: only Admin SDK (Cloud Functions).
-     * hostingDeployHookUrl: only clearable on the public doc (migration); real value lives under private/hosting.
+     * hostingDeployHookUrl + GitHub deploy targets: only clearable on the public doc
+     * (migration); real values live under private/hosting (F03).
      */
     function pageUpdateAllowed(pageId) {
       let affected = request.resource.data.diff(resource.data).affectedKeys();
       let siteAccessLocked = !affected.hasAny(['siteAccess', 'unpaidSince']);
       let hookOk = !affected.hasAny(['hostingDeployHookUrl'])
-        || request.resource.data.get('hostingDeployHookUrl', '') == '';
-      return canEditPage(pageId) && siteAccessLocked && hookOk;
+        || isEmptyString(request.resource.data.get('hostingDeployHookUrl', ''));
+      let githubOk = (
+          !affected.hasAny(['hostingGithubOwner'])
+          || isEmptyString(request.resource.data.get('hostingGithubOwner', ''))
+        )
+        && (
+          !affected.hasAny(['hostingGithubRepo'])
+          || isEmptyString(request.resource.data.get('hostingGithubRepo', ''))
+        )
+        && (
+          !affected.hasAny(['hostingGithubWorkflow'])
+          || isEmptyString(request.resource.data.get('hostingGithubWorkflow', ''))
+        )
+        && (
+          !affected.hasAny(['hostingGithubRef'])
+          || isEmptyString(request.resource.data.get('hostingGithubRef', ''))
+        );
+      return canEditPage(pageId) && siteAccessLocked && hookOk && githubOk;
     }
 
     match /users/{userId} {
@@ -60,8 +81,13 @@ service cloud.firestore {
       allow update, delete: if isRoot();
     }
 
+    /**
+     * F03 Step B: anonymous get stays (landings), anonymous list is denied (no bulk PII scrape).
+     * Staff list: root only. Admins/users load assigned pages via get.
+     */
     match /pages/{pageId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isRoot();
       allow create: if isRoot();
       allow update: if pageUpdateAllowed(pageId);
       allow delete: if isRoot();
@@ -79,7 +105,8 @@ service cloud.firestore {
     }
 
     match /paginas/{pageId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isRoot();
       allow create: if isRoot();
       allow update: if pageUpdateAllowed(pageId);
       allow delete: if isRoot();
@@ -93,6 +120,20 @@ service cloud.firestore {
       match /private/{docId} {
         allow read, write: if canEditPage(pageId);
       }
+    }
+
+    /**
+     * Public hostname → pageId index for custom-domain routing without listing /pages.
+     */
+    match /domainIndex/{domain} {
+      allow get: if true;
+      allow list: if isRoot();
+      allow create: if isSignedIn()
+        && canEditPage(request.resource.data.pageId);
+      allow update: if isSignedIn()
+        && canEditPage(resource.data.pageId)
+        && canEditPage(request.resource.data.pageId);
+      allow delete: if isSignedIn() && canEditPage(resource.data.pageId);
     }
 
     match /billingAccounts/{accountId} {

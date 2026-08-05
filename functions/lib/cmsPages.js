@@ -120,15 +120,20 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
     const pageRef = db.collection(PAGES_COLLECTION).doc(pageId);
     const accountRef = db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
     const userRef = db.collection(USERS_COLLECTION).doc(uid);
+    // HttpsError thrown inside runTransaction can be wrapped; capture and rethrow after.
+    let denial = null;
     await db.runTransaction(async (tx) => {
         var _a, _b, _c, _d;
+        if (denial)
+            return;
         const [pageSnap, accountSnap, userSnap] = await Promise.all([
             tx.get(pageRef),
             tx.get(accountRef),
             tx.get(userRef),
         ]);
         if (pageSnap.exists) {
-            throw new https_1.HttpsError("already-exists", `Ya existe una página con ID "${pageId}".`);
+            denial = new https_1.HttpsError("already-exists", `Ya existe una página con ID "${pageId}".`);
+            return;
         }
         const accountData = accountSnap.exists ? ((_a = accountSnap.data()) !== null && _a !== void 0 ? _a : {}) : {};
         const planId = normalizePlanId(accountData.plan);
@@ -136,16 +141,24 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
         const pageLimit = planId === "enterprise" ? null : planId === "agency" ? 5 : planId === "pro" ? 1 : 1;
         if (!isRoot) {
             if (!isOwner) {
-                throw new https_1.HttpsError("permission-denied", "Solo el dueño de la cuenta puede crear páginas.");
+                denial = new https_1.HttpsError("permission-denied", "Solo el dueño de la cuenta puede crear páginas.");
+                return;
             }
             if (!PAGE_SELF_SERVE_PLANS.has(planId)) {
-                throw new https_1.HttpsError("permission-denied", "Crear páginas requiere plan Pro o Agency.");
+                denial = new https_1.HttpsError("permission-denied", "Crear páginas requiere plan Pro o Agency.");
+                return;
             }
             if (!isActiveStatus(accountData.status)) {
-                throw new https_1.HttpsError("failed-precondition", "Tu suscripción no está activa. Reactiva el plan para crear páginas.");
+                denial = new https_1.HttpsError("failed-precondition", "Tu suscripción no está activa. Reactiva el plan para crear páginas.");
+                return;
             }
             if (pageLimit != null && pageIds.length >= pageLimit) {
-                throw new https_1.HttpsError("resource-exhausted", `Límite de páginas alcanzado (${pageIds.length}/${pageLimit}).`);
+                denial = new https_1.HttpsError("resource-exhausted", `Límite de páginas alcanzado (${pageIds.length}/${pageLimit}).`);
+                return;
+            }
+            if (!accountSnap.exists) {
+                denial = new https_1.HttpsError("failed-precondition", "No hay cuenta de billing. Abre Facturación o contacta soporte.");
+                return;
             }
         }
         const initial = buildInitialPageDoc({ name, specialty, vertical });
@@ -155,9 +168,6 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
                 pageIds: firestore_1.FieldValue.arrayUnion(pageId),
                 updatedAt: new Date().toISOString(),
             }, { merge: true });
-        }
-        else if (!isRoot) {
-            throw new https_1.HttpsError("failed-precondition", "No hay cuenta de billing. Abre Facturación o contacta soporte.");
         }
         const userData = (_b = userSnap.data()) !== null && _b !== void 0 ? _b : {};
         const role = String((_c = userData.role) !== null && _c !== void 0 ? _c : "").trim().toLowerCase();
@@ -180,6 +190,9 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
         }
         tx.set(userRef, patch, { merge: true });
     });
+    if (denial) {
+        throw denial;
+    }
     const createdSnap = await pageRef.get();
     return {
         ok: true,

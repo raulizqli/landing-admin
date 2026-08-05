@@ -39,3 +39,4 @@ export {
 export { createCmsPage } from "./cmsPages.js";
 export { ensureBootstrapRoot } from "./bootstrapRoot.js";
 export { askOllamaCloud } from "./askOllamaCloud.js";
+export { syncDomainIndexes } from "./domainIndex.js";

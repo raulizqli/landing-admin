@@ -13,7 +13,15 @@ import {
   ROUTES_SUBCOLLECTION,
   stripMarketingEditorFields,
 } from '@raulizqli/landing-core/marketingSite';
-import { getPrivateHostingFields } from '@raulizqli/landing-core/hostingDeploy';
+import {
+  getPrivateHostingFields,
+  mergePrivateHostingIntoPage,
+} from '@raulizqli/landing-core/hostingDeploy';
+import {
+  DOMAIN_INDEX_COLLECTION,
+  buildDomainIndexPayload,
+  domainIndexDocId,
+} from '@raulizqli/landing-core/domainIndex';
 import { buildMarketingSeoArtifacts } from '@raulizqli/landing-core/marketingSeo';
 import { assertMarketingSiteAccessRemote } from './billingFunctions';
 import { getHubDb, getDbForConfig } from './firebaseClients';
@@ -32,14 +40,14 @@ function privateHostingRef(db, pageId, collectionName) {
   return doc(db, collectionName, pageId, PRIVATE_SUBCOLLECTION, PRIVATE_HOSTING_DOC);
 }
 
-async function loadPrivateHostingHook(db, pageId, collectionName) {
+async function loadPrivateHosting(db, pageId, collectionName) {
   try {
     const snapshot = await getDoc(privateHostingRef(db, pageId, collectionName));
-    if (!snapshot.exists()) return '';
-    return String(snapshot.data()?.hostingDeployHookUrl ?? '').trim();
+    if (!snapshot.exists()) return {};
+    return snapshot.data() || {};
   } catch (error) {
     console.warn('Could not load private hosting config:', error);
-    return '';
+    return {};
   }
 }
 
@@ -65,9 +73,38 @@ function stripServerOwnedPageFields(data) {
   // Owned by billing sync (Cloud Functions), not the page editor.
   delete next.siteAccess;
   delete next.unpaidSince;
-  // Deploy hook lives under private/hosting — clear public field on save (migration).
+  // Deploy secrets live under private/hosting — clear public fields on save (migration).
   next.hostingDeployHookUrl = '';
+  next.hostingGithubOwner = '';
+  next.hostingGithubRepo = '';
+  next.hostingGithubWorkflow = '';
+  next.hostingGithubRef = '';
   return next;
+}
+
+async function syncDomainIndex(db, pageId, collectionName, nextDomain, previousDomain) {
+  const next = domainIndexDocId(nextDomain);
+  const prev = domainIndexDocId(previousDomain);
+
+  if (prev && prev !== next) {
+    try {
+      await deleteDoc(doc(db, DOMAIN_INDEX_COLLECTION, prev));
+    } catch (error) {
+      console.warn('Could not remove previous domainIndex entry:', error);
+    }
+  }
+
+  if (!next) return;
+
+  try {
+    await setDoc(
+      doc(db, DOMAIN_INDEX_COLLECTION, next),
+      buildDomainIndexPayload(pageId, collectionName),
+      { merge: true },
+    );
+  } catch (error) {
+    console.warn('Could not upsert domainIndex entry:', error);
+  }
 }
 
 async function loadMarketingRoutes(db, pageId, collectionName) {
@@ -106,14 +143,6 @@ async function saveMarketingRoutes(db, pageId, collectionName, routes) {
   return normalized;
 }
 
-function mergeHostingHook(pageData, privateHook) {
-  const legacyHook = String(pageData.hostingDeployHookUrl ?? '').trim();
-  return {
-    ...pageData,
-    hostingDeployHookUrl: privateHook || legacyHook,
-  };
-}
-
 export async function loadPageForEditor(pageId, hubRouteData = {}) {
   const hubDb = getHubDb();
   const route = normalizePageData(hubRouteData);
@@ -125,10 +154,10 @@ export async function loadPageForEditor(pageId, hubRouteData = {}) {
     }
     const data = snapshot.data();
     const marketingRoutes = await loadMarketingRoutes(hubDb, pageId, collectionName);
-    const privateHook = await loadPrivateHostingHook(hubDb, pageId, collectionName);
-    return hydratePageForm(mergeHostingHook(
+    const privateHosting = await loadPrivateHosting(hubDb, pageId, collectionName);
+    return hydratePageForm(mergePrivateHostingIntoPage(
       { id: pageId, ...data, marketingRoutes },
-      privateHook,
+      privateHosting,
     ));
   }
 
@@ -141,10 +170,10 @@ export async function loadPageForEditor(pageId, hubRouteData = {}) {
   const merged = mergeHubRouteWithExternalContent(route, externalSnapshot.data());
   const marketingRoutes = await loadMarketingRoutes(externalDb, pageId, collectionName);
   const hubCollection = primaryPagesCollection();
-  const privateHook = await loadPrivateHostingHook(hubDb, pageId, hubCollection);
-  return hydratePageForm(mergeHostingHook(
+  const privateHosting = await loadPrivateHosting(hubDb, pageId, hubCollection);
+  return hydratePageForm(mergePrivateHostingIntoPage(
     { ...merged, id: pageId, marketingRoutes },
-    privateHook,
+    privateHosting,
   ));
 }
 
@@ -174,6 +203,10 @@ export async function savePageFromEditor(pageId, formData) {
   }
 
   const hubCollection = primaryPagesCollection();
+  const { snapshot: existingHubSnap } = await getPageSnapshot(hubDb, pageId);
+  const previousDomain = existingHubSnap?.exists()
+    ? existingHubSnap.data()?.customDomain
+    : '';
 
   if (payload.useExternal) {
     const externalDb = getDbForConfig(formData.externalFirebase);
@@ -184,14 +217,29 @@ export async function savePageFromEditor(pageId, formData) {
     }
     await setDoc(pageDocRef(hubDb, pageId, hubCollection), hubData, { merge: true });
     await savePrivateHosting(hubDb, pageId, hubCollection, formData);
+    await syncDomainIndex(
+      hubDb,
+      pageId,
+      hubCollection,
+      hubData.customDomain ?? formData.customDomain,
+      previousDomain,
+    );
     return { migratedToExternal: true, marketingRoutes, seoArtifacts };
   }
 
   const { collectionName } = await getPageSnapshot(hubDb, pageId);
+  const targetCollection = collectionName || hubCollection;
   await setDoc(pageDocRef(hubDb, pageId, hubCollection), dataToUpdate, { merge: true });
-  await savePrivateHosting(hubDb, pageId, collectionName || hubCollection, formData);
+  await savePrivateHosting(hubDb, pageId, targetCollection, formData);
+  await syncDomainIndex(
+    hubDb,
+    pageId,
+    hubCollection,
+    dataToUpdate.customDomain ?? formData.customDomain,
+    previousDomain,
+  );
   if (dataToUpdate.siteMode === 'marketing' || marketingRoutes.length) {
-    await saveMarketingRoutes(hubDb, pageId, collectionName || hubCollection, marketingRoutes);
+    await saveMarketingRoutes(hubDb, pageId, targetCollection, marketingRoutes);
   }
   return { migratedToExternal: false, marketingRoutes, seoArtifacts };
 }
@@ -225,8 +273,14 @@ export async function createPageInHub({
   delete initial.marketingRoutes;
   // Do not seed public docs with deploy secrets.
   initial.hostingDeployHookUrl = '';
+  initial.hostingGithubOwner = '';
+  initial.hostingGithubRepo = '';
+  initial.hostingGithubWorkflow = '';
+  initial.hostingGithubRef = '';
 
-  await setDoc(pageDocRef(hubDb, id, primaryPagesCollection()), initial, { merge: false });
+  const hubCollection = primaryPagesCollection();
+  await setDoc(pageDocRef(hubDb, id, hubCollection), initial, { merge: false });
+  await syncDomainIndex(hubDb, id, hubCollection, initial.customDomain, '');
   return hydratePageForm({ id, ...initial, marketingRoutes: [] });
 }
 

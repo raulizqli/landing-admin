@@ -38,26 +38,48 @@ export function normalizeHostingDeployFields(data = {}) {
 
 /**
  * Fields safe to persist on the publicly readable page document.
- * Deploy hook URL lives in pages/{id}/private/hosting (F03).
+ * Deploy hook + GitHub workflow targets live in pages/{id}/private/hosting (F03).
  */
 export function getHostingDeployRoutingFields(pageData = {}) {
   const fields = normalizeHostingDeployFields(pageData);
   return {
     hostingProvider: fields.hostingProvider,
-    hostingGithubOwner: fields.hostingGithubOwner,
-    hostingGithubRepo: fields.hostingGithubRepo,
-    hostingGithubWorkflow: fields.hostingGithubWorkflow,
-    hostingGithubRef: fields.hostingGithubRef,
     hostingPublicUrl: fields.hostingPublicUrl,
+    // Cleared on public docs — real values under private/hosting (migration).
+    hostingGithubOwner: '',
+    hostingGithubRepo: '',
+    hostingGithubWorkflow: '',
+    hostingGithubRef: '',
   };
 }
 
-/** Secret hosting fields for pages/{id}/private/hosting. */
+/** Secret / ops hosting fields for pages/{id}/private/hosting. */
 export function getPrivateHostingFields(pageData = {}) {
   const fields = normalizeHostingDeployFields(pageData);
   return {
     hostingDeployHookUrl: fields.hostingDeployHookUrl,
+    hostingGithubOwner: fields.hostingGithubOwner,
+    hostingGithubRepo: fields.hostingGithubRepo,
+    hostingGithubWorkflow: fields.hostingGithubWorkflow,
+    hostingGithubRef: fields.hostingGithubRef,
     updatedAt: new Date().toISOString(),
+  };
+}
+
+/** Merge private hosting into editor form (legacy public fields as fallback). */
+export function mergePrivateHostingIntoPage(pageData = {}, privateHosting = {}) {
+  const legacy = normalizeHostingDeployFields(pageData);
+  const priv = privateHosting && typeof privateHosting === 'object' ? privateHosting : {};
+  return {
+    ...pageData,
+    hostingDeployHookUrl: String(priv.hostingDeployHookUrl ?? legacy.hostingDeployHookUrl ?? '').trim(),
+    hostingGithubOwner: String(priv.hostingGithubOwner ?? legacy.hostingGithubOwner ?? '').trim(),
+    hostingGithubRepo: String(priv.hostingGithubRepo ?? legacy.hostingGithubRepo ?? '').trim(),
+    hostingGithubWorkflow:
+      String(priv.hostingGithubWorkflow ?? legacy.hostingGithubWorkflow ?? '').trim()
+      || 'deploy-template-manual.yml',
+    hostingGithubRef:
+      String(priv.hostingGithubRef ?? legacy.hostingGithubRef ?? '').trim() || 'master',
   };
 }
 

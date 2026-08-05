@@ -49,14 +49,10 @@ export async function triggerHostingDeploy(pageId, formData = {}) {
     await savePrivateHostingConfig(pageId, formData);
     const hosting = normalizeHostingDeployFields(formData);
     const callable = httpsCallable(getHubFunctions(), 'triggerHostingDeploy');
-    // Do not send hostingDeployHookUrl — server reads pages/{id}/private/hosting (F03/F07).
+    // Deploy secrets (hook + GitHub targets) are read from private/hosting (F03/F07).
     const result = await callable({
       pageId,
       hostingProvider: hosting.hostingProvider,
-      hostingGithubOwner: hosting.hostingGithubOwner,
-      hostingGithubRepo: hosting.hostingGithubRepo,
-      hostingGithubWorkflow: hosting.hostingGithubWorkflow,
-      hostingGithubRef: hosting.hostingGithubRef,
       hostingPublicUrl: hosting.hostingPublicUrl,
     });
     return result.data;

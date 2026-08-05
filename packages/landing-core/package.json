@@ -54,6 +54,7 @@
     "./legalDocuments": "./src/legalDocuments.js",
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",
+    "./domainIndex": "./src/domainIndex.js",
     "./billingPlans": "./src/billingPlans.js",
     "./marketingSite": "./src/marketingSite.js",
     "./marketingSeo": "./src/marketingSeo.js",
