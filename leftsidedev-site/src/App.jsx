@@ -3,6 +3,8 @@ import SiteLayout from './components/layout/SiteLayout';
 import HomePage from './pages/HomePage';
 import ServicesPage from './pages/ServicesPage';
 import ServiceDetailPage from './pages/ServiceDetailPage';
+import IndustriesPage from './pages/IndustriesPage';
+import IndustryDetailPage from './pages/IndustryDetailPage';
 import CaseStudiesPage from './pages/CaseStudiesPage';
 import CaseStudyDetailPage from './pages/CaseStudyDetailPage';
 import PortfolioPage from './pages/PortfolioPage';
@@ -22,6 +24,8 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="services" element={<ServicesPage />} />
         <Route path="services/:slug" element={<ServiceDetailPage />} />
+        <Route path="industries" element={<IndustriesPage />} />
+        <Route path="industries/:slug" element={<IndustryDetailPage />} />
         <Route path="case-studies" element={<CaseStudiesPage />} />
         <Route path="case-studies/:slug" element={<CaseStudyDetailPage />} />
         <Route path="portfolio" element={<PortfolioPage />} />

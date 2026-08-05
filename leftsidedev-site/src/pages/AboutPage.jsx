@@ -23,13 +23,13 @@ export default function AboutPage() {
       >
         <div className="max-w-3xl space-y-4 text-sm leading-relaxed text-[var(--color-mute)] sm:text-base">
           <p>
-            We help businesses design and ship AI-powered software, custom applications, and intelligent
-            automations. Our positioning is deliberate: we are not a generic “software development company.”
-            We specialize in systems where models, tools, data, and product UX must work together in production.
+            LeftSideDev is a software agency that designs and builds custom applications, AI automation,
+            and cloud-native platforms. We partner with operators and product teams who need senior
+            engineering—not generic agency slides.
           </p>
           <p>
-            That includes AI agents, RAG systems, MCP integrations, workflow automation, web and mobile
-            applications, Firebase backends, and enterprise-grade platforms.
+            We specialize in systems where product UX, APIs, data, and (when useful) AI must work together
+            in production: web and mobile apps, integrations, enterprise platforms, agents, and RAG.
           </p>
         </div>
         <ul className="mt-8 flex flex-wrap gap-2">

@@ -18,7 +18,7 @@ export default function StickyCta() {
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 sm:px-6">
       <div className="glass mx-auto flex max-w-3xl flex-col items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-2xl shadow-black/40 sm:flex-row sm:px-5">
         <p className="text-center text-sm text-[var(--color-mist)] sm:text-left">
-          Ready to scope your next AI-powered product?
+          Ready to scope your next software or AI project?
         </p>
         <div className="flex w-full gap-2 sm:w-auto">
           <Button to={CTA.primary.href} className="flex-1 sm:flex-none">

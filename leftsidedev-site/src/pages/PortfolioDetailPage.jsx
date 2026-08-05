@@ -45,7 +45,35 @@ export default function PortfolioDetailPage() {
             / {project.title}
           </p>
           <h1 className="mt-4 font-display text-4xl font-bold tracking-tight sm:text-5xl">{project.title}</h1>
+          {project.industry ? (
+            <p className="mt-3 text-sm text-[var(--color-accent)]">{project.industry}</p>
+          ) : null}
           <p className="mt-5 max-w-2xl text-lg text-[var(--color-mute)]">{project.summary}</p>
+          {project.challenge ? (
+            <div className="mt-8 max-w-2xl space-y-4 text-sm text-[var(--color-mute)]">
+              <p>
+                <span className="font-semibold text-[var(--color-mist)]">Challenge. </span>
+                {project.challenge}
+              </p>
+              <p>
+                <span className="font-semibold text-[var(--color-mist)]">Solution. </span>
+                {project.solution}
+              </p>
+              <p>
+                <span className="font-semibold text-[var(--color-mist)]">Outcome. </span>
+                {project.outcome}
+              </p>
+            </div>
+          ) : null}
+          {project.imagePlaceholder ? (
+            <div
+              className="mt-8 flex min-h-[180px] max-w-3xl items-center justify-center rounded-2xl border border-dashed border-[var(--color-line)] bg-[var(--color-ink)]/60 px-4 text-center text-xs text-[var(--color-mute)]"
+              role="img"
+              aria-label={project.imageAlt}
+            >
+              Image placeholder — replace with production screenshot
+            </div>
+          ) : null}
           <div className="mt-8 flex flex-wrap gap-3">
             {project.demoUrl ? (
               <Button href={project.demoUrl} external>

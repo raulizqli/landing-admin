@@ -1,15 +1,22 @@
 export const BLOG_CATEGORIES = [
   'AI',
+  'Software Development',
+  'Cloud',
+  'Mobile',
+  'Web',
+  'Firebase',
+  'Node.js',
   'React',
+  'Business Automation',
+  'Integrations',
+  // Legacy categories kept so existing posts keep grouping
   'Angular',
   'Node',
-  'Firebase',
   'Automation',
   'MCP',
   'RAG',
   'LLMs',
   'Architecture',
-  'Cloud',
 ];
 
 export const BLOG_POSTS = [

@@ -40,6 +40,7 @@ const blogSlugs = [
 const staticRoutes = [
   '/',
   '/services',
+  '/industries',
   '/case-studies',
   '/portfolio',
   '/blog',
@@ -49,9 +50,21 @@ const staticRoutes = [
   '/resources',
 ];
 
+const industrySlugs = [
+  'healthcare',
+  'education',
+  'construction',
+  'manufacturing',
+  'retail',
+  'professional-services',
+  'finance',
+  'logistics',
+];
+
 const routes = [
   ...staticRoutes,
   ...serviceSlugs.map((slug) => `/services/${slug}`),
+  ...industrySlugs.map((slug) => `/industries/${slug}`),
   ...caseSlugs.map((slug) => `/case-studies/${slug}`),
   ...portfolioSlugs.map((slug) => `/portfolio/${slug}`),
   ...blogSlugs.map((slug) => `/blog/${slug}`),

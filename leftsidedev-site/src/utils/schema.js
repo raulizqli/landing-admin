@@ -123,3 +123,24 @@ export function serviceSchema(service) {
     url: absoluteUrl(`/services/${service.slug}`),
   };
 }
+
+export function websiteSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.name,
+    url: SITE.url,
+    description: SITE.tagline,
+    inLanguage: SITE.language,
+    publisher: {
+      '@type': 'Organization',
+      name: SITE.name,
+      url: SITE.url,
+    },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${SITE.url}/blog?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
+}
