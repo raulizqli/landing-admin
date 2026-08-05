@@ -415,14 +415,14 @@ function mockLogoDataUrl(name, specialty) {
 }
 function parseLogoImageFallbackChain(raw) {
     var _a;
-    const text = String((_a = raw !== null && raw !== void 0 ? raw : process.env.AI_IMAGE_FALLBACK_CHAIN) !== null && _a !== void 0 ? _a : "openai,mock,gemini").trim();
+    const text = String((_a = raw !== null && raw !== void 0 ? raw : process.env.AI_IMAGE_FALLBACK_CHAIN) !== null && _a !== void 0 ? _a : "openai,gemini,mock").trim();
     const parsed = text
         .split(",")
         .map((item) => item.trim().toLowerCase())
         .filter(Boolean);
     const allowed = new Set(["openai", "mock", "gemini"]);
     const chain = parsed.filter((item) => allowed.has(item));
-    return chain.length ? chain : ["openai", "mock", "gemini"];
+    return chain.length ? chain : ["openai", "gemini", "mock"];
 }
 function buildLogoPrompt(input) {
     var _a, _b, _c, _d;
@@ -583,7 +583,7 @@ async function generateLogoWithGemini(prompt) {
 }
 /**
  * Generate a simple brand mark / logo image.
- * Fallback chain defaults to OpenAI → mock SVG → Gemini Imagen.
+ * Fallback chain defaults to OpenAI → Gemini Imagen → mock SVG.
  */
 async function generateLogoImage(input) {
     var _a, _b;
