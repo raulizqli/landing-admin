@@ -51,6 +51,7 @@ export default function SavePublishAdGate({
         <div className="min-h-0 flex-1 overflow-y-auto">
           <PublicityAdsBanner
             placement="static"
+            layout="stacked"
             label={t('billing.saveAd.label')}
             message={t('billing.saveAd.adHint')}
             className="!border-0"

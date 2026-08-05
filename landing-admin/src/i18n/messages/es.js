@@ -127,6 +127,7 @@ export default {
       label: 'Publicidad free tier',
       message: 'Estás en free tier. Esta barra de publicidad ayuda a cubrir el hosting del CMS. Mejora tu plan para quitarla y desbloquear funciones Pro.',
       cta: 'Mejorar plan',
+      tab: 'Free tier · Mejorar',
     },
     saveAd: {
       title: 'Ver anuncio para publicar',

@@ -127,6 +127,7 @@ export default {
       label: 'Free-tier publicity',
       message: 'You are on free tier. This publicity bar helps cover CMS hosting. Upgrade your plan to remove it and unlock Pro features.',
       cta: 'Upgrade plan',
+      tab: 'Free tier · Upgrade',
     },
     saveAd: {
       title: 'Watch an ad to publish',
