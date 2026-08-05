@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import {
   getVisibleServiceItems,
   normalizePreHeroMode,
@@ -30,18 +29,21 @@ const COPY = {
   },
 };
 
-function activateScripts(container) {
-  const scripts = container.querySelectorAll('script');
-  scripts.forEach((oldScript) => {
-    const newScript = document.createElement('script');
-    [...oldScript.attributes].forEach((attr) => {
-      newScript.setAttribute(attr.name, attr.value);
-    });
-    if (oldScript.textContent) {
-      newScript.textContent = oldScript.textContent;
-    }
-    oldScript.parentNode?.replaceChild(newScript, oldScript);
-  });
+function EmbedHtml({ embed }) {
+  const hasCode = Boolean(String(embed?.htmlCode ?? '').trim());
+  if (!hasCode) return null;
+
+  // Isolate third-party / raw HTML in a sandboxed iframe without allow-same-origin
+  // so scripts cannot touch the parent origin (F08).
+  return (
+    <iframe
+      title={embed.label || embed.title || 'Custom embed'}
+      className="custom-embed-content w-full min-h-[240px] border-0 rounded-md bg-transparent"
+      sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
+      referrerPolicy="no-referrer"
+      srcDoc={String(embed.htmlCode)}
+    />
+  );
 }
 
 function SectionShell({ embed, children, className = '', copy = COPY.es }) {
@@ -68,26 +70,6 @@ function SectionTitle({ title }) {
       {title}
     </h2>
   );
-}
-
-function EmbedHtml({ embed }) {
-  const containerRef = useRef(null);
-  const hasCode = Boolean(embed?.htmlCode);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !hasCode) return undefined;
-
-    container.innerHTML = embed.htmlCode;
-    activateScripts(container);
-
-    return () => {
-      container.innerHTML = '';
-    };
-  }, [embed?.id, embed?.htmlCode, hasCode]);
-
-  if (!hasCode) return null;
-  return <div ref={containerRef} className="custom-embed-content w-full min-h-[48px]" />;
 }
 
 function TextSection({ embed }) {

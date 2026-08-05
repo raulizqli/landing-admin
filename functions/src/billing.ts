@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { getFirestore } from "firebase-admin/firestore";
 import { onCall, onRequest, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { initializeApp, getApps } from "firebase-admin/app";
@@ -102,6 +103,69 @@ function mercadoPagoToken(): string {
     throw new HttpsError("failed-precondition", "MERCADOPAGO_ACCESS_TOKEN no está configurada.");
   }
   return token;
+}
+
+function headerValue(req: { headers: Record<string, unknown> }, name: string): string {
+  const raw = req.headers[name] ?? req.headers[name.toLowerCase()];
+  if (Array.isArray(raw)) return String(raw[0] ?? "").trim();
+  return String(raw ?? "").trim();
+}
+
+/**
+ * Mercado Pago Webhooks signature (HMAC-SHA256).
+ * Manifest: id:{data.id};request-id:{x-request-id};ts:{ts}; (omit missing parts).
+ * Fail closed outside the emulator when MERCADOPAGO_WEBHOOK_SECRET is unset (F06).
+ */
+function assertMercadoPagoWebhookSignature(req: {
+  headers: Record<string, unknown>;
+  query: Record<string, unknown>;
+  body?: { data?: { id?: unknown } };
+}): void {
+  const secret = String(process.env.MERCADOPAGO_WEBHOOK_SECRET ?? "").trim();
+  const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
+
+  if (!secret) {
+    if (isEmulator) return;
+    throw new Error("MERCADOPAGO_WEBHOOK_SECRET is not configured");
+  }
+
+  const xSignature = headerValue(req, "x-signature");
+  const xRequestId = headerValue(req, "x-request-id");
+  if (!xSignature) {
+    throw new Error("Missing x-signature");
+  }
+
+  const parts = Object.fromEntries(
+    xSignature.split(",").map((part) => {
+      const [key, ...rest] = part.trim().split("=");
+      return [String(key || "").trim(), rest.join("=").trim()];
+    }),
+  );
+  const ts = String(parts.ts ?? "").trim();
+  const v1 = String(parts.v1 ?? "").trim();
+  if (!ts || !v1) {
+    throw new Error("Invalid x-signature format");
+  }
+
+  let dataId = String(req.query["data.id"] ?? req.body?.data?.id ?? req.query.id ?? "").trim();
+  if (dataId && /^[a-zA-Z0-9]+$/.test(dataId)) {
+    dataId = dataId.toLowerCase();
+  }
+
+  let manifest = "";
+  if (dataId) manifest += `id:${dataId};`;
+  if (xRequestId) manifest += `request-id:${xRequestId};`;
+  manifest += `ts:${ts};`;
+
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+  const expectedBuf = Buffer.from(expected, "utf8");
+  const providedBuf = Buffer.from(v1, "utf8");
+  if (
+    expectedBuf.length !== providedBuf.length
+    || !timingSafeEqual(expectedBuf, providedBuf)
+  ) {
+    throw new Error("Invalid Mercado Pago webhook signature");
+  }
 }
 
 async function getCallerProfile(uid: string) {
@@ -498,6 +562,18 @@ export const stripeBillingWebhook = onRequest({ cors: false }, async (req, res) 
 export const mercadoPagoBillingWebhook = onRequest({ cors: false }, async (req, res) => {
   if (req.method !== "POST" && req.method !== "GET") {
     res.status(405).send("Method not allowed");
+    return;
+  }
+
+  try {
+    assertMercadoPagoWebhookSignature(req as {
+      headers: Record<string, unknown>;
+      query: Record<string, unknown>;
+      body?: { data?: { id?: unknown } };
+    });
+  } catch (error) {
+    console.error("Mercado Pago webhook signature error", error);
+    res.status(401).send("Invalid signature");
     return;
   }
 

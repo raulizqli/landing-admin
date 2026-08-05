@@ -4,20 +4,98 @@ exports.triggerHostingDeploy = void 0;
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const app_1 = require("firebase-admin/app");
+const node_net_1 = require("node:net");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
 const USERS_COLLECTION = "users";
 const PAGES_COLLECTIONS = ["pages", "paginas"];
 const PRIVATE_HOSTING_DOC = "hosting";
+const DEFAULT_DEPLOY_HOOK_HOSTS = [
+    "api.vercel.com",
+    "api.netlify.com",
+    "api.cloudflare.com",
+];
 function normalizeProvider(value) {
     const provider = String(value !== null && value !== void 0 ? value : "").trim();
     if (provider === "webhook" || provider === "github")
         return provider;
     return "hub";
 }
-async function assertHostingCaller(request) {
-    var _a, _b;
+function normalizePageIdList(values) {
+    if (!Array.isArray(values))
+        return [];
+    return [...new Set(values.map((value) => String(value !== null && value !== void 0 ? value : "").trim()).filter(Boolean))];
+}
+function isPrivateOrLocalHostname(hostname) {
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (host === "localhost"
+        || host === "metadata.google.internal"
+        || host.endsWith(".localhost")
+        || host.endsWith(".local")
+        || host.endsWith(".internal")) {
+        return true;
+    }
+    const ipVersion = (0, node_net_1.isIP)(host);
+    if (!ipVersion)
+        return false;
+    if (ipVersion === 4) {
+        const parts = host.split(".").map((part) => Number(part));
+        if (parts.length !== 4 || parts.some((part) => Number.isNaN(part)))
+            return true;
+        const [a, b] = parts;
+        if (a === 10 || a === 127 || a === 0)
+            return true;
+        if (a === 169 && b === 254)
+            return true;
+        if (a === 172 && b >= 16 && b <= 31)
+            return true;
+        if (a === 192 && b === 168)
+            return true;
+        if (a === 100 && b >= 64 && b <= 127)
+            return true; // CGNAT
+        return false;
+    }
+    // IPv6 loopback / link-local / ULA
+    return (host === "::1"
+        || host.startsWith("fe80:")
+        || host.startsWith("fc")
+        || host.startsWith("fd"));
+}
+function allowedDeployHookHosts() {
+    var _a;
+    const extra = String((_a = process.env.DEPLOY_HOOK_HOST_ALLOWLIST) !== null && _a !== void 0 ? _a : "")
+        .split(",")
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+    return new Set([...DEFAULT_DEPLOY_HOOK_HOSTS, ...extra]);
+}
+/** Reject non-HTTPS, private hosts, and non-allowlisted deploy hook endpoints (F07). */
+function assertSafeDeployHookUrl(rawUrl) {
+    let parsed;
+    try {
+        parsed = new URL(rawUrl);
+    }
+    catch (_a) {
+        throw new https_1.HttpsError("invalid-argument", "La URL del Deploy Hook no es válida.");
+    }
+    if (parsed.protocol !== "https:") {
+        throw new https_1.HttpsError("invalid-argument", "El Deploy Hook debe usar HTTPS.");
+    }
+    if (parsed.username || parsed.password) {
+        throw new https_1.HttpsError("invalid-argument", "El Deploy Hook no puede incluir credenciales en la URL.");
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (isPrivateOrLocalHostname(hostname)) {
+        throw new https_1.HttpsError("invalid-argument", "El Deploy Hook apunta a un host no permitido.");
+    }
+    if (!allowedDeployHookHosts().has(hostname)) {
+        throw new https_1.HttpsError("failed-precondition", `Host de Deploy Hook no allowlisteado (${hostname}). Usa Vercel/Netlify/Cloudflare API o configura DEPLOY_HOOK_HOST_ALLOWLIST.`);
+    }
+    return parsed.toString();
+}
+async function assertHostingCaller(request, pageId) {
+    var _a, _b, _c;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -25,11 +103,22 @@ async function assertHostingCaller(request) {
         .collection(USERS_COLLECTION)
         .doc(request.auth.uid)
         .get();
-    const role = (_b = callerDoc.data()) === null || _b === void 0 ? void 0 : _b.role;
-    if (!callerDoc.exists || (role !== "root" && role !== "admin")) {
+    if (!callerDoc.exists) {
         throw new https_1.HttpsError("permission-denied", "Solo root o admin pueden disparar un deploy de hosting.");
     }
-    return request.auth.uid;
+    const data = (_b = callerDoc.data()) !== null && _b !== void 0 ? _b : {};
+    const role = String((_c = data.role) !== null && _c !== void 0 ? _c : "").trim();
+    if (role === "root") {
+        return request.auth.uid;
+    }
+    if (role === "admin") {
+        const assigned = normalizePageIdList(data.assignedPageIds);
+        if (assigned.includes(pageId)) {
+            return request.auth.uid;
+        }
+        throw new https_1.HttpsError("permission-denied", "Este admin no tiene asignada esa página para publicar hosting.");
+    }
+    throw new https_1.HttpsError("permission-denied", "Solo root o admin pueden disparar un deploy de hosting.");
 }
 async function loadHubPage(pageId) {
     var _a;
@@ -75,6 +164,7 @@ async function postWebhook(url, body) {
             Accept: "application/json",
         },
         body: JSON.stringify(body),
+        redirect: "error",
     });
     const text = await response.text();
     if (!response.ok) {
@@ -131,11 +221,11 @@ const callableOptions = {
 };
 exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (request) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
-    await assertHostingCaller(request);
     const pageId = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.pageId) !== null && _b !== void 0 ? _b : "").trim();
     if (!pageId) {
         throw new https_1.HttpsError("invalid-argument", "El pageId es obligatorio.");
     }
+    await assertHostingCaller(request, pageId);
     const { collectionName, page } = await loadHubPage(pageId);
     const privateHosting = await loadPrivateHosting(collectionName, pageId);
     const overrides = ((_c = request.data) !== null && _c !== void 0 ? _c : {});
@@ -169,7 +259,8 @@ exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (reque
             ? "Configura un Deploy Hook en esta página o el env DEFAULT_TEMPLATE_DEPLOY_HOOK_URL en Cloud Functions."
             : "Pegá la URL del Deploy Hook (Vercel/Netlify/Cloudflare) en esta página.");
     }
-    const result = await postWebhook(webhookUrl, payload);
+    const safeUrl = assertSafeDeployHookUrl(webhookUrl);
+    const result = await postWebhook(safeUrl, payload);
     return {
         ok: true,
         provider,

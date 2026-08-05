@@ -36,18 +36,20 @@ service firebase.storage {
           && userData().pageId == pageId);
     }
 
+    // Match landing-admin uploadImage.js allowlist — reject SVG (F10).
+    function isAllowedImageUpload() {
+      return request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
     match /pages/{pageId}/{fileName} {
       allow read: if true;
-      allow write: if canEditPage(pageId)
-        && request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+      allow write: if canEditPage(pageId) && isAllowedImageUpload();
     }
 
     match /paginas/{pageId}/{fileName} {
       allow read: if true;
-      allow write: if canEditPage(pageId)
-        && request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+      allow write: if canEditPage(pageId) && isAllowedImageUpload();
     }
   }
 }
