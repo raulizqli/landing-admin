@@ -11,6 +11,9 @@ exports.chatGemini = chatGemini;
 exports.chatAnthropic = chatAnthropic;
 exports.runProviderChat = runProviderChat;
 exports.isQuotaOrRateLimitError = isQuotaOrRateLimitError;
+exports.isProviderConnectivityError = isProviderConnectivityError;
+exports.isLoopbackOllamaBaseUrl = isLoopbackOllamaBaseUrl;
+exports.isOllamaReachableInThisRuntime = isOllamaReachableInThisRuntime;
 exports.resolveLiteProviderChain = resolveLiteProviderChain;
 exports.buildProviderFallbackChain = buildProviderFallbackChain;
 exports.resolveFullProvider = resolveFullProvider;
@@ -282,14 +285,50 @@ function isQuotaOrRateLimitError(error) {
     return /429|rate.?limit|quota|resource.?exhausted|exceeded.?your.?current.?quota|too many requests|billing.?hard.?limit/i
         .test(msg);
 }
+/** True when the runtime could not reach the provider (typical for localhost Ollama from Cloud Functions). */
+function isProviderConnectivityError(error) {
+    const msg = error instanceof Error
+        ? error.message
+        : typeof error === "string"
+            ? error
+            : String(error !== null && error !== void 0 ? error : "");
+    return /ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ECONNRESET|fetch failed|network|socket|UND_ERR|other side closed/i
+        .test(msg);
+}
+/** True when Ollama is pointed at a loopback host unreachable from Cloud Functions. */
+function isLoopbackOllamaBaseUrl(baseUrl) {
+    const raw = String(baseUrl
+        || process.env.OLLAMA_BASE_URL
+        || "http://127.0.0.1:11434").trim();
+    try {
+        const host = new URL(raw).hostname.toLowerCase();
+        return host === "127.0.0.1" || host === "localhost" || host === "::1";
+    }
+    catch (_a) {
+        return /127\.0\.0\.1|localhost/i.test(raw);
+    }
+}
+function isOllamaReachableInThisRuntime(baseUrl) {
+    if (process.env.FUNCTIONS_EMULATOR === "true")
+        return true;
+    if (process.env.AI_ALLOW_LOCAL_OLLAMA === "1" || process.env.AI_ALLOW_LOCAL_OLLAMA === "true") {
+        return true;
+    }
+    return !isLoopbackOllamaBaseUrl(baseUrl);
+}
 function resolveLiteProviderChain() {
     const primary = asProviderId(process.env.AI_LITE_PROVIDER || "ollama", "ollama");
     const fallback = asProviderId(process.env.AI_LITE_FALLBACK_PROVIDER || "gemini", "gemini");
     const chain = [];
     for (const id of [primary, fallback, "groq", "ollama"]) {
+        if (id === "ollama" && !isOllamaReachableInThisRuntime())
+            continue;
         if (!chain.includes(id))
             chain.push(id);
     }
+    // Always keep at least one cloud-capable candidate.
+    if (chain.length === 0)
+        chain.push("gemini");
     return chain;
 }
 /**
@@ -305,10 +344,16 @@ function buildProviderFallbackChain(options = {}) {
             chain.push(id);
     };
     const preferred = tryAsProviderId(String((_a = options.preferred) !== null && _a !== void 0 ? _a : ""));
-    if (preferred)
-        push(preferred);
+    if (preferred) {
+        if (preferred !== "ollama" || isOllamaReachableInThisRuntime()) {
+            push(preferred);
+        }
+    }
     if (options.includeFullDefault) {
-        push(resolveFullProvider());
+        const full = resolveFullProvider();
+        if (full !== "ollama" || isOllamaReachableInThisRuntime()) {
+            push(full);
+        }
     }
     const configuredFallback = asProviderId(process.env.AI_LITE_FALLBACK_PROVIDER || "gemini", "gemini");
     push(configuredFallback);

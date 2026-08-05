@@ -6,6 +6,7 @@ import {
   resolveLiteProviderChain,
   buildProviderFallbackChain,
   isQuotaOrRateLimitError,
+  isProviderConnectivityError,
   runProviderChat,
   generateLogoImage,
   AiProviderId,
@@ -539,16 +540,16 @@ export const runAiAssist = onCall(longCallableOptions, async (request: CallableR
       : null)
     || (lane === "full" ? resolveFullProvider() : null);
 
-  // Prefer chosen engine; on quota/rate-limit continue with Gemini (and remaining chain).
+  // Prefer chosen engine; on quota/rate-limit OR connectivity failure continue the chain.
   // Lite without an explicit engine still retries any provider failure (legacy behavior).
   const providerChain = buildProviderFallbackChain({
     preferred: preferredForChain,
     includeFullDefault: lane === "full" && !byokProvider,
   });
-  const retryAnyFailure = lane === "lite" && !preferredEngine && !byokProvider;
+  const retryAnyFailure = !byokProvider || (lane === "lite" && !preferredEngine);
 
   let result: Record<string, unknown> | null = null;
-  let usedProvider: string = providerChain[0] || "ollama";
+  let usedProvider: string = providerChain[0] || "gemini";
   const failures: string[] = [];
 
   try {
@@ -579,7 +580,11 @@ export const runAiAssist = onCall(longCallableOptions, async (request: CallableR
         failures.push(`${candidate}: ${detail}`);
         console.error("runAiAssist provider failure", { candidate, detail, error });
         const canRetry = index < providerChain.length - 1
-          && (retryAnyFailure || isQuotaOrRateLimitError(error));
+          && (
+            retryAnyFailure
+            || isQuotaOrRateLimitError(error)
+            || isProviderConnectivityError(error)
+          );
         if (!canRetry) {
           throw error;
         }

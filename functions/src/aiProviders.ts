@@ -332,13 +332,50 @@ export function isQuotaOrRateLimitError(error: unknown): boolean {
     .test(msg);
 }
 
+/** True when the runtime could not reach the provider (typical for localhost Ollama from Cloud Functions). */
+export function isProviderConnectivityError(error: unknown): boolean {
+  const msg = error instanceof Error
+    ? error.message
+    : typeof error === "string"
+      ? error
+      : String(error ?? "");
+  return /ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ECONNRESET|fetch failed|network|socket|UND_ERR|other side closed/i
+    .test(msg);
+}
+
+/** True when Ollama is pointed at a loopback host unreachable from Cloud Functions. */
+export function isLoopbackOllamaBaseUrl(baseUrl?: string): boolean {
+  const raw = String(
+    baseUrl
+    || process.env.OLLAMA_BASE_URL
+    || "http://127.0.0.1:11434",
+  ).trim();
+  try {
+    const host = new URL(raw).hostname.toLowerCase();
+    return host === "127.0.0.1" || host === "localhost" || host === "::1";
+  } catch {
+    return /127\.0\.0\.1|localhost/i.test(raw);
+  }
+}
+
+export function isOllamaReachableInThisRuntime(baseUrl?: string): boolean {
+  if (process.env.FUNCTIONS_EMULATOR === "true") return true;
+  if (process.env.AI_ALLOW_LOCAL_OLLAMA === "1" || process.env.AI_ALLOW_LOCAL_OLLAMA === "true") {
+    return true;
+  }
+  return !isLoopbackOllamaBaseUrl(baseUrl);
+}
+
 export function resolveLiteProviderChain(): AiProviderId[] {
   const primary = asProviderId(process.env.AI_LITE_PROVIDER || "ollama", "ollama");
   const fallback = asProviderId(process.env.AI_LITE_FALLBACK_PROVIDER || "gemini", "gemini");
   const chain: AiProviderId[] = [];
   for (const id of [primary, fallback, "groq" as const, "ollama" as const]) {
+    if (id === "ollama" && !isOllamaReachableInThisRuntime()) continue;
     if (!chain.includes(id)) chain.push(id);
   }
+  // Always keep at least one cloud-capable candidate.
+  if (chain.length === 0) chain.push("gemini");
   return chain;
 }
 
@@ -357,9 +394,16 @@ export function buildProviderFallbackChain(options: {
   };
 
   const preferred = tryAsProviderId(String(options.preferred ?? ""));
-  if (preferred) push(preferred);
+  if (preferred) {
+    if (preferred !== "ollama" || isOllamaReachableInThisRuntime()) {
+      push(preferred);
+    }
+  }
   if (options.includeFullDefault) {
-    push(resolveFullProvider());
+    const full = resolveFullProvider();
+    if (full !== "ollama" || isOllamaReachableInThisRuntime()) {
+      push(full);
+    }
   }
 
   const configuredFallback = asProviderId(

@@ -68,14 +68,8 @@ export default function AppRouter() {
             </RequireRoot>
           )}
         />
-        <Route
-          path="/app/preview-frame"
-          element={(
-            <RequireAuth>
-              <MirrorPreviewFrame />
-            </RequireAuth>
-          )}
-        />
+        {/* No auth: iframe must not redirect to /login or / (breaks framing / CSP cache). */}
+        <Route path="/app/preview-frame" element={<MirrorPreviewFrame />} />
         <Route path="/app/*" element={<Navigate to="/app" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

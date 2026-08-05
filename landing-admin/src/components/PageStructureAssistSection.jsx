@@ -6,11 +6,14 @@ import {
 import { TOGGLEABLE_PAGE_SECTIONS } from '@raulizqli/landing-core/sectionVisibility';
 import {
   applyAiAssistResult,
+  buildAiSystemPrompt,
+  buildAiUserPrompt,
   isAiActionAllowed,
   normalizeStructureSuggestion,
   resolveAiAssistLane,
 } from '../utils/aiAssist';
-import { runAiAssistRemote } from '../utils/aiAssistFunctions';
+import { runAiAssistRemote, runLocalAssistant } from '../utils/aiAssistFunctions';
+import { getDefaultAiEngine, getLocalOllamaConfig } from '../utils/aiEngine';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useLocale } from '../i18n/LocaleContext';
 import AiWorkingBanner from './AiWorkingBanner';
@@ -94,19 +97,34 @@ export default function PageStructureAssistSection({
     const brief = String(note || '').trim();
 
     try {
-      const data = await runAiAssistRemote({
-        pageId,
-        action: 'suggest_page_structure',
-        language,
-        brief,
-        context,
-        input: { brief, context },
-      });
-      const normalized = normalizeStructureSuggestion(data?.result || data);
+      let rawResult;
+      if (getDefaultAiEngine() === 'local') {
+        const system = buildAiSystemPrompt({ language, vertical: selectedVertical });
+        const user = buildAiUserPrompt({
+          action: 'suggest_page_structure',
+          brief,
+          context,
+        });
+        rawResult = await runLocalAssistant({
+          system,
+          user,
+          ...getLocalOllamaConfig(),
+        });
+      } else {
+        const data = await runAiAssistRemote({
+          pageId,
+          action: 'suggest_page_structure',
+          language,
+          brief,
+          context,
+          input: { brief, context },
+        });
+        rawResult = data?.result || data;
+      }
+      const normalized = normalizeStructureSuggestion(rawResult);
       if (!normalized.recommendedSections.length && !normalized.summary) {
-        const provider = data?.provider ? ` (${data.provider})` : '';
         throw new Error(
-          `La IA no devolvió una estructura usable${provider}. Prueba de nuevo o revisa el proveedor.`,
+          'La IA no devolvió una estructura usable. Prueba de nuevo o revisa el proveedor.',
         );
       }
       setSuggestion(normalized);

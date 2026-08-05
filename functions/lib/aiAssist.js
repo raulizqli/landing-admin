@@ -433,15 +433,15 @@ exports.runAiAssist = (0, https_1.onCall)(longCallableOptions, async (request) =
             ? preferredEngine
             : null)
         || (lane === "full" ? (0, aiProviders_js_1.resolveFullProvider)() : null);
-    // Prefer chosen engine; on quota/rate-limit continue with Gemini (and remaining chain).
+    // Prefer chosen engine; on quota/rate-limit OR connectivity failure continue the chain.
     // Lite without an explicit engine still retries any provider failure (legacy behavior).
     const providerChain = (0, aiProviders_js_1.buildProviderFallbackChain)({
         preferred: preferredForChain,
         includeFullDefault: lane === "full" && !byokProvider,
     });
-    const retryAnyFailure = lane === "lite" && !preferredEngine && !byokProvider;
+    const retryAnyFailure = !byokProvider || (lane === "lite" && !preferredEngine);
     let result = null;
-    let usedProvider = providerChain[0] || "ollama";
+    let usedProvider = providerChain[0] || "gemini";
     const failures = [];
     try {
         for (let index = 0; index < providerChain.length; index += 1) {
@@ -472,7 +472,9 @@ exports.runAiAssist = (0, https_1.onCall)(longCallableOptions, async (request) =
                 failures.push(`${candidate}: ${detail}`);
                 console.error("runAiAssist provider failure", { candidate, detail, error });
                 const canRetry = index < providerChain.length - 1
-                    && (retryAnyFailure || (0, aiProviders_js_1.isQuotaOrRateLimitError)(error));
+                    && (retryAnyFailure
+                        || (0, aiProviders_js_1.isQuotaOrRateLimitError)(error)
+                        || (0, aiProviders_js_1.isProviderConnectivityError)(error));
                 if (!canRetry) {
                     throw error;
                 }
