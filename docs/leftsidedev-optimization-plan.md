@@ -6,7 +6,7 @@
 |---|---|---|
 | `functions/scripts/seed-leftsidedev-page.mjs` | Firestore seed for `pages/leftsidedev` | Positions LeftSideDev as a **Landing CMS**, not an AI Engineering Studio |
 | `landing-template` | Single-document SPA for all tenants | No multi-route services/blog/SEO shell; cream therapeutic aesthetic |
-| `landing-admin` | Multi-tenant CMS | Guest `/` redirects to marketing URL; not a corporate site |
+| `landing-admin` | Multi-tenant CMS | Host `/` → `/login` o `/app` según sesión; marketing vive en leftsidedev-site |
 | SEO surface | Document `title` only | No OG/Twitter, schema, sitemap, RSS, GEO structure |
 
 **Decision:** Ship a dedicated Vite app `leftsidedev-site/` for the corporate site. Keep the Landing CMS seed as a **product** page; do not overload psychologist landings with corporate IA marketing.

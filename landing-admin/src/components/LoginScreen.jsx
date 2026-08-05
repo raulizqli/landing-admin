@@ -28,10 +28,14 @@ export default function LoginScreen() {
     }
   };
 
-  const displayError = localError
-    || (authError?.startsWith('login.') || authError === 'auth.profile'
-      ? t(authError === 'auth.profile' ? 'login.errorProfile' : authError)
-      : authError);
+  const displayError = (() => {
+    if (localError) return localError;
+    if (!authError) return '';
+    if (authError === 'auth.offline') return t('common.offlineBody');
+    if (authError === 'auth.profile') return t('login.errorProfile');
+    if (authError.startsWith('login.')) return t(authError);
+    return authError;
+  })();
 
   return (
     <div className="min-h-screen bg-[#081810] flex items-center justify-center p-6 font-sans">

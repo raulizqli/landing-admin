@@ -14,6 +14,7 @@ import { ensureBillingAccountRemote } from '../utils/billingFunctions';
 import { normalizeBillingAccount } from '../utils/billingPlans';
 import { isBillingBypass } from '../utils/permissions';
 import { getLoginBlockReason } from '../utils/appEnv';
+import { initHubAppCheck } from '../utils/appCheck';
 
 const AuthContext = createContext(null);
 
@@ -89,6 +90,7 @@ export function AuthProvider({ children }) {
         setAuthError('');
         setUser(nextUser);
         setProfile(nextProfile);
+        initHubAppCheck();
         await loadBillingForProfile(nextProfile);
       } catch (error) {
         console.error('Error al cargar el perfil de usuario:', error);
@@ -137,16 +139,33 @@ export function AuthProvider({ children }) {
       if (error?.code === 'auth/demo-forbidden' || error?.code === 'auth/user-disabled') {
         throw error;
       }
-      const code = error?.code ?? '';
-      const message = code === 'auth/invalid-credential'
-        ? 'login.errorInvalid'
-        : code === 'auth/user-disabled'
-          ? 'login.errorDisabled'
-          : code === 'auth/recaptcha-not-enabled' || code === 'auth/missing-recaptcha-token'
-            ? 'login.errorGeneric'
-            : code === 'auth/captcha-check-failed'
-              ? 'login.errorGeneric'
-              : 'login.errorGeneric';
+      const code = String(error?.code ?? '');
+      const raw = String(error?.message ?? '');
+      let message = 'login.errorGeneric';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        message = 'login.errorInvalid';
+      } else if (code === 'auth/user-disabled') {
+        message = 'login.errorDisabled';
+      } else if (
+        code.includes('network-request-failed')
+        || /network-request-failed|Failed to fetch|NetworkError/i.test(raw)
+      ) {
+        message = 'login.errorNetwork';
+      } else if (code === 'auth/too-many-requests') {
+        message = 'login.errorTooMany';
+      } else if (
+        code.includes('unavailable')
+        || code.includes('offline')
+        || /offline|unavailable|Failed to get document because the client is offline/i.test(raw)
+      ) {
+        message = 'auth.offline';
+      } else if (/app.?check|recaptcha/i.test(`${code} ${raw}`)) {
+        message = 'login.errorAppCheck';
+      } else if (code === 'auth/recaptcha-not-enabled' || code === 'auth/missing-recaptcha-token' || code === 'auth/captcha-check-failed') {
+        message = 'login.errorAppCheck';
+      } else if (/profile|permission-denied/i.test(`${code} ${raw}`)) {
+        message = 'login.errorProfile';
+      }
       setAuthError(message);
       throw error;
     }

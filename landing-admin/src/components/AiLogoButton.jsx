@@ -4,6 +4,7 @@ import { getAiAssistUsageRemote, runAiAssistRemote } from '../utils/aiAssistFunc
 import { getAccountAiLogoLimit } from '../utils/billingPlans';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useLocale } from '../i18n/LocaleContext';
+import AiWorkingBanner from './AiWorkingBanner';
 
 /**
  * Generate a brand logo/icon with AI (Pro: 3/month, Agency+: unlimited).
@@ -131,6 +132,7 @@ export default function AiLogoButton({
         )}
       </div>
       {usageHint && <p className="text-[10px] text-indigo-700/70">{usageHint}</p>}
+      <AiWorkingBanner active={busy} taskLabel={t('ai.workingLogo')} />
       {error && <p className="text-[10px] text-red-600">{error}</p>}
       {previewUrl && (
         <div className="space-y-2 border-t border-indigo-100 pt-2">

@@ -22,10 +22,10 @@ describe('mapAiError', () => {
     expect(message).toMatch(/API key|proveedor|configuración/i);
   });
 
-  it('keeps resource-exhausted messages', () => {
+  it('maps auth network failures clearly', () => {
     expect(mapAiError({
-      code: 'functions/resource-exhausted',
-      message: 'Cuota de IA full agotada (50/mes).',
-    })).toContain('Cuota de IA');
+      code: 'auth/network-request-failed',
+      message: 'Firebase: Error (auth/network-request-failed).',
+    })).toMatch(/Firebase Auth|red|conexión|VPN/i);
   });
 });

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
@@ -6,7 +5,6 @@ import MirrorPreviewFrame from './components/MirrorPreviewFrame.jsx';
 import UsersAdminPage from './components/UsersAdminPage.jsx';
 import { useAuth } from './contexts/AuthContext.jsx';
 import { useLocale } from './i18n/LocaleContext.jsx';
-import { getRootPublicUrl, isExternalPublicUrl } from './utils/marketingUrl.js';
 import { canManageUsers } from './utils/permissions.js';
 
 function AuthLoadingScreen() {
@@ -18,40 +16,12 @@ function AuthLoadingScreen() {
   );
 }
 
-function GuestPublicRedirect() {
-  const { t } = useLocale();
-  const publicUrl = getRootPublicUrl();
-
-  useEffect(() => {
-    if (!isExternalPublicUrl(publicUrl)) return;
-    window.location.replace(publicUrl);
-  }, [publicUrl]);
-
-  if (!isExternalPublicUrl(publicUrl)) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return (
-    <div className="h-screen flex flex-col items-center justify-center gap-3 bg-[#081810] text-white font-sans p-6 text-center">
-      <p className="text-sm tracking-wide uppercase opacity-80 animate-pulse">
-        {t('shell.redirectingMarketing')}
-      </p>
-      <a href={publicUrl} className="text-[#40B850] text-sm underline underline-offset-2">
-        {publicUrl}
-      </a>
-    </div>
-  );
-}
-
+/** Admin host `/` (e.g. admin.leftsidedev.site): session → CMS, else login. */
 function RootRoute() {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   if (loading) return <AuthLoadingScreen />;
-  // `/` → corporate site when configured, else template/marketing. CMS at `/app`.
-  // Same-origin guard avoids loops if the public URL points at this host.
-  if (!isExternalPublicUrl()) {
-    return <Navigate to="/login" replace />;
-  }
-  return <GuestPublicRedirect />;
+  if (user) return <Navigate to="/app" replace />;
+  return <Navigate to="/login" replace />;
 }
 
 function LoginRoute() {

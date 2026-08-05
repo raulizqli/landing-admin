@@ -10,7 +10,9 @@ exports.chatGroq = chatGroq;
 exports.chatGemini = chatGemini;
 exports.chatAnthropic = chatAnthropic;
 exports.runProviderChat = runProviderChat;
+exports.isQuotaOrRateLimitError = isQuotaOrRateLimitError;
 exports.resolveLiteProviderChain = resolveLiteProviderChain;
+exports.buildProviderFallbackChain = buildProviderFallbackChain;
 exports.resolveFullProvider = resolveFullProvider;
 exports.generateLogoImage = generateLogoImage;
 function extractJsonObject(raw) {
@@ -115,7 +117,10 @@ async function chatOpenAiCompatible(request, defaultBase, defaultModel) {
 async function chatOllama(request) {
     var _a;
     const base = (request.baseUrl || process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
-    const model = request.model || process.env.AI_LITE_MODEL || "qwen2.5:7b";
+    const model = request.model
+        || process.env.AI_OLLAMA_MODEL
+        || process.env.AI_LITE_MODEL
+        || "llama3.2";
     try {
         const response = await fetch(`${base}/api/chat`, {
             method: "POST",
@@ -138,9 +143,18 @@ async function chatOllama(request) {
         return extractJsonObject(((_a = data.message) === null || _a === void 0 ? void 0 : _a.content) || "{}");
     }
     catch (error) {
-        // Hub Ollama often unavailable in local/dev — fall through to mock.
-        console.warn("Ollama unavailable, using mock:", error);
-        return mockChatJson(request);
+        // Only mock in emulator/offline. In prod Cloud Functions, localhost Ollama is unreachable —
+        // swallowing the error as mock skips Gemini/Groq in the fallback chain.
+        const allowMock = process.env.FUNCTIONS_EMULATOR === "true"
+            || process.env.AI_ALLOW_MOCK === "1"
+            || process.env.AI_ALLOW_MOCK === "true";
+        if (allowMock) {
+            console.warn("Ollama unavailable, using mock:", error);
+            return mockChatJson(request);
+        }
+        throw error instanceof Error
+            ? error
+            : new Error(`Ollama no disponible (${base}): ${String(error)}`);
     }
 }
 async function chatOpenAi(request) {
@@ -149,10 +163,27 @@ async function chatOpenAi(request) {
 async function chatGroq(request) {
     return chatOpenAiCompatible(Object.assign(Object.assign({}, request), { apiKey: request.apiKey || process.env.GROQ_API_KEY, baseUrl: request.baseUrl || "https://api.groq.com/openai/v1", model: request.model || "llama-3.3-70b-versatile" }), "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile");
 }
+function looksLikeGeminiModel(model) {
+    const id = String(model !== null && model !== void 0 ? model : "").trim().toLowerCase();
+    return id.startsWith("gemini") || id.startsWith("models/gemini");
+}
+function resolveGeminiModel(request) {
+    var _a;
+    const fromRequest = String((_a = request.model) !== null && _a !== void 0 ? _a : "").trim();
+    if (fromRequest && looksLikeGeminiModel(fromRequest)) {
+        return fromRequest.replace(/^models\//i, "");
+    }
+    const fromEnv = String(process.env.GEMINI_MODEL || process.env.AI_GEMINI_MODEL || "").trim();
+    if (fromEnv) {
+        return fromEnv.replace(/^models\//i, "");
+    }
+    // Never reuse AI_LITE_MODEL here — that is often an Ollama tag (llama3.2).
+    return "gemini-2.0-flash";
+}
 async function chatGemini(request) {
     var _a, _b, _c, _d, _e;
     const apiKey = request.apiKey || process.env.GEMINI_API_KEY || "";
-    const model = request.model || process.env.AI_LITE_MODEL || "gemini-2.0-flash";
+    const model = resolveGeminiModel(request);
     if (!apiKey)
         return mockChatJson(request);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -226,7 +257,7 @@ async function runProviderChat(provider, request) {
     const usedMock = result.provider === "mock";
     return { result, provider: usedMock ? "mock" : provider };
 }
-function asProviderId(value, fallback) {
+function tryAsProviderId(value) {
     const id = String(value !== null && value !== void 0 ? value : "").trim().toLowerCase();
     if (id === "ollama"
         || id === "openai"
@@ -236,7 +267,20 @@ function asProviderId(value, fallback) {
         || id === "openai_compatible") {
         return id;
     }
-    return fallback;
+    return null;
+}
+function asProviderId(value, fallback) {
+    return tryAsProviderId(value) || fallback;
+}
+/** True when the provider rejected the call due to rate limits / billing quota. */
+function isQuotaOrRateLimitError(error) {
+    const msg = error instanceof Error
+        ? error.message
+        : typeof error === "string"
+            ? error
+            : String(error !== null && error !== void 0 ? error : "");
+    return /429|rate.?limit|quota|resource.?exhausted|exceeded.?your.?current.?quota|too many requests|billing.?hard.?limit/i
+        .test(msg);
 }
 function resolveLiteProviderChain() {
     const primary = asProviderId(process.env.AI_LITE_PROVIDER || "ollama", "ollama");
@@ -245,6 +289,31 @@ function resolveLiteProviderChain() {
     for (const id of [primary, fallback, "groq", "ollama"]) {
         if (!chain.includes(id))
             chain.push(id);
+    }
+    return chain;
+}
+/**
+ * Ordered providers for assist calls: preferred first, then Gemini (configured
+ * fallback), then the rest of the lite chain. Keeps remote Gemini ahead of
+ * localhost Ollama so Cloud Functions quota fallbacks actually work.
+ */
+function buildProviderFallbackChain(options = {}) {
+    var _a;
+    const chain = [];
+    const push = (id) => {
+        if (!chain.includes(id))
+            chain.push(id);
+    };
+    const preferred = tryAsProviderId(String((_a = options.preferred) !== null && _a !== void 0 ? _a : ""));
+    if (preferred)
+        push(preferred);
+    if (options.includeFullDefault) {
+        push(resolveFullProvider());
+    }
+    const configuredFallback = asProviderId(process.env.AI_LITE_FALLBACK_PROVIDER || "gemini", "gemini");
+    push(configuredFallback);
+    for (const id of resolveLiteProviderChain()) {
+        push(id);
     }
     return chain;
 }

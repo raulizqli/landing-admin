@@ -13,6 +13,7 @@ import {
 import { runAiAssistRemote } from '../utils/aiAssistFunctions';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useLocale } from '../i18n/LocaleContext';
+import AiWorkingBanner from './AiWorkingBanner';
 
 const FRIENDLY_VERTICAL_KEYS = {
   beauty: 'ai.structure.verticals.styling',
@@ -103,7 +104,10 @@ export default function PageStructureAssistSection({
       });
       const normalized = normalizeStructureSuggestion(data?.result || data);
       if (!normalized.recommendedSections.length && !normalized.summary) {
-        throw new Error(t('ai.error'));
+        const provider = data?.provider ? ` (${data.provider})` : '';
+        throw new Error(
+          `La IA no devolvió una estructura usable${provider}. Prueba de nuevo o revisa el proveedor.`,
+        );
       }
       setSuggestion(normalized);
     } catch (err) {
@@ -160,11 +164,14 @@ export default function PageStructureAssistSection({
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          maxLength={500}
+          rows={5}
+          maxLength={4000}
           placeholder={t('ai.structure.notePlaceholder')}
           className="w-full resize-y rounded-lg border border-gray-200 p-2.5 text-xs outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
         />
+        <p className="text-[10px] text-gray-400 text-right">
+          {String(note || '').length}/4000
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -180,6 +187,8 @@ export default function PageStructureAssistSection({
           <p className="text-[10px] text-amber-700">{t('ai.upgradeForAction')}</p>
         )}
       </div>
+
+      <AiWorkingBanner active={busy} taskLabel={t('ai.workingStructure')} />
 
       {error && (
         <p className="text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">

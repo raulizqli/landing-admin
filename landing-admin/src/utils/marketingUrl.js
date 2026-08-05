@@ -1,7 +1,8 @@
 /**
- * Public URLs for admin `/` redirects and the login «back to site» link.
+ * Public URLs for the login «back to site» link (corporate / marketing).
+ * Admin host `/` itself is session-aware: guests → /login, signed-in → /app.
  *
- * Priority for `/`:
+ * Priority:
  * 1. VITE_CORPORATE_SITE_URL (leftsidedev-site / corporate)
  * 2. VITE_MARKETING_URL / template showcase (configured marketing landing)
  */
@@ -35,7 +36,7 @@ export function getMarketingUrl() {
 }
 
 /**
- * Destination for admin `/` and login «back to site».
+ * Destination for login «back to site».
  * Corporate when configured; otherwise the template/marketing URL.
  */
 export function getRootPublicUrl() {

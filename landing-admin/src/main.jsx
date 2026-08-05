@@ -6,9 +6,9 @@ import AppRouter from './AppRouter.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { LocaleProvider } from './i18n/LocaleContext.jsx'
 import { auth } from './firebase.js'
-import { initHubAppCheck } from './utils/appCheck.js'
 
-initHubAppCheck()
+// App Check se inicia tras login (AuthContext / callables). En el /login no hace falta
+// y un reCAPTCHA mal registrado para el dominio de prod rompe signInWithEmailAndPassword.
 
 // Necesario si en Firebase Console activas "protección reCAPTCHA" para email/contraseña.
 initializeRecaptchaConfig(auth).catch((error) => {

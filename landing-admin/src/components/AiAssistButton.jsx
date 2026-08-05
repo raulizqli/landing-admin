@@ -7,9 +7,11 @@ import {
   resolveAiAssistLane,
 } from '../utils/aiAssist';
 import { runAiAssistRemote, runLocalAssistant } from '../utils/aiAssistFunctions';
+import { getDefaultAiEngine, getLocalOllamaConfig } from '../utils/aiEngine';
 import { getAiProviderDisplayName } from '../utils/aiProviderLabel';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useLocale } from '../i18n/LocaleContext';
+import AiWorkingBanner from './AiWorkingBanner';
 
 const LITE_MENU = [
   { action: 'rewrite_field', tone: 'empathetic', labelKey: 'ai.rewrite' },
@@ -41,7 +43,7 @@ export default function AiAssistButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
-  const [engine, setEngine] = useState('platform'); // platform | local
+  const [engine, setEngine] = useState(() => getDefaultAiEngine()); // platform | local
 
   const lane = entitlements.aiLane
     || resolveAiAssistLane(entitlements.account, { bypass: entitlements.bypass });
@@ -89,8 +91,9 @@ export default function AiAssistButton({
           brief,
           context,
         });
-        result = await runLocalAssistant({ system, user });
-        meta = { lane: 'lite', provider: 'local' };
+        const ollama = getLocalOllamaConfig();
+        result = await runLocalAssistant({ system, user, ...ollama });
+        meta = { lane: 'lite', provider: 'local_ollama' };
       } else {
         const data = await runAiAssistRemote({
           pageId,
@@ -101,7 +104,7 @@ export default function AiAssistButton({
           currentValue,
           brief,
           input: { currentValue, brief, context },
-          engine: lane === 'lite' ? 'ollama' : undefined,
+          // Let Cloud Functions pick AI_LITE_PROVIDER and fall back (Gemini) on quota.
         });
         result = data.result;
         meta = { lane: data.lane, provider: data.provider, usage: data.usage };
@@ -178,6 +181,11 @@ export default function AiAssistButton({
           {error && (
             <p className="mt-2 rounded-lg bg-red-50 px-2 py-1.5 text-[11px] text-red-700">{error}</p>
           )}
+          <AiWorkingBanner
+            active={busy}
+            taskLabel={t('ai.workingRewrite')}
+            className="mt-2"
+          />
           {preview && (
             <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
               <p className="text-[10px] text-gray-400">

@@ -1,5 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
-import { getHubFunctions } from './firebaseClients';
+import { getHubAuth, getHubFunctions } from './firebaseClients';
+import { appCheckDevHint, ensureCallableSession } from './appCheck';
+import { getLocalOllamaConfig } from './aiEngine';
 
 function extractCallableErrorDetail(error) {
   const details = error?.details ?? error?.customData?.details ?? error?.customData;
@@ -28,9 +30,13 @@ function extractCallableErrorDetail(error) {
 export function mapAiError(error) {
   const code = String(error?.code ?? '');
   const detail = extractCallableErrorDetail(error);
+  const raw = `${detail} ${error?.message ?? ''}`;
 
+  if (code.includes('network-request-failed') || /auth\/network-request-failed/i.test(raw)) {
+    return 'No se pudo contactar Firebase Auth (red). Comprueba internet, VPN/proxy o bloqueadores, recarga e inténtalo otra vez.';
+  }
   if (code.includes('unauthenticated')) {
-    return detail || 'Debes iniciar sesión.';
+    return `${detail || 'Debes iniciar sesión.'}${appCheckDevHint()}`;
   }
   if (code.includes('resource-exhausted')) {
     return detail || 'Cuota de IA agotada este mes.';
@@ -45,6 +51,9 @@ export function mapAiError(error) {
     return detail || 'Cloud Function de IA no desplegada. Despliega runAiAssist / generateLandingDraft.';
   }
   if (code.includes('unavailable') || code.includes('failed-precondition')) {
+    if (/app check|appcheck|recaptcha/i.test(raw)) {
+      return `App Check rechazó la petición.${appCheckDevHint()}`;
+    }
     return detail || 'El servicio de IA no está disponible. Revisa API key, modelo y conectividad.';
   }
   if (code.includes('deadline-exceeded') || code.includes('timeout')) {
@@ -58,6 +67,7 @@ export function mapAiError(error) {
 
 export async function runAiAssistRemote(payload) {
   try {
+    await ensureCallableSession(getHubAuth());
     const callable = httpsCallable(getHubFunctions(), 'runAiAssist', { timeout: 120000 });
     const result = await callable(payload);
     return result.data;
@@ -68,6 +78,7 @@ export async function runAiAssistRemote(payload) {
 
 export async function generateLandingDraftRemote(payload) {
   try {
+    await ensureCallableSession(getHubAuth());
     const callable = httpsCallable(getHubFunctions(), 'generateLandingDraft', { timeout: 120000 });
     const result = await callable(payload);
     return result.data;
@@ -78,6 +89,7 @@ export async function generateLandingDraftRemote(payload) {
 
 export async function getAiAssistUsageRemote() {
   try {
+    await ensureCallableSession(getHubAuth());
     const callable = httpsCallable(getHubFunctions(), 'getAiAssistUsage');
     const result = await callable({});
     return result.data;
@@ -88,6 +100,7 @@ export async function getAiAssistUsageRemote() {
 
 export async function createCmsPageRemote(payload) {
   try {
+    await ensureCallableSession(getHubAuth());
     const callable = httpsCallable(getHubFunctions(), 'createCmsPage', { timeout: 60000 });
     const result = await callable(payload);
     return result.data;
@@ -111,13 +124,15 @@ export async function createCmsPageRemote(payload) {
     if (code.includes('failed-precondition')) {
       if (/app check|appcheck|recaptcha/i.test(`${raw} ${detail}`)) {
         throw new Error(
-          'App Check rechazó la petición. En local: registra el debug token de la consola en Firebase → App Check. En prod: verifica reCAPTCHA y el dominio del admin.',
+          `App Check rechazó la petición.${appCheckDevHint()}`,
         );
       }
       throw new Error(detail || 'No se pudo crear la página (suscripción o precondiciones).');
     }
     if (code.includes('unauthenticated')) {
-      throw new Error(detail || 'Debes iniciar sesión de nuevo para crear páginas.');
+      throw new Error(
+        `${detail || 'Sesión no aceptada por Cloud Functions.'}${appCheckDevHint()}`,
+      );
     }
     if (code.includes('not-found') || code.includes('functions/not-found')) {
       throw new Error('Cloud Function createCmsPage no desplegada.');
@@ -140,17 +155,20 @@ export async function setAiProviderConfigRemote(payload) {
 export async function runLocalAssistant({
   system,
   user,
-  model = 'llama3.2',
-  baseUrl = 'http://127.0.0.1:11434',
+  model,
+  baseUrl,
 } = {}) {
-  const endpoint = `${baseUrl.replace(/\/$/, '')}/api/chat`;
+  const defaults = getLocalOllamaConfig();
+  const resolvedModel = String(model || defaults.model).trim() || defaults.model;
+  const resolvedBase = String(baseUrl || defaults.baseUrl).trim() || defaults.baseUrl;
+  const endpoint = `${resolvedBase.replace(/\/$/, '')}/api/chat`;
   let response;
   try {
     response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model,
+        model: resolvedModel,
         stream: false,
         format: 'json',
         messages: [
@@ -162,14 +180,14 @@ export async function runLocalAssistant({
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `El motor local no responde en ${baseUrl}. Comprueba que el servicio y el modelo estén disponibles. (${detail})`,
+      `El motor local no responde en ${resolvedBase}. Comprueba que Ollama esté en marcha (ollama serve) y el modelo disponible. (${detail})`,
     );
   }
   const raw = await response.text();
   if (!response.ok) {
     if (response.status === 404) {
       throw new Error(
-        `El modelo local «${model}» no está disponible. Instálalo o selecciona otro modelo.`,
+        `El modelo local «${resolvedModel}» no está disponible. Instálalo con: ollama pull ${resolvedModel}`,
       );
     }
     throw new Error(`El motor local falló (${response.status}): ${raw.slice(0, 160) || 'sin detalle'}`);

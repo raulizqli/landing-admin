@@ -308,6 +308,10 @@ exports.generateLandingDraft = (0, https_1.onCall)(longCallableOptions, async (r
     for (const provider of providers) {
         try {
             const output = await (0, aiProviders_js_1.runProviderChat)(provider, { system, user });
+            if (output.provider === "mock") {
+                failures.push(`${provider}: respuesta mock (sin proveedor real)`);
+                continue;
+            }
             return {
                 ok: true,
                 provider: output.provider,
@@ -412,53 +416,70 @@ exports.runAiAssist = (0, https_1.onCall)(longCallableOptions, async (request) =
         brief,
         context,
     });
-    let provider = "ollama";
+    let byokProvider = null;
     let apiKey = "";
     let baseUrl = "";
     let model = "";
     const byok = ((_10 = account.aiProvider) === null || _10 === void 0 ? void 0 : _10.mode) === "byok" && quotaConf.aiByok && isActiveStatus(account.status);
     if (lane === "full" && byok && ((_11 = account.aiProvider) === null || _11 === void 0 ? void 0 : _11.provider)) {
-        provider = (0, aiProviders_js_1.resolveFullProvider)(account.aiProvider.provider);
+        byokProvider = (0, aiProviders_js_1.resolveFullProvider)(account.aiProvider.provider);
         apiKey = await loadByokApiKey(accountId, account);
         baseUrl = String((_12 = account.aiProvider.baseUrl) !== null && _12 !== void 0 ? _12 : "");
         model = String((_13 = account.aiProvider.model) !== null && _13 !== void 0 ? _13 : "");
     }
-    else if (lane === "full") {
-        provider = (0, aiProviders_js_1.resolveFullProvider)();
-    }
-    else if (preferredEngine === "gemini" || preferredEngine === "groq" || preferredEngine === "ollama") {
-        provider = preferredEngine;
-    }
-    else {
-        provider = (0, aiProviders_js_1.resolveLiteProviderChain)()[0];
-    }
-    const chatRequest = { system, user, apiKey, baseUrl, model };
+    const preferredForChain = byokProvider
+        || (preferredEngine === "gemini" || preferredEngine === "groq" || preferredEngine === "ollama"
+            || preferredEngine === "openai" || preferredEngine === "anthropic" || preferredEngine === "openai_compatible"
+            ? preferredEngine
+            : null)
+        || (lane === "full" ? (0, aiProviders_js_1.resolveFullProvider)() : null);
+    // Prefer chosen engine; on quota/rate-limit continue with Gemini (and remaining chain).
+    // Lite without an explicit engine still retries any provider failure (legacy behavior).
+    const providerChain = (0, aiProviders_js_1.buildProviderFallbackChain)({
+        preferred: preferredForChain,
+        includeFullDefault: lane === "full" && !byokProvider,
+    });
+    const retryAnyFailure = lane === "lite" && !preferredEngine && !byokProvider;
     let result = null;
-    let usedProvider = provider;
+    let usedProvider = providerChain[0] || "ollama";
+    const failures = [];
     try {
-        if (lane === "lite" && !preferredEngine) {
-            const failures = [];
-            for (const candidate of (0, aiProviders_js_1.resolveLiteProviderChain)()) {
-                try {
-                    const out = await (0, aiProviders_js_1.runProviderChat)(candidate, chatRequest);
-                    result = out.result;
-                    usedProvider = out.provider;
-                    break;
+        for (let index = 0; index < providerChain.length; index += 1) {
+            const candidate = providerChain[index];
+            const chatRequest = candidate === byokProvider
+                ? { system, user, apiKey, baseUrl, model }
+                : { system, user };
+            try {
+                const out = await (0, aiProviders_js_1.runProviderChat)(candidate, chatRequest);
+                // Mock means the adapter could not reach a real model — keep walking the chain.
+                if (out.provider === "mock" && index < providerChain.length - 1) {
+                    failures.push(`${candidate}: respuesta mock (sin proveedor real)`);
+                    console.warn("runAiAssist skipping mock result", { candidate, failures });
+                    continue;
                 }
-                catch (error) {
-                    const detail = sanitizeAiProviderMessage(error, "fallo sin detalle");
-                    failures.push(`${candidate}: ${detail}`);
-                    console.error("runAiAssist lite provider failure", { candidate, detail, error });
+                result = out.result;
+                usedProvider = out.provider;
+                if (index > 0) {
+                    console.warn("runAiAssist fell back after provider failure", {
+                        usedProvider,
+                        failures,
+                    });
                 }
+                break;
             }
-            if (!result) {
-                throw new Error(failures.join(" | ") || "Ningún proveedor Lite de IA respondió.");
+            catch (error) {
+                const detail = sanitizeAiProviderMessage(error, "fallo sin detalle");
+                failures.push(`${candidate}: ${detail}`);
+                console.error("runAiAssist provider failure", { candidate, detail, error });
+                const canRetry = index < providerChain.length - 1
+                    && (retryAnyFailure || (0, aiProviders_js_1.isQuotaOrRateLimitError)(error));
+                if (!canRetry) {
+                    throw error;
+                }
             }
         }
-        else {
-            const out = await (0, aiProviders_js_1.runProviderChat)(provider, chatRequest);
-            result = out.result;
-            usedProvider = out.provider;
+        if (!result || usedProvider === "mock") {
+            throw new Error(failures.join(" | ") || "Ningún proveedor de IA respondió.");
         }
     }
     catch (error) {

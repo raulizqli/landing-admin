@@ -122,7 +122,10 @@ async function chatOpenAiCompatible(
 
 export async function chatOllama(request: ChatJsonRequest): Promise<Record<string, unknown>> {
   const base = (request.baseUrl || process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
-  const model = request.model || process.env.AI_LITE_MODEL || "qwen2.5:7b";
+  const model = request.model
+    || process.env.AI_OLLAMA_MODEL
+    || process.env.AI_LITE_MODEL
+    || "llama3.2";
 
   try {
     const response = await fetch(`${base}/api/chat`, {
@@ -147,9 +150,18 @@ export async function chatOllama(request: ChatJsonRequest): Promise<Record<strin
     const data = JSON.parse(raw) as { message?: { content?: string } };
     return extractJsonObject(data.message?.content || "{}");
   } catch (error) {
-    // Hub Ollama often unavailable in local/dev — fall through to mock.
-    console.warn("Ollama unavailable, using mock:", error);
-    return mockChatJson(request);
+    // Only mock in emulator/offline. In prod Cloud Functions, localhost Ollama is unreachable —
+    // swallowing the error as mock skips Gemini/Groq in the fallback chain.
+    const allowMock = process.env.FUNCTIONS_EMULATOR === "true"
+      || process.env.AI_ALLOW_MOCK === "1"
+      || process.env.AI_ALLOW_MOCK === "true";
+    if (allowMock) {
+      console.warn("Ollama unavailable, using mock:", error);
+      return mockChatJson(request);
+    }
+    throw error instanceof Error
+      ? error
+      : new Error(`Ollama no disponible (${base}): ${String(error)}`);
   }
 }
 
@@ -179,9 +191,29 @@ export async function chatGroq(request: ChatJsonRequest): Promise<Record<string,
   );
 }
 
+function looksLikeGeminiModel(model: string): boolean {
+  const id = String(model ?? "").trim().toLowerCase();
+  return id.startsWith("gemini") || id.startsWith("models/gemini");
+}
+
+function resolveGeminiModel(request: ChatJsonRequest): string {
+  const fromRequest = String(request.model ?? "").trim();
+  if (fromRequest && looksLikeGeminiModel(fromRequest)) {
+    return fromRequest.replace(/^models\//i, "");
+  }
+  const fromEnv = String(
+    process.env.GEMINI_MODEL || process.env.AI_GEMINI_MODEL || "",
+  ).trim();
+  if (fromEnv) {
+    return fromEnv.replace(/^models\//i, "");
+  }
+  // Never reuse AI_LITE_MODEL here — that is often an Ollama tag (llama3.2).
+  return "gemini-2.0-flash";
+}
+
 export async function chatGemini(request: ChatJsonRequest): Promise<Record<string, unknown>> {
   const apiKey = request.apiKey || process.env.GEMINI_API_KEY || "";
-  const model = request.model || process.env.AI_LITE_MODEL || "gemini-2.0-flash";
+  const model = resolveGeminiModel(request);
   if (!apiKey) return mockChatJson(request);
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -270,7 +302,7 @@ export async function runProviderChat(
   return { result, provider: usedMock ? "mock" : provider };
 }
 
-function asProviderId(value: string, fallback: AiProviderId): AiProviderId {
+function tryAsProviderId(value: string): AiProviderId | null {
   const id = String(value ?? "").trim().toLowerCase();
   if (
     id === "ollama"
@@ -282,7 +314,22 @@ function asProviderId(value: string, fallback: AiProviderId): AiProviderId {
   ) {
     return id;
   }
-  return fallback;
+  return null;
+}
+
+function asProviderId(value: string, fallback: AiProviderId): AiProviderId {
+  return tryAsProviderId(value) || fallback;
+}
+
+/** True when the provider rejected the call due to rate limits / billing quota. */
+export function isQuotaOrRateLimitError(error: unknown): boolean {
+  const msg = error instanceof Error
+    ? error.message
+    : typeof error === "string"
+      ? error
+      : String(error ?? "");
+  return /429|rate.?limit|quota|resource.?exhausted|exceeded.?your.?current.?quota|too many requests|billing.?hard.?limit/i
+    .test(msg);
 }
 
 export function resolveLiteProviderChain(): AiProviderId[] {
@@ -291,6 +338,38 @@ export function resolveLiteProviderChain(): AiProviderId[] {
   const chain: AiProviderId[] = [];
   for (const id of [primary, fallback, "groq" as const, "ollama" as const]) {
     if (!chain.includes(id)) chain.push(id);
+  }
+  return chain;
+}
+
+/**
+ * Ordered providers for assist calls: preferred first, then Gemini (configured
+ * fallback), then the rest of the lite chain. Keeps remote Gemini ahead of
+ * localhost Ollama so Cloud Functions quota fallbacks actually work.
+ */
+export function buildProviderFallbackChain(options: {
+  preferred?: string | null;
+  includeFullDefault?: boolean;
+} = {}): AiProviderId[] {
+  const chain: AiProviderId[] = [];
+  const push = (id: AiProviderId) => {
+    if (!chain.includes(id)) chain.push(id);
+  };
+
+  const preferred = tryAsProviderId(String(options.preferred ?? ""));
+  if (preferred) push(preferred);
+  if (options.includeFullDefault) {
+    push(resolveFullProvider());
+  }
+
+  const configuredFallback = asProviderId(
+    process.env.AI_LITE_FALLBACK_PROVIDER || "gemini",
+    "gemini",
+  );
+  push(configuredFallback);
+
+  for (const id of resolveLiteProviderChain()) {
+    push(id);
   }
   return chain;
 }

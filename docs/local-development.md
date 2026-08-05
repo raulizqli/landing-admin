@@ -33,8 +33,8 @@ Archivo: `landing-admin/.env.local`
 | `VITE_FIREBASE_APP_ID` | Sí | ID de la aplicación web |
 | `VITE_FIREBASE_MEASUREMENT_ID` | No | GA4 por defecto |
 | `VITE_TEMPLATE_PREVIEW_URL` | Dev | Template para preview Local; normalmente `http://localhost:5174` |
-| `VITE_CORPORATE_SITE_URL` | No | Destino preferido de `/` (admin) → sitio corporativo |
-| `VITE_MARKETING_URL` | No | Fallback de `/` (admin) → template/marketing configurado |
+| `VITE_CORPORATE_SITE_URL` | No | Enlace «Volver al sitio» en `/login` (sitio corporativo) |
+| `VITE_MARKETING_URL` | No | Fallback de «Volver al sitio» → template/marketing configurado |
 | `VITE_BOOTSTRAP_ROOT_EMAIL` | Inicial | Email autorizado para crear el primer perfil root |
 | `VITE_RECAPTCHA_SITE_KEY` | Producción | Site key de reCAPTCHA v3 para App Check |
 | `VITE_APP_CHECK_DEBUG_TOKEN` | Dev | Token debug registrado en App Check |
@@ -167,8 +167,11 @@ App Check protege escrituras del CMS y llamadas sensibles:
 1. Crea una clave **reCAPTCHA v3**; no uses el checkbox v2.
 2. Registra `localhost`, `127.0.0.1` y los dominios de producción.
 3. Añade la site key como `VITE_RECAPTCHA_SITE_KEY`.
-4. Para desarrollo, registra el token debug que muestra la consola.
-5. Empieza con modo **Monitor** y valida el tráfico antes de activar **Enforce**.
+4. Para desarrollo, define un UUID estable en `VITE_APP_CHECK_DEBUG_TOKEN` y regístralo en Firebase Console → App Check → Manage debug tokens (o copia el token que imprime la consola del navegador).
+5. Reinicia Vite tras cambiar `.env.local`.
+6. Empieza con modo **Monitor** y valida el tráfico antes de activar **Enforce**.
+
+Sin debug token registrado, las callables contra Functions de prod desde localhost suelen fallar con `functions/unauthenticated` (no es un problema de cuota ni de rol).
 
 Los secretos de reCAPTCHA no pertenecen a variables `VITE_`; esas variables son visibles en el navegador.
 
@@ -212,6 +215,13 @@ npm run lint --prefix landing-template
 - Confirma que el usuario tenga un perfil válido en `users/{uid}`.
 - Revisa reglas y App Check.
 - Comprueba el proyecto Firebase activo y el rol asignado.
+
+### `Unauthenticated` al crear página / IA en localhost
+
+- El admin apunta a Functions de **prod** si no hay `VITE_FUNCTIONS_EMULATOR_HOST`.
+- Registra `VITE_APP_CHECK_DEBUG_TOKEN` en App Check → Manage debug tokens y reinicia Vite.
+- Cierra sesión y vuelve a entrar (el cliente refresca el ID token antes del callable).
+- Alternativa: Functions Emulator + `VITE_FUNCTIONS_EMULATOR_HOST=127.0.0.1:5001`.
 
 ## Lecturas relacionadas
 
