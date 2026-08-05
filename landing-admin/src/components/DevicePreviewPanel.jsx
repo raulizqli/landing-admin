@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  buildMirrorPreviewFrameUrl,
-  isSameOriginPreviewMessage,
-  LANDING_PREVIEW_READY,
   postLandingPreviewScroll,
   postLandingPreviewUpdate,
 } from '../utils/mirrorPreview';
+import MirrorPreviewPortal from './MirrorPreviewPortal';
 
 const TEMPLATE_PREVIEW_URL = (
   import.meta.env.VITE_TEMPLATE_PREVIEW_URL?.replace(/\/$/, '')
@@ -95,27 +93,16 @@ export default function DevicePreviewPanel({
     if (layoutTimerRef.current) window.clearTimeout(layoutTimerRef.current);
   }, []);
 
-  const mirrorPreviewUrl = useMemo(() => {
-    if (!selectedId) return null;
-    return buildMirrorPreviewFrameUrl({
-      pageId: selectedId,
-      language: editingLanguage,
-    });
-  }, [selectedId, editingLanguage]);
-
   const localPreviewUrl = selectedId && TEMPLATE_PREVIEW_URL
     ? `${TEMPLATE_PREVIEW_URL}?pageId=${encodeURIComponent(selectedId)}&preview=true&lang=${editingLanguage}`
     : null;
 
-  const previewTargetOrigin = previewSource === 'mirror'
-    ? window.location.origin
-    : TEMPLATE_PREVIEW_URL;
-
-  const postPreviewUpdate = useCallback(() => {
-    if (!formData || !previewIframeRef.current?.contentWindow || !previewTargetOrigin) return;
+  const postLocalPreviewUpdate = useCallback(() => {
+    if (previewSource !== 'local') return;
+    if (!formData || !previewIframeRef.current?.contentWindow || !TEMPLATE_PREVIEW_URL) return;
     postLandingPreviewUpdate(
       previewIframeRef.current.contentWindow,
-      previewTargetOrigin,
+      TEMPLATE_PREVIEW_URL,
       {
         data: formData,
         pageId: selectedId,
@@ -125,44 +112,28 @@ export default function DevicePreviewPanel({
       },
     );
   }, [
+    previewSource,
     formData,
     selectedId,
     editingLanguage,
     previewScrollSectionId,
     activeMarketingRouteId,
-    previewTargetOrigin,
   ]);
 
   useEffect(() => {
-    if (!formData) return;
-    if (previewSource === 'local' && !TEMPLATE_PREVIEW_URL) return;
-    if (previewSource === 'mirror' && !mirrorPreviewUrl) return;
-    postPreviewUpdate();
-  }, [formData, previewSource, mirrorPreviewUrl, postPreviewUpdate, activeMarketingRouteId]);
+    if (previewSource !== 'local' || !formData || !TEMPLATE_PREVIEW_URL) return;
+    postLocalPreviewUpdate();
+  }, [formData, previewSource, postLocalPreviewUpdate, activeMarketingRouteId]);
 
   useEffect(() => {
-    if (previewSource !== 'mirror') return undefined;
-
-    const handleReady = (event) => {
-      if (!isSameOriginPreviewMessage(event)) return;
-      if (event.data?.type !== LANDING_PREVIEW_READY) return;
-      postPreviewUpdate();
-    };
-
-    window.addEventListener('message', handleReady);
-    return () => window.removeEventListener('message', handleReady);
-  }, [previewSource, postPreviewUpdate]);
-
-  useEffect(() => {
-    if (!previewScrollSectionId || !formData) return;
-    if (!previewIframeRef.current?.contentWindow || !previewTargetOrigin) return;
-    if (previewSource === 'local' && !TEMPLATE_PREVIEW_URL) return;
+    if (previewSource !== 'local' || !previewScrollSectionId || !formData) return;
+    if (!previewIframeRef.current?.contentWindow || !TEMPLATE_PREVIEW_URL) return;
     postLandingPreviewScroll(
       previewIframeRef.current.contentWindow,
-      previewTargetOrigin,
+      TEMPLATE_PREVIEW_URL,
       previewScrollSectionId,
     );
-  }, [previewScrollSectionId, previewSource, previewTargetOrigin, formData]);
+  }, [previewScrollSectionId, previewSource, formData]);
 
   const openLocalPreviewTab = () => {
     if (localPreviewUrl) window.open(localPreviewUrl, '_blank', 'noopener,noreferrer');
@@ -187,11 +158,6 @@ export default function DevicePreviewPanel({
     }, 500);
   };
 
-  const iframeSrc = previewSource === 'mirror' ? mirrorPreviewUrl : localPreviewUrl;
-  const iframeKey = previewSource === 'mirror'
-    ? `mirror:${mirrorPreviewUrl}`
-    : `local:${localPreviewUrl}`;
-
   const previewSurface = (() => {
     if (!formData) {
       return (
@@ -200,14 +166,26 @@ export default function DevicePreviewPanel({
         </div>
       );
     }
-    if (previewSource === 'local' && !TEMPLATE_PREVIEW_URL) {
+    if (previewSource === 'mirror') {
+      return (
+        <MirrorPreviewPortal
+          formData={formData}
+          selectedId={selectedId}
+          language={editingLanguage}
+          scrollSectionId={previewScrollSectionId}
+          activeMarketingRouteId={activeMarketingRouteId}
+          title={`Vista previa espejo de ${selectedId}`}
+        />
+      );
+    }
+    if (!TEMPLATE_PREVIEW_URL) {
       return (
         <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white p-6 text-center">
           Configura <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">VITE_TEMPLATE_PREVIEW_URL</code> en <code className="mx-1 text-[10px] bg-gray-100 px-1 rounded">.env.local</code> para usar la vista local.
         </div>
       );
     }
-    if (!iframeSrc) {
+    if (!localPreviewUrl) {
       return (
         <div className="h-full flex items-center justify-center text-gray-400 text-xs bg-white">
           Ningún sitio seleccionado para previsualización.
@@ -217,10 +195,10 @@ export default function DevicePreviewPanel({
     return (
       <iframe
         ref={previewIframeRef}
-        key={iframeKey}
-        title={`Vista previa ${previewSource === 'mirror' ? 'espejo' : 'local'} de ${selectedId}`}
-        src={iframeSrc}
-        onLoad={postPreviewUpdate}
+        key={`local:${localPreviewUrl}`}
+        title={`Vista previa local de ${selectedId}`}
+        src={localPreviewUrl}
+        onLoad={postLocalPreviewUpdate}
         className="w-full h-full border-0 bg-white"
       />
     );
