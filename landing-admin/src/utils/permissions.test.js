@@ -1,9 +1,44 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canAccessPage,
   canCreatePages,
   canManagePageLayout,
+  getAccessiblePageIds,
   isBillingAccountOwner,
 } from './permissions.js';
+
+describe('getAccessiblePageIds', () => {
+  it('returns all assigned pages for Agency-style user owners', () => {
+    expect(getAccessiblePageIds({
+      role: 'user',
+      pageId: 'first',
+      assignedPageIds: ['first', 'second', 'third'],
+    })).toEqual(['first', 'second', 'third']);
+  });
+
+  it('falls back to assignedPageIds when pageId is empty', () => {
+    expect(getAccessiblePageIds({
+      role: 'user',
+      pageId: '',
+      assignedPageIds: ['solo'],
+    })).toEqual(['solo']);
+  });
+
+  it('allows canAccessPage for any assigned page', () => {
+    const profile = { role: 'user', pageId: 'a', assignedPageIds: ['a', 'b'] };
+    expect(canAccessPage(profile, 'b')).toBe(true);
+    expect(canAccessPage(profile, 'c')).toBe(false);
+  });
+});
+
+describe('isSinglePageUser', () => {
+  it('hides multi-page list only when the user has at most one page', async () => {
+    const { isSinglePageUser } = await import('./permissions.js');
+    expect(isSinglePageUser({ role: 'user', pageId: 'a', assignedPageIds: ['a'] })).toBe(true);
+    expect(isSinglePageUser({ role: 'user', pageId: 'a', assignedPageIds: ['a', 'b'] })).toBe(false);
+    expect(isSinglePageUser({ role: 'admin', assignedPageIds: ['a'] })).toBe(false);
+  });
+});
 
 describe('isBillingAccountOwner', () => {
   it('treats accountId defaulting to uid as owner', () => {

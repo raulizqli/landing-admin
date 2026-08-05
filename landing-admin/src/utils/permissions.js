@@ -27,10 +27,10 @@ export function getAccessiblePageIds(profile) {
   }
 
   if (role === ROLES.USER) {
-    const pageId = String(profile?.pageId ?? '').trim();
-    if (pageId) return [pageId];
+    // Agency/Pro owners may hold several pages in assignedPageIds; pageId is the primary.
+    const primary = String(profile?.pageId ?? '').trim();
     const fromList = normalizePageIdList(profile?.assignedPageIds);
-    return fromList.length > 0 ? [fromList[0]] : [];
+    return normalizePageIdList(primary ? [primary, ...fromList] : fromList);
   }
 
   return [];
@@ -117,5 +117,7 @@ export function getRoleLabel(role) {
 }
 
 export function isSinglePageUser(profile) {
-  return normalizeRole(profile?.role) === ROLES.USER;
+  if (normalizeRole(profile?.role) !== ROLES.USER) return false;
+  // Agency owners (role user) with multiple assigned pages need the sidebar list.
+  return getAccessiblePageIds(profile).length <= 1;
 }

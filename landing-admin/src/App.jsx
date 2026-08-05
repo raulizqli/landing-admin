@@ -88,7 +88,16 @@ function hydrateForm(landing) {
 }
 
 export default function App() {
-  const { user, profile, loading: authLoading, signOut, hasAccess, authError, refreshBillingAccount } = useAuth();
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    signOut,
+    hasAccess,
+    authError,
+    refreshProfile,
+    refreshBillingAccount,
+  } = useAuth();
   const { t } = useLocale();
   const entitlements = useEntitlements();
   const [landings, setLandings] = useState([]);
@@ -382,9 +391,15 @@ export default function App() {
       setLayoutBaseline(hydrated);
       setShowCreatePage(false);
       try {
-        await refreshBillingAccount?.();
+        // Profile must refresh so assignedPageIds/pageId unlock list + Guardar (Agency first page).
+        await refreshProfile?.();
       } catch (error) {
-        console.warn('Could not refresh billing after create:', error);
+        console.warn('Could not refresh profile after create:', error);
+        try {
+          await refreshBillingAccount?.();
+        } catch (billingError) {
+          console.warn('Could not refresh billing after create:', billingError);
+        }
       }
     } finally {
       setCreatingPage(false);

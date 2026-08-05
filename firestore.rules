@@ -31,13 +31,14 @@ service cloud.firestore {
     }
 
     function canEditPage(pageId) {
+      // Agency/Pro owners often keep pages in assignedPageIds (not only users.pageId).
+      let inAssigned = userData().keys().hasAll(['assignedPageIds'])
+        && pageId in userData().assignedPageIds;
+      let isPrimaryUserPage = userData().keys().hasAll(['pageId'])
+        && userData().pageId == pageId;
       return isRoot()
-        || (isAdmin()
-          && userData().keys().hasAll(['assignedPageIds'])
-          && pageId in userData().assignedPageIds)
-        || (isRegularUser()
-          && userData().keys().hasAll(['pageId'])
-          && userData().pageId == pageId);
+        || (isAdmin() && inAssigned)
+        || (isRegularUser() && (isPrimaryUserPage || inAssigned));
     }
 
     function isEmptyString(value) {

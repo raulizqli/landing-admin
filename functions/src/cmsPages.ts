@@ -225,21 +225,18 @@ export const createCmsPage = onCall(
 
       const userData = userSnap.data() ?? {};
       const role = String(userData.role ?? "").trim().toLowerCase();
-      const assignedPageIds = normalizePageIdList(userData.assignedPageIds);
+      const existingPageId = String(userData.pageId ?? "").trim();
       const patch: Record<string, unknown> = {
         accountId,
         updatedAt: new Date().toISOString(),
       };
 
-      if (role === "admin" || (isOwner && role !== "root")) {
+      // Always attach the new page to the creator so CMS list + Firestore canEditPage work
+      // for Agency/Pro owners (role user|admin) without a stale empty pageId.
+      if (role === "admin" || role === "user" || (isOwner && role !== "root")) {
         patch.assignedPageIds = FieldValue.arrayUnion(pageId);
-      } else if (role === "user") {
-        const existingPageId = String(userData.pageId ?? "").trim();
         if (!existingPageId) {
           patch.pageId = pageId;
-        }
-        if (!assignedPageIds.includes(pageId)) {
-          patch.assignedPageIds = FieldValue.arrayUnion(pageId);
         }
       }
 

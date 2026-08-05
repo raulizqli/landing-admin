@@ -171,21 +171,17 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
         }
         const userData = (_b = userSnap.data()) !== null && _b !== void 0 ? _b : {};
         const role = String((_c = userData.role) !== null && _c !== void 0 ? _c : "").trim().toLowerCase();
-        const assignedPageIds = normalizePageIdList(userData.assignedPageIds);
+        const existingPageId = String((_d = userData.pageId) !== null && _d !== void 0 ? _d : "").trim();
         const patch = {
             accountId,
             updatedAt: new Date().toISOString(),
         };
-        if (role === "admin" || (isOwner && role !== "root")) {
+        // Always attach the new page to the creator so CMS list + Firestore canEditPage work
+        // for Agency/Pro owners (role user|admin) without a stale empty pageId.
+        if (role === "admin" || role === "user" || (isOwner && role !== "root")) {
             patch.assignedPageIds = firestore_1.FieldValue.arrayUnion(pageId);
-        }
-        else if (role === "user") {
-            const existingPageId = String((_d = userData.pageId) !== null && _d !== void 0 ? _d : "").trim();
             if (!existingPageId) {
                 patch.pageId = pageId;
-            }
-            if (!assignedPageIds.includes(pageId)) {
-                patch.assignedPageIds = firestore_1.FieldValue.arrayUnion(pageId);
             }
         }
         tx.set(userRef, patch, { merge: true });
