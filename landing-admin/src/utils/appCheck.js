@@ -18,6 +18,11 @@ function configureDebugToken() {
   globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
+/**
+ * Start App Check after the user is signed in (not on the bare /login page).
+ * Once initialized it stays for the page lifetime — logout must full-reload
+ * (see AuthContext.signOut) so the next login is not blocked by Auth+App Check.
+ */
 export function initHubAppCheck() {
   if (initialized || typeof window === 'undefined') return null;
 

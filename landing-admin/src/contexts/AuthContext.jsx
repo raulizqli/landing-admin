@@ -66,6 +66,11 @@ export function AuthProvider({ children }) {
     } catch (signOutError) {
       console.error('Error al cerrar sesión no autorizada:', signOutError);
     }
+    // Full reload clears in-memory App Check so the next sign-in is not blocked
+    // (prod-only symptom: first login OK, logout → login fails).
+    if (typeof window !== 'undefined') {
+      window.location.replace('/login');
+    }
   }, []);
 
   useEffect(() => {
@@ -173,7 +178,19 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     setAuthError('');
-    await firebaseSignOut(auth);
+    setUser(null);
+    setProfile(null);
+    setBillingAccount(null);
+    try {
+      await firebaseSignOut(auth);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+    // App Check cannot be torn down after init; Auth would attach a stale/broken
+    // App Check token on the next signInWithEmailAndPassword in production.
+    if (typeof window !== 'undefined') {
+      window.location.replace('/login');
+    }
   };
 
   const refreshProfile = async () => {
