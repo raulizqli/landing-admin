@@ -8,6 +8,7 @@ exports.ensureBootstrapRoot = void 0;
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
+const callableOptions_js_1 = require("./callableOptions.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
@@ -32,10 +33,7 @@ function normalizeProfile(uid, data = {}) {
         createdAt: (_g = data.createdAt) !== null && _g !== void 0 ? _g : null,
     };
 }
-const callableOptions = {
-    cors: true,
-    invoker: "public",
-};
+const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 /**
  * Ensures the allowlisted bootstrap email has a users/{uid} doc with role root.
  * Other signed-in users without a profile get permission-denied (invite-only).

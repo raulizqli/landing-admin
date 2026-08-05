@@ -5,6 +5,7 @@ const app_1 = require("firebase-admin/app");
 const auth_1 = require("firebase-admin/auth");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
+const callableOptions_js_1 = require("./callableOptions.js");
 (0, app_1.initializeApp)();
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
@@ -91,10 +92,7 @@ async function assertRootCaller(request) {
     }
     return request.auth.uid;
 }
-const callableOptions = {
-    cors: true,
-    invoker: "public",
-};
+const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 function getAdminPublicUrl() {
     var _a;
     return String((_a = process.env.ADMIN_PUBLIC_URL) !== null && _a !== void 0 ? _a : "http://localhost:5173").trim().replace(/\/+$/, "");

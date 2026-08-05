@@ -2,6 +2,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, type Firestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 initializeApp();
 
@@ -130,10 +131,7 @@ async function assertRootCaller(request: CallableRequest) {
   return request.auth.uid;
 }
 
-const callableOptions = {
-  cors: true,
-  invoker: "public",
-};
+const callableOptions = sensitiveCallableOptions();
 
 function getAdminPublicUrl() {
   return String(process.env.ADMIN_PUBLIC_URL ?? "http://localhost:5173").trim().replace(/\/+$/, "");

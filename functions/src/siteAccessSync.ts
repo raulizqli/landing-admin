@@ -8,6 +8,7 @@ import {
   resolveSiteAccessFromAccount,
   SiteAccessSnapshot,
 } from "./siteAccessPolicy.js";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -16,6 +17,7 @@ if (getApps().length === 0) {
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
 const PAGES_COLLECTIONS = ["pages", "paginas"] as const;
+const callableOptions = sensitiveCallableOptions();
 
 async function getCallerProfile(uid: string) {
   const snap = await getFirestore().collection(USERS_COLLECTION).doc(uid).get();
@@ -111,7 +113,7 @@ export async function applyBillingPatchWithSiteAccess(
 }
 
 /** Root: mark whether Google Ads publicity is earning enough to keep sites online. */
-export const setBillingMonetization = onCall(async (request: CallableRequest) => {
+export const setBillingMonetization = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }

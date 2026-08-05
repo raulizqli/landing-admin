@@ -8,12 +8,14 @@ const https_1 = require("firebase-functions/v2/https");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const app_1 = require("firebase-admin/app");
 const siteAccessPolicy_js_1 = require("./siteAccessPolicy.js");
+const callableOptions_js_1 = require("./callableOptions.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
 const PAGES_COLLECTIONS = ["pages", "paginas"];
+const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 async function getCallerProfile(uid) {
     var _a;
     const snap = await (0, firestore_1.getFirestore)().collection(USERS_COLLECTION).doc(uid).get();
@@ -86,7 +88,7 @@ async function applyBillingPatchWithSiteAccess(accountId, patch) {
     return Object.assign(Object.assign({ id: accountId }, nextData), { siteAccess });
 }
 /** Root: mark whether Google Ads publicity is earning enough to keep sites online. */
-exports.setBillingMonetization = (0, https_1.onCall)(async (request) => {
+exports.setBillingMonetization = (0, https_1.onCall)(callableOptions, async (request) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");

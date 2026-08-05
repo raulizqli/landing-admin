@@ -10,11 +10,13 @@ const https_1 = require("firebase-functions/v2/https");
 const app_1 = require("firebase-admin/app");
 const stripe_1 = __importDefault(require("stripe"));
 const siteAccessSync_js_1 = require("./siteAccessSync.js");
+const callableOptions_js_1 = require("./callableOptions.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
+const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 const VALID_PLANS = new Set(["starter", "pro", "agency", "enterprise"]);
 const PLAN_AMOUNTS_MXN = {
     starter: 189,
@@ -203,7 +205,7 @@ async function loadOrCreateAccountForUser(profile) {
 async function applyPlanToAccount(accountId, patch) {
     return (0, siteAccessSync_js_1.applyBillingPatchWithSiteAccess)(accountId, patch);
 }
-exports.ensureBillingAccount = (0, https_1.onCall)(async (request) => {
+exports.ensureBillingAccount = (0, https_1.onCall)(callableOptions, async (request) => {
     var _a;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
@@ -212,7 +214,7 @@ exports.ensureBillingAccount = (0, https_1.onCall)(async (request) => {
     const account = await loadOrCreateAccountForUser(profile);
     return { account };
 });
-exports.setBillingPlanManual = (0, https_1.onCall)(async (request) => {
+exports.setBillingPlanManual = (0, https_1.onCall)(callableOptions, async (request) => {
     var _a, _b, _c, _d, _e, _f;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
@@ -234,7 +236,7 @@ exports.setBillingPlanManual = (0, https_1.onCall)(async (request) => {
     });
     return { account };
 });
-exports.createBillingCheckout = (0, https_1.onCall)(async (request) => {
+exports.createBillingCheckout = (0, https_1.onCall)(callableOptions, async (request) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");

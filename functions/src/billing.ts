@@ -4,6 +4,7 @@ import { onCall, onRequest, HttpsError, CallableRequest } from "firebase-functio
 import { initializeApp, getApps } from "firebase-admin/app";
 import Stripe from "stripe";
 import { applyBillingPatchWithSiteAccess } from "./siteAccessSync.js";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -11,6 +12,7 @@ if (getApps().length === 0) {
 
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
+const callableOptions = sensitiveCallableOptions();
 
 const VALID_PLANS = new Set(["starter", "pro", "agency", "enterprise"]);
 
@@ -277,7 +279,7 @@ async function applyPlanToAccount(
   return applyBillingPatchWithSiteAccess(accountId, patch);
 }
 
-export const ensureBillingAccount = onCall(async (request: CallableRequest) => {
+export const ensureBillingAccount = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }
@@ -286,7 +288,7 @@ export const ensureBillingAccount = onCall(async (request: CallableRequest) => {
   return { account };
 });
 
-export const setBillingPlanManual = onCall(async (request: CallableRequest) => {
+export const setBillingPlanManual = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }
@@ -310,7 +312,7 @@ export const setBillingPlanManual = onCall(async (request: CallableRequest) => {
   return { account };
 });
 
-export const createBillingCheckout = onCall(async (request: CallableRequest) => {
+export const createBillingCheckout = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }

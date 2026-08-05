@@ -5,12 +5,16 @@ const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const app_1 = require("firebase-admin/app");
 const aiProviders_js_1 = require("./aiProviders.js");
+const callableOptions_js_1 = require("./callableOptions.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
 const AI_USAGE_SUBCOLLECTION = "aiUsage";
+const AI_SECRETS_DOC = "aiProvider";
+const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
+const longCallableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)({ timeoutSeconds: 120 });
 const LITE_ACTIONS = new Set(["rewrite_field", "polish_bio", "polish_tagline", "hero_suggest"]);
 const FULL_ACTIONS = new Set([
     ...LITE_ACTIONS,
@@ -78,6 +82,47 @@ async function getCallerProfile(uid) {
         throw new https_1.HttpsError("permission-denied", "Perfil de usuario no encontrado.");
     }
     return Object.assign({ uid }, ((_a = snap.data()) !== null && _a !== void 0 ? _a : {}));
+}
+function aiSecretsRef(accountId) {
+    return (0, firestore_1.getFirestore)()
+        .collection(BILLING_ACCOUNTS_COLLECTION)
+        .doc(accountId)
+        .collection("secrets")
+        .doc(AI_SECRETS_DOC);
+}
+/** Persist BYOK key in Admin-only secrets subcollection (never on the public billingAccounts doc). */
+async function saveByokApiKey(accountId, apiKey) {
+    const trimmed = String(apiKey !== null && apiKey !== void 0 ? apiKey : "").trim();
+    if (!trimmed) {
+        await aiSecretsRef(accountId).delete().catch(() => undefined);
+        return;
+    }
+    await aiSecretsRef(accountId).set({
+        apiKey: trimmed,
+        updatedAt: new Date().toISOString(),
+    }, { merge: true });
+}
+/**
+ * Load BYOK key from secrets/. Migrates legacy plaintext apiKey off billingAccounts if present (F11).
+ */
+async function loadByokApiKey(accountId, accountData) {
+    var _a, _b, _c;
+    const secretsSnap = await aiSecretsRef(accountId).get();
+    const fromSecrets = String((_b = (_a = secretsSnap.data()) === null || _a === void 0 ? void 0 : _a.apiKey) !== null && _b !== void 0 ? _b : "").trim();
+    if (fromSecrets)
+        return fromSecrets;
+    const legacy = (accountData.aiProvider && typeof accountData.aiProvider === "object")
+        ? accountData.aiProvider
+        : {};
+    const legacyKey = String((_c = legacy.apiKey) !== null && _c !== void 0 ? _c : "").trim();
+    if (!legacyKey)
+        return "";
+    await saveByokApiKey(accountId, legacyKey);
+    await (0, firestore_1.getFirestore)().collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId).set({
+        aiProvider: Object.assign(Object.assign({}, legacy), { apiKey: firestore_1.FieldValue.delete(), apiKeyLast4: legacy.apiKeyLast4 || legacyKey.slice(-4), hasKey: true }),
+        updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    return legacyKey;
 }
 function resolveLane(account, isRoot) {
     if (isRoot)
@@ -232,7 +277,7 @@ function buildLandingDraftPrompt(brief, language, vertical) {
         brief,
     ].join("\n");
 }
-exports.generateLandingDraft = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (request) => {
+exports.generateLandingDraft = (0, https_1.onCall)(longCallableOptions, async (request) => {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
@@ -278,8 +323,8 @@ exports.generateLandingDraft = (0, https_1.onCall)({ timeoutSeconds: 120 }, asyn
     }
     throwAiProviderFailure(new Error(failures.join(" | ") || "Ningún proveedor de IA respondió."), "No se pudo generar el borrador. Revisa claves, modelo y conectividad de IA.");
 });
-exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16;
+exports.runAiAssist = (0, https_1.onCall)(longCallableOptions, async (request) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -321,12 +366,12 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
             const byokKey = ((_5 = account.aiProvider) === null || _5 === void 0 ? void 0 : _5.mode) === "byok"
                 && quotaConf.aiByok
                 && isActiveStatus(account.status)
-                ? String((_7 = (_6 = account.aiProvider) === null || _6 === void 0 ? void 0 : _6.apiKey) !== null && _7 !== void 0 ? _7 : "")
+                ? await loadByokApiKey(accountId, account)
                 : "";
             logoResult = await (0, aiProviders_js_1.generateLogoImage)({
-                name: String((_8 = context.name) !== null && _8 !== void 0 ? _8 : ""),
-                specialty: String((_9 = context.specialty) !== null && _9 !== void 0 ? _9 : ""),
-                vertical: String((_10 = context.vertical) !== null && _10 !== void 0 ? _10 : "generic"),
+                name: String((_6 = context.name) !== null && _6 !== void 0 ? _6 : ""),
+                specialty: String((_7 = context.specialty) !== null && _7 !== void 0 ? _7 : ""),
+                vertical: String((_8 = context.vertical) !== null && _8 !== void 0 ? _8 : "generic"),
                 brief,
                 language,
                 apiKey: byokKey || undefined,
@@ -358,7 +403,7 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
     }
     const limit = lane === "full" ? quotaConf.full : quotaConf.lite;
     const usage = await assertAndIncrementQuota(accountId, lane, limit, isRoot);
-    const system = buildSystemPrompt(language, String((_11 = context.vertical) !== null && _11 !== void 0 ? _11 : "generic"));
+    const system = buildSystemPrompt(language, String((_9 = context.vertical) !== null && _9 !== void 0 ? _9 : "generic"));
     const user = buildUserPrompt({
         action,
         tone,
@@ -371,12 +416,12 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
     let apiKey = "";
     let baseUrl = "";
     let model = "";
-    const byok = ((_12 = account.aiProvider) === null || _12 === void 0 ? void 0 : _12.mode) === "byok" && quotaConf.aiByok && isActiveStatus(account.status);
-    if (lane === "full" && byok && ((_13 = account.aiProvider) === null || _13 === void 0 ? void 0 : _13.provider)) {
+    const byok = ((_10 = account.aiProvider) === null || _10 === void 0 ? void 0 : _10.mode) === "byok" && quotaConf.aiByok && isActiveStatus(account.status);
+    if (lane === "full" && byok && ((_11 = account.aiProvider) === null || _11 === void 0 ? void 0 : _11.provider)) {
         provider = (0, aiProviders_js_1.resolveFullProvider)(account.aiProvider.provider);
-        apiKey = String((_14 = account.aiProvider.apiKey) !== null && _14 !== void 0 ? _14 : "");
-        baseUrl = String((_15 = account.aiProvider.baseUrl) !== null && _15 !== void 0 ? _15 : "");
-        model = String((_16 = account.aiProvider.model) !== null && _16 !== void 0 ? _16 : "");
+        apiKey = await loadByokApiKey(accountId, account);
+        baseUrl = String((_12 = account.aiProvider.baseUrl) !== null && _12 !== void 0 ? _12 : "");
+        model = String((_13 = account.aiProvider.model) !== null && _13 !== void 0 ? _13 : "");
     }
     else if (lane === "full") {
         provider = (0, aiProviders_js_1.resolveFullProvider)();
@@ -440,9 +485,9 @@ exports.runAiAssist = (0, https_1.onCall)({ timeoutSeconds: 120 }, async (reques
         disclaimer: "Revisa el texto antes de publicar.",
     };
 });
-/** Agency+/root: store BYOK provider settings (api key server-side only). */
-exports.setAiProviderConfig = (0, https_1.onCall)(async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
+/** Agency+/root: store BYOK provider settings (api key in secrets/ only). */
+exports.setAiProviderConfig = (0, https_1.onCall)(callableOptions, async (request) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -476,40 +521,51 @@ exports.setAiProviderConfig = (0, https_1.onCall)(async (request) => {
     const previous = (account.aiProvider && typeof account.aiProvider === "object")
         ? account.aiProvider
         : {};
+    let apiKeyLast4 = String((_t = previous.apiKeyLast4) !== null && _t !== void 0 ? _t : "").trim();
+    let hasKey = false;
+    if (clearKey) {
+        await saveByokApiKey(accountId, "");
+        apiKeyLast4 = "";
+        hasKey = false;
+    }
+    else if (apiKey) {
+        await saveByokApiKey(accountId, apiKey);
+        apiKeyLast4 = apiKey.slice(-4);
+        hasKey = true;
+    }
+    else {
+        const existing = await loadByokApiKey(accountId, account);
+        hasKey = Boolean(existing);
+        if (hasKey && !apiKeyLast4 && existing)
+            apiKeyLast4 = existing.slice(-4);
+    }
     const next = {
         mode,
         provider,
         model,
         baseUrl,
         updatedAt: new Date().toISOString(),
-        apiKeyLast4: previous.apiKeyLast4 || "",
+        apiKeyLast4,
+        hasKey,
     };
-    if (clearKey) {
-        next.apiKey = "";
-        next.apiKeyLast4 = "";
-    }
-    else if (apiKey) {
-        next.apiKey = apiKey;
-        next.apiKeyLast4 = apiKey.slice(-4);
-    }
-    else if (previous.apiKey) {
-        next.apiKey = previous.apiKey;
-        next.apiKeyLast4 = previous.apiKeyLast4 || "";
-    }
-    await accountRef.set({ aiProvider: next, updatedAt: new Date().toISOString() }, { merge: true });
+    // Never persist raw apiKey on the client-readable billingAccounts document.
+    await accountRef.set({
+        aiProvider: Object.assign(Object.assign({}, next), { apiKey: firestore_1.FieldValue.delete() }),
+        updatedAt: new Date().toISOString(),
+    }, { merge: true });
     return {
         aiProvider: {
             mode: next.mode,
             provider: next.provider,
             model: next.model,
             baseUrl: next.baseUrl,
-            apiKeyLast4: next.apiKeyLast4,
-            hasKey: Boolean(next.apiKey),
+            apiKeyLast4,
+            hasKey,
             updatedAt: next.updatedAt,
         },
     };
 });
-exports.getAiAssistUsage = (0, https_1.onCall)(async (request) => {
+exports.getAiAssistUsage = (0, https_1.onCall)(callableOptions, async (request) => {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
@@ -559,7 +615,7 @@ exports.getAiAssistUsage = (0, https_1.onCall)(async (request) => {
             model: aiProvider.model || "",
             baseUrl: aiProvider.baseUrl || "",
             apiKeyLast4: aiProvider.apiKeyLast4 || "",
-            hasKey: Boolean(aiProvider.apiKey),
+            hasKey: Boolean(aiProvider.hasKey) || Boolean(await loadByokApiKey(accountId, account)),
         },
     };
 });

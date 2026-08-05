@@ -1,4 +1,4 @@
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { initializeApp, getApps } from "firebase-admin/app";
 import {
@@ -8,6 +8,7 @@ import {
   generateLogoImage,
   AiProviderId,
 } from "./aiProviders.js";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -16,6 +17,9 @@ if (getApps().length === 0) {
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
 const AI_USAGE_SUBCOLLECTION = "aiUsage";
+const AI_SECRETS_DOC = "aiProvider";
+const callableOptions = sensitiveCallableOptions();
+const longCallableOptions = sensitiveCallableOptions({ timeoutSeconds: 120 });
 
 const LITE_ACTIONS = new Set(["rewrite_field", "polish_bio", "polish_tagline", "hero_suggest"]);
 const FULL_ACTIONS = new Set([
@@ -100,6 +104,58 @@ async function getCallerProfile(uid: string): Promise<CallerProfile> {
     throw new HttpsError("permission-denied", "Perfil de usuario no encontrado.");
   }
   return { uid, ...(snap.data() ?? {}) } as CallerProfile;
+}
+
+function aiSecretsRef(accountId: string) {
+  return getFirestore()
+    .collection(BILLING_ACCOUNTS_COLLECTION)
+    .doc(accountId)
+    .collection("secrets")
+    .doc(AI_SECRETS_DOC);
+}
+
+/** Persist BYOK key in Admin-only secrets subcollection (never on the public billingAccounts doc). */
+async function saveByokApiKey(accountId: string, apiKey: string): Promise<void> {
+  const trimmed = String(apiKey ?? "").trim();
+  if (!trimmed) {
+    await aiSecretsRef(accountId).delete().catch(() => undefined);
+    return;
+  }
+  await aiSecretsRef(accountId).set({
+    apiKey: trimmed,
+    updatedAt: new Date().toISOString(),
+  }, { merge: true });
+}
+
+/**
+ * Load BYOK key from secrets/. Migrates legacy plaintext apiKey off billingAccounts if present (F11).
+ */
+async function loadByokApiKey(
+  accountId: string,
+  accountData: Record<string, unknown>,
+): Promise<string> {
+  const secretsSnap = await aiSecretsRef(accountId).get();
+  const fromSecrets = String(secretsSnap.data()?.apiKey ?? "").trim();
+  if (fromSecrets) return fromSecrets;
+
+  const legacy = (accountData.aiProvider && typeof accountData.aiProvider === "object")
+    ? accountData.aiProvider as Record<string, unknown>
+    : {};
+  const legacyKey = String(legacy.apiKey ?? "").trim();
+  if (!legacyKey) return "";
+
+  await saveByokApiKey(accountId, legacyKey);
+  await getFirestore().collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId).set({
+    aiProvider: {
+      ...legacy,
+      apiKey: FieldValue.delete(),
+      apiKeyLast4: legacy.apiKeyLast4 || legacyKey.slice(-4),
+      hasKey: true,
+    },
+    updatedAt: new Date().toISOString(),
+  }, { merge: true });
+
+  return legacyKey;
 }
 
 function resolveLane(account: { plan?: unknown; status?: unknown }, isRoot: boolean): "lite" | "full" {
@@ -284,7 +340,7 @@ function buildLandingDraftPrompt(brief: string, language: string, vertical: stri
   ].join("\n");
 }
 
-export const generateLandingDraft = onCall({ timeoutSeconds: 120 }, async (request: CallableRequest) => {
+export const generateLandingDraft = onCall(longCallableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }
@@ -340,7 +396,7 @@ export const generateLandingDraft = onCall({ timeoutSeconds: 120 }, async (reque
   );
 });
 
-export const runAiAssist = onCall({ timeoutSeconds: 120 }, async (request: CallableRequest) => {
+export const runAiAssist = onCall(longCallableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }
@@ -408,7 +464,7 @@ export const runAiAssist = onCall({ timeoutSeconds: 120 }, async (request: Calla
       const byokKey = account.aiProvider?.mode === "byok"
         && quotaConf.aiByok
         && isActiveStatus(account.status)
-        ? String(account.aiProvider?.apiKey ?? "")
+        ? await loadByokApiKey(accountId, account as Record<string, unknown>)
         : "";
       logoResult = await generateLogoImage({
         name: String(context.name ?? ""),
@@ -465,7 +521,7 @@ export const runAiAssist = onCall({ timeoutSeconds: 120 }, async (request: Calla
   const byok = account.aiProvider?.mode === "byok" && quotaConf.aiByok && isActiveStatus(account.status);
   if (lane === "full" && byok && account.aiProvider?.provider) {
     provider = resolveFullProvider(account.aiProvider.provider);
-    apiKey = String(account.aiProvider.apiKey ?? "");
+    apiKey = await loadByokApiKey(accountId, account as Record<string, unknown>);
     baseUrl = String(account.aiProvider.baseUrl ?? "");
     model = String(account.aiProvider.model ?? "");
   } else if (lane === "full") {
@@ -536,8 +592,8 @@ export const runAiAssist = onCall({ timeoutSeconds: 120 }, async (request: Calla
   };
 });
 
-/** Agency+/root: store BYOK provider settings (api key server-side only). */
-export const setAiProviderConfig = onCall(async (request: CallableRequest) => {
+/** Agency+/root: store BYOK provider settings (api key in secrets/ only). */
+export const setAiProviderConfig = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }
@@ -575,27 +631,41 @@ export const setAiProviderConfig = onCall(async (request: CallableRequest) => {
     ? account.aiProvider as Record<string, unknown>
     : {};
 
+  let apiKeyLast4 = String(previous.apiKeyLast4 ?? "").trim();
+  let hasKey = false;
+
+  if (clearKey) {
+    await saveByokApiKey(accountId, "");
+    apiKeyLast4 = "";
+    hasKey = false;
+  } else if (apiKey) {
+    await saveByokApiKey(accountId, apiKey);
+    apiKeyLast4 = apiKey.slice(-4);
+    hasKey = true;
+  } else {
+    const existing = await loadByokApiKey(accountId, account);
+    hasKey = Boolean(existing);
+    if (hasKey && !apiKeyLast4 && existing) apiKeyLast4 = existing.slice(-4);
+  }
+
   const next: Record<string, unknown> = {
     mode,
     provider,
     model,
     baseUrl,
     updatedAt: new Date().toISOString(),
-    apiKeyLast4: previous.apiKeyLast4 || "",
+    apiKeyLast4,
+    hasKey,
   };
 
-  if (clearKey) {
-    next.apiKey = "";
-    next.apiKeyLast4 = "";
-  } else if (apiKey) {
-    next.apiKey = apiKey;
-    next.apiKeyLast4 = apiKey.slice(-4);
-  } else if (previous.apiKey) {
-    next.apiKey = previous.apiKey;
-    next.apiKeyLast4 = previous.apiKeyLast4 || "";
-  }
-
-  await accountRef.set({ aiProvider: next, updatedAt: new Date().toISOString() }, { merge: true });
+  // Never persist raw apiKey on the client-readable billingAccounts document.
+  await accountRef.set({
+    aiProvider: {
+      ...next,
+      apiKey: FieldValue.delete(),
+    },
+    updatedAt: new Date().toISOString(),
+  }, { merge: true });
 
   return {
     aiProvider: {
@@ -603,14 +673,14 @@ export const setAiProviderConfig = onCall(async (request: CallableRequest) => {
       provider: next.provider,
       model: next.model,
       baseUrl: next.baseUrl,
-      apiKeyLast4: next.apiKeyLast4,
-      hasKey: Boolean(next.apiKey),
+      apiKeyLast4,
+      hasKey,
       updatedAt: next.updatedAt,
     },
   };
 });
 
-export const getAiAssistUsage = onCall(async (request: CallableRequest) => {
+export const getAiAssistUsage = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }
@@ -660,7 +730,7 @@ export const getAiAssistUsage = onCall(async (request: CallableRequest) => {
       model: aiProvider.model || "",
       baseUrl: aiProvider.baseUrl || "",
       apiKeyLast4: aiProvider.apiKeyLast4 || "",
-      hasKey: Boolean(aiProvider.apiKey),
+      hasKey: Boolean(aiProvider.hasKey) || Boolean(await loadByokApiKey(accountId, account)),
     },
   };
 });

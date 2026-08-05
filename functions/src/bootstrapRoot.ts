@@ -5,6 +5,7 @@
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -32,10 +33,7 @@ function normalizeProfile(uid: string, data: Record<string, unknown> = {}) {
   };
 }
 
-const callableOptions = {
-  cors: true,
-  invoker: "public" as const,
-};
+const callableOptions = sensitiveCallableOptions();
 
 /**
  * Ensures the allowlisted bootstrap email has a users/{uid} doc with role root.

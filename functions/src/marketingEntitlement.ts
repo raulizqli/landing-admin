@@ -1,6 +1,7 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { initializeApp, getApps } from "firebase-admin/app";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -8,6 +9,7 @@ if (getApps().length === 0) {
 
 const USERS_COLLECTION = "users";
 const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
+const callableOptions = sensitiveCallableOptions();
 
 const PLANS_WITH_MARKETING_SITE = new Set(["enterprise"]);
 
@@ -92,7 +94,7 @@ async function loadBillingAccount(accountId: string) {
  * Hard gate before publishing Marketing Site data.
  * Root bypasses; others need Enterprise plan or Agency marketingSite add-on.
  */
-export const assertMarketingSiteAccess = onCall(async (request: CallableRequest) => {
+export const assertMarketingSiteAccess = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }
@@ -126,7 +128,7 @@ export const assertMarketingSiteAccess = onCall(async (request: CallableRequest)
 });
 
 /** Root-only: toggle paid add-ons on a billing account (e.g. Agency + marketingSite). */
-export const setBillingAccountAddons = onCall(async (request: CallableRequest) => {
+export const setBillingAccountAddons = onCall(callableOptions, async (request: CallableRequest) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   }

@@ -4,6 +4,7 @@ exports.createCmsPage = void 0;
 const firestore_1 = require("firebase-admin/firestore");
 const app_1 = require("firebase-admin/app");
 const https_1 = require("firebase-functions/v2/https");
+const callableOptions_js_1 = require("./callableOptions.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
@@ -90,10 +91,7 @@ function buildInitialPageDoc(input) {
         updatedAt: now,
     };
 }
-const callableOptions = {
-    cors: true,
-    invoker: "public",
-};
+const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 /**
  * Create a CMS page with plan quota enforcement.
  * Root: unrestricted. Pro/Agency account owners: up to pageLimit.

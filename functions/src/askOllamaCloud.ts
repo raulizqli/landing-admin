@@ -10,6 +10,7 @@ import { logger } from "firebase-functions";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { Ollama } from "ollama";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -52,13 +53,11 @@ async function assertRootCaller(request: CallableRequest) {
 }
 
 export const askOllamaCloud = onCall(
-  {
+  sensitiveCallableOptions({
     secrets: [ollamaCloudToken],
-    cors: true,
-    invoker: "public",
     timeoutSeconds: 120,
     memory: "512MiB",
-  },
+  }),
   async (request: CallableRequest<AskOllamaCloudPayload>) => {
     await assertRootCaller(request);
 

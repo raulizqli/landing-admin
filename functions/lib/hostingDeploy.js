@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.triggerHostingDeploy = void 0;
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
+const callableOptions_js_1 = require("./callableOptions.js");
 const app_1 = require("firebase-admin/app");
 const node_net_1 = require("node:net");
 if ((0, app_1.getApps)().length === 0) {
@@ -215,10 +216,7 @@ async function dispatchGithubWorkflow(page, pageId, token) {
         ref,
     };
 }
-const callableOptions = {
-    cors: true,
-    invoker: "public",
-};
+const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (request) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
     const pageId = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.pageId) !== null && _b !== void 0 ? _b : "").trim();

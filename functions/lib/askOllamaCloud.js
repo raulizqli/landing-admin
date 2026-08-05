@@ -13,6 +13,7 @@ const firebase_functions_1 = require("firebase-functions");
 const https_1 = require("firebase-functions/v2/https");
 const params_1 = require("firebase-functions/params");
 const ollama_1 = require("ollama");
+const callableOptions_js_1 = require("./callableOptions.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
@@ -43,13 +44,11 @@ async function assertRootCaller(request) {
     }
     return request.auth.uid;
 }
-exports.askOllamaCloud = (0, https_1.onCall)({
+exports.askOllamaCloud = (0, https_1.onCall)((0, callableOptions_js_1.sensitiveCallableOptions)({
     secrets: [ollamaCloudToken],
-    cors: true,
-    invoker: "public",
     timeoutSeconds: 120,
     memory: "512MiB",
-}, async (request) => {
+}), async (request) => {
     await assertRootCaller(request);
     const prompt = readPrompt(request.data);
     if (!prompt) {

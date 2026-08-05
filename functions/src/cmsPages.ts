@@ -1,6 +1,7 @@
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { sensitiveCallableOptions } from "./callableOptions.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -109,10 +110,7 @@ function buildInitialPageDoc(input: {
   };
 }
 
-const callableOptions = {
-  cors: true,
-  invoker: "public" as const,
-};
+const callableOptions = sensitiveCallableOptions();
 
 /**
  * Create a CMS page with plan quota enforcement.

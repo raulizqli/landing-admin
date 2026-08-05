@@ -107,6 +107,11 @@ service cloud.firestore {
           || (request.resource.data.ownerUid == request.auth.uid
             && request.auth.uid == accountId));
       allow update, delete: if isRoot();
+
+      // BYOK API keys and other secrets — Admin SDK / Cloud Functions only (F11).
+      match /secrets/{docId} {
+        allow read, write: if false;
+      }
     }
   }
 }
