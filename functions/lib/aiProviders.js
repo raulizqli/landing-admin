@@ -413,6 +413,22 @@ function mockLogoDataUrl(name, specialty) {
 </svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
+/** GPT Image models always return base64 and reject `response_format`. */
+function isGptImageModel(model = "") {
+    return /^gpt-image/i.test(String(model).trim());
+}
+function buildOpenAiImageGenerationBody(model, prompt) {
+    const body = {
+        model,
+        prompt: prompt.slice(0, 3500),
+        n: 1,
+        size: "1024x1024",
+    };
+    if (!isGptImageModel(model)) {
+        body.response_format = "url";
+    }
+    return body;
+}
 /**
  * Generate a simple brand mark / logo image.
  * Uses OpenAI Images when OPENAI_API_KEY is set; otherwise returns an SVG data URL.
@@ -440,19 +456,14 @@ async function generateLogoImage(input) {
             prompt,
         };
     }
+    const imageModel = process.env.OPENAI_IMAGE_MODEL || "dall-e-3";
     const response = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({
-            model: process.env.OPENAI_IMAGE_MODEL || "dall-e-3",
-            prompt: prompt.slice(0, 3500),
-            n: 1,
-            size: "1024x1024",
-            response_format: "url",
-        }),
+        body: JSON.stringify(buildOpenAiImageGenerationBody(imageModel, prompt)),
     });
     if (!response.ok) {
         const detail = await response.text().catch(() => "");

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   applyAiAssistResult,
   buildAiSystemPrompt,
@@ -35,11 +36,15 @@ export default function AiAssistButton({
   label,
   fullActions = [],
   showLiteMenu = true,
+  customMenu = null,
   resultPatch = null,
+  workingTaskLabel,
 }) {
   const { locale, t } = useLocale();
   const entitlements = useEntitlements();
+  const anchorRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [panelStyle, setPanelStyle] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
@@ -51,19 +56,71 @@ export default function AiAssistButton({
   const canFull = lane === 'full';
 
   const language = formData?.defaultLanguage === 'en' || formData?.labelLanguage === 'en' ? 'en' : 'es';
-  const menu = [
-    ...(showLiteMenu
-      ? LITE_MENU.map((item) => ({
-        ...item,
-        action: action === 'polish_bio' || action === 'polish_tagline' || action === 'hero_suggest'
-          ? action
-          : item.action,
-      }))
-      : []),
-    ...(canFull ? fullActions : []),
-  ];
+  const menu = customMenu?.length
+    ? customMenu.map((item) => ({
+      ...item,
+      action: item.action || action,
+    }))
+    : [
+      ...(showLiteMenu
+        ? LITE_MENU.map((item) => ({
+          ...item,
+          action: action === 'polish_bio' || action === 'polish_tagline' || action === 'hero_suggest'
+            ? action
+            : item.action,
+        }))
+        : []),
+      ...(canFull ? fullActions : []),
+    ];
 
-  if (!canLite || menu.length === 0) return null;
+  const canShow = canLite && menu.length > 0;
+  const panelId = `ai-assist-panel-${pageId || 'page'}-${fieldPath || action}`;
+
+  const updatePanelPosition = () => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const panelWidth = 288;
+    const left = Math.min(
+      Math.max(8, rect.right - panelWidth),
+      window.innerWidth - panelWidth - 8,
+    );
+    setPanelStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left,
+      width: panelWidth,
+      zIndex: 80,
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!canShow || !open) {
+      setPanelStyle(null);
+      return undefined;
+    }
+    updatePanelPosition();
+    window.addEventListener('resize', updatePanelPosition);
+    window.addEventListener('scroll', updatePanelPosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePanelPosition);
+      window.removeEventListener('scroll', updatePanelPosition, true);
+    };
+  }, [canShow, open, busy, preview, error]);
+
+  useEffect(() => {
+    if (!canShow || !open) return undefined;
+    const handlePointerDown = (event) => {
+      const anchor = anchorRef.current;
+      const panel = document.getElementById(panelId);
+      if (anchor?.contains(event.target) || panel?.contains(event.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [canShow, open, panelId]);
+
+  if (!canShow) return null;
 
   const run = async (item) => {
     if (!isAiActionAllowed(lane, item.action) && !entitlements.bypass) {
@@ -73,6 +130,9 @@ export default function AiAssistButton({
     setBusy(true);
     setError('');
     setPreview(null);
+    setOpen(true);
+    const effectiveFieldPath = item.fieldPath ?? fieldPath;
+    const effectiveCurrentValue = item.currentValue ?? currentValue;
     const context = {
       name: formData?.name || '',
       specialty: formData?.specialty || '',
@@ -86,8 +146,8 @@ export default function AiAssistButton({
         const user = buildAiUserPrompt({
           action: item.action,
           tone: item.tone,
-          fieldPath,
-          currentValue,
+          fieldPath: effectiveFieldPath,
+          currentValue: effectiveCurrentValue,
           brief,
           context,
         });
@@ -100,10 +160,10 @@ export default function AiAssistButton({
           action: item.action,
           tone: item.tone,
           language,
-          fieldPath,
-          currentValue,
+          fieldPath: effectiveFieldPath,
+          currentValue: effectiveCurrentValue,
           brief,
-          input: { currentValue, brief, context },
+          input: { currentValue: effectiveCurrentValue, brief, context },
           // Let Cloud Functions pick AI_LITE_PROVIDER and fall back (Gemini) on quota.
         });
         result = data.result;
@@ -116,7 +176,7 @@ export default function AiAssistButton({
       }
       setPreview({
         action: item.action,
-        fieldPath,
+        fieldPath: effectiveFieldPath,
         result: resultPatch ? { ...result, ...resultPatch } : result,
         meta,
       });
@@ -135,24 +195,24 @@ export default function AiAssistButton({
     setOpen(false);
   };
 
-  return (
-    <div className="relative inline-flex flex-col items-end gap-1">
-      <div className="flex flex-wrap items-center gap-1">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => setOpen((value) => !value)}
-          className="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
-        >
-          {busy ? t('ai.generating') : (label || t('ai.improve'))}
-        </button>
-      </div>
+  const panel = open && panelStyle ? (
+    <div
+      id={panelId}
+      style={panelStyle}
+      className="rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
+    >
+      <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+        {engine === 'local' ? t('ai.engineLocal') : (lane === 'full' ? t('ai.laneFull') : t('ai.laneLite'))}
+      </p>
 
-      {open && (
-        <div className="absolute right-0 z-30 mt-8 w-72 rounded-xl border border-gray-200 bg-white p-2 shadow-xl">
-          <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            {lane === 'full' ? t('ai.laneFull') : t('ai.laneLite')}
-          </p>
+      {busy ? (
+        <AiWorkingBanner
+          active
+          taskLabel={workingTaskLabel || t('ai.workingRewrite')}
+          className="mx-1 my-1"
+        />
+      ) : (
+        <>
           <div className="mb-1 flex gap-1 px-1">
             <button
               type="button"
@@ -171,7 +231,7 @@ export default function AiAssistButton({
           </div>
           <ul className="max-h-48 space-y-0.5 overflow-y-auto">
             {menu.map((item) => (
-              <li key={`${item.action}-${item.tone || item.labelKey}`}>
+              <li key={`${item.action}-${item.tone || item.labelKey}-${item.fieldPath || ''}`}>
                 <button
                   type="button"
                   disabled={busy}
@@ -183,50 +243,66 @@ export default function AiAssistButton({
               </li>
             ))}
           </ul>
-          {error && (
-            <p className="mt-2 rounded-lg bg-red-50 px-2 py-1.5 text-[11px] text-red-700">{error}</p>
-          )}
-          <AiWorkingBanner
-            active={busy}
-            taskLabel={t('ai.workingRewrite')}
-            className="mt-2"
-          />
-          {preview && (
-            <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
-              <p className="text-[10px] text-gray-400">
-                {formatAiGenerationLabel({
-                  provider: preview.meta?.provider,
-                  model: preview.meta?.model,
-                  language: locale,
-                }) || getAiProviderDisplayName(preview.meta?.provider, locale)}
-                {' · '}
-                {t('ai.reviewHint')}
-              </p>
-              <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-2 text-[11px] text-gray-800">
-                {preview.result?.text
-                  || preview.result?.title
-                  || JSON.stringify(preview.result, null, 2)}
-              </pre>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={apply}
-                  className="flex-1 rounded-lg bg-indigo-600 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-indigo-500"
-                >
-                  {t('ai.apply')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreview(null)}
-                  className="rounded-lg border border-gray-200 px-2 py-1.5 text-[11px] text-gray-600"
-                >
-                  {t('ai.discard')}
-                </button>
-              </div>
-            </div>
-          )}
+        </>
+      )}
+
+      {error && (
+        <p className="mt-2 rounded-lg bg-red-50 px-2 py-1.5 text-[11px] text-red-700">{error}</p>
+      )}
+
+      {preview && !busy && (
+        <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
+          <p className="text-[10px] text-gray-400">
+            {formatAiGenerationLabel({
+              provider: preview.meta?.provider,
+              model: preview.meta?.model,
+              language: locale,
+            }) || getAiProviderDisplayName(preview.meta?.provider, locale)}
+            {' · '}
+            {t('ai.reviewHint')}
+          </p>
+          <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-2 text-[11px] text-gray-800">
+            {preview.result?.title && preview.result?.text
+              ? `${preview.result.title}\n\n${preview.result.text}`
+              : preview.result?.text
+                || preview.result?.title
+                || JSON.stringify(preview.result, null, 2)}
+          </pre>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={apply}
+              className="flex-1 rounded-lg bg-indigo-600 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-indigo-500"
+            >
+              {t('ai.apply')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreview(null)}
+              className="rounded-lg border border-gray-200 px-2 py-1.5 text-[11px] text-gray-600"
+            >
+              {t('ai.discard')}
+            </button>
+          </div>
         </div>
       )}
+    </div>
+  ) : null;
+
+  return (
+    <div ref={anchorRef} className="relative inline-flex flex-col items-end gap-1">
+      <div className="flex flex-wrap items-center gap-1">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setOpen((value) => !value)}
+          className="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+        >
+          {busy ? t('ai.generating') : (label || t('ai.improve'))}
+        </button>
+      </div>
+
+      {typeof document !== 'undefined' && panel ? createPortal(panel, document.body) : null}
     </div>
   );
 }

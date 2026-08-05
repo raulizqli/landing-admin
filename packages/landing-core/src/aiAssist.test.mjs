@@ -4,6 +4,8 @@ import {
   applyAiAssistResult,
   isAiActionAllowed,
   normalizeStructureSuggestion,
+  parseBlogPostTarget,
+  parseHeroSlideTarget,
   resolveAiAssistLane,
   sanitizeAiText,
 } from './aiAssist.js';
@@ -102,5 +104,73 @@ describe('aiAssist lanes and apply', () => {
     assert.equal(next.aboutTagline, 'Tag');
     assert.equal(next.heroSlides[0].title, 'Hero title');
     assert.equal(next.seo.defaultTitle, 'SEO title');
+  });
+
+  it('applies hero_suggest to selected slide or appends a new slide', () => {
+    assert.deepEqual(parseHeroSlideTarget('heroSlides[2]'), { mode: 'edit', index: 2 });
+    assert.deepEqual(parseHeroSlideTarget('heroSlides[+]'), { mode: 'add', index: null });
+
+    const edited = applyAiAssistResult(
+      {
+        heroSlides: [
+          { title: 'A', text: 'a' },
+          { title: 'B', text: 'b' },
+          { title: 'C', text: 'c' },
+        ],
+      },
+      {
+        action: 'hero_suggest',
+        fieldPath: 'heroSlides[1]',
+        result: { title: 'New B', text: 'New subtitle' },
+      },
+    );
+    assert.equal(edited.heroSlides[1].title, 'New B');
+    assert.equal(edited.heroSlides[1].text, 'New subtitle');
+    assert.equal(edited.heroSlides[0].title, 'A');
+
+    const added = applyAiAssistResult(
+      { heroSlides: [{ title: 'Only', text: 'one' }] },
+      {
+        action: 'hero_suggest',
+        fieldPath: 'heroSlides[+]',
+        result: { title: 'Slide 2', text: 'Second slide' },
+      },
+    );
+    assert.equal(added.heroSlides.length, 2);
+    assert.equal(added.heroSlides[1].title, 'Slide 2');
+    assert.equal(added.heroSlides[1].showTitle, true);
+  });
+
+  it('applies blog_draft to selected post or appends a new post', () => {
+    assert.deepEqual(parseBlogPostTarget('blogPosts[1]'), { mode: 'edit', index: 1 });
+    assert.deepEqual(parseBlogPostTarget('blogPosts[+]'), { mode: 'add', index: null });
+
+    const edited = applyAiAssistResult(
+      {
+        blogPosts: [
+          { title: 'A', text: 'a' },
+          { title: 'B', text: 'b' },
+        ],
+      },
+      {
+        action: 'blog_draft',
+        fieldPath: 'blogPosts[1]',
+        result: { title: 'New B', text: 'New body' },
+      },
+    );
+    assert.equal(edited.blogPosts[1].title, 'New B');
+    assert.equal(edited.blogPosts[1].text, 'New body');
+    assert.equal(edited.blogSectionEnabled, true);
+
+    const added = applyAiAssistResult(
+      { blogPosts: [{ title: 'Only', text: 'one' }] },
+      {
+        action: 'blog_draft',
+        fieldPath: 'blogPosts[+]',
+        result: { title: 'Post 2', text: 'Second post' },
+      },
+    );
+    assert.equal(added.blogPosts.length, 2);
+    assert.equal(added.blogPosts[1].title, 'Post 2');
   });
 });

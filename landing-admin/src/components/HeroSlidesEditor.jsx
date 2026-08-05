@@ -1,14 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createEmptySlide, HERO_BUTTON_POSITIONS } from '../utils/heroSlides';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 import AiAssistButton from './AiAssistButton';
+import { useLocale } from '../i18n/LocaleContext';
+
+function formatSlideCurrentValue(slide) {
+  const title = String(slide?.title ?? '').trim();
+  const text = String(slide?.text ?? '').trim();
+  if (title && text) return `Título: ${title}\nTexto: ${text}`;
+  return title || text || '';
+}
 
 function SlideEditor({
   slide,
   index,
   open,
+  selected,
   onToggle,
+  onSelect,
   onChange,
   onRemove,
   pageId,
@@ -21,16 +31,29 @@ function SlideEditor({
     || 'Sin contenido';
 
   return (
-    <div className={`border rounded-lg bg-gray-50/80 overflow-hidden ${open ? 'border-indigo-200' : 'border-gray-200'}`}>
+    <div className={`border rounded-lg bg-gray-50/80 overflow-hidden ${
+      open ? 'border-indigo-200' : selected ? 'border-indigo-300' : 'border-gray-200'
+    }`}
+    >
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={onToggle}
+          onClick={() => {
+            onSelect?.();
+            onToggle();
+          }}
           className="flex-1 flex items-center justify-between gap-3 px-4 py-3 text-left min-w-0"
           aria-expanded={open}
         >
           <div className="min-w-0">
-            <span className="block text-xs font-semibold text-gray-700">Diapositiva {index + 1}</span>
+            <span className="block text-xs font-semibold text-gray-700">
+              Diapositiva {index + 1}
+              {selected && (
+                <span className="ml-1.5 text-[10px] font-bold uppercase text-indigo-500">
+                  · seleccionada
+                </span>
+              )}
+            </span>
             <span className="block text-[10px] text-gray-400 truncate">{summary}</span>
           </div>
           <span className="text-gray-400 text-sm shrink-0" aria-hidden>
@@ -167,10 +190,45 @@ function SlideEditor({
 }
 
 export default function HeroSlidesEditor({ slides = [], onChange, pageId, formData, onFormChange }) {
+  const { t } = useLocale();
   const items = slides.length > 0 ? slides : [createEmptySlide()];
   const [openSlides, setOpenSlides] = useState({});
+  const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
+  const prevSlideCountRef = useRef(items.length);
 
   const isSlideOpen = (index) => openSlides[index] === true;
+
+  useEffect(() => {
+    if (items.length > prevSlideCountRef.current) {
+      const newIndex = items.length - 1;
+      setSelectedSlideIndex(newIndex);
+      setOpenSlides((prev) => ({ ...prev, [newIndex]: true }));
+    }
+    prevSlideCountRef.current = items.length;
+  }, [items.length]);
+
+  useEffect(() => {
+    if (selectedSlideIndex >= items.length) {
+      setSelectedSlideIndex(Math.max(0, items.length - 1));
+    }
+  }, [items.length, selectedSlideIndex]);
+
+  const selectedSlide = items[selectedSlideIndex] || items[0];
+
+  const heroAiMenu = useMemo(() => [
+    {
+      action: 'hero_suggest',
+      labelKey: 'ai.hero.editSlide',
+      fieldPath: `heroSlides[${selectedSlideIndex}]`,
+      currentValue: formatSlideCurrentValue(selectedSlide),
+    },
+    {
+      action: 'hero_suggest',
+      labelKey: 'ai.hero.addSlide',
+      fieldPath: 'heroSlides[+]',
+      currentValue: '',
+    },
+  ], [selectedSlide, selectedSlideIndex]);
 
   const toggleSlide = (index) => {
     setOpenSlides((prev) => ({ ...prev, [index]: !prev[index] }));
@@ -183,6 +241,7 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
   const addSlide = () => {
     const nextIndex = items.length;
     onChange([...items, createEmptySlide()]);
+    setSelectedSlideIndex(nextIndex);
     setOpenSlides((prev) => ({ ...prev, [nextIndex]: true }));
   };
 
@@ -190,6 +249,7 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
     if (items.length <= 1) {
       onChange([createEmptySlide()]);
       setOpenSlides({});
+      setSelectedSlideIndex(0);
       return;
     }
     onChange(items.filter((_, i) => i !== index));
@@ -201,6 +261,11 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
         if (i > index) next[i - 1] = value;
       });
       return next;
+    });
+    setSelectedSlideIndex((prev) => {
+      if (prev === index) return Math.max(0, index - 1);
+      if (prev > index) return prev - 1;
+      return prev;
     });
   };
 
@@ -236,8 +301,13 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
         onChange={onFormChange}
       />
 
-      <div className="flex items-center justify-between gap-2">
-        <label className="block text-[11px] font-bold text-gray-400 uppercase">Carrusel Hero</label>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <label className="block text-[11px] font-bold text-gray-400 uppercase">Carrusel Hero</label>
+          <p className="text-[10px] text-gray-400 mt-0.5">
+            {t('ai.hero.selectedSlide', { n: selectedSlideIndex + 1 })}
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {onFormChange && (
             <AiAssistButton
@@ -245,9 +315,12 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
               onChange={onFormChange}
               pageId={pageId}
               action="hero_suggest"
-              fieldPath="heroSlides[0]"
-              currentValue={items[0]?.text || items[0]?.title || ''}
+              fieldPath={`heroSlides[${selectedSlideIndex}]`}
+              currentValue={formatSlideCurrentValue(selectedSlide)}
               label="✨ LeftSide AI"
+              showLiteMenu={false}
+              customMenu={heroAiMenu}
+              workingTaskLabel={t('ai.workingHero')}
             />
           )}
           <button
@@ -263,11 +336,13 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
       <div className="space-y-2">
         {items.map((slide, index) => (
           <SlideEditor
-            key={`hero-slide-editor-${index}`}
+            key={slide.id || `hero-slide-editor-${index}`}
             slide={slide}
             index={index}
             open={isSlideOpen(index)}
+            selected={index === selectedSlideIndex}
             onToggle={() => toggleSlide(index)}
+            onSelect={() => setSelectedSlideIndex(index)}
             onChange={(field, value) => updateSlide(index, field, value)}
             onRemove={() => removeSlide(index)}
             pageId={pageId}

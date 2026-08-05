@@ -254,7 +254,7 @@ export default function PageStructureAssistSection({
   };
 
   const handleGenerateContent = async () => {
-    if (!canFull || !suggestion || !selectedContentIds.length) return;
+    if (!canFull || !selectedContentIds.length || !pageId) return;
     if (!isAiActionAllowed('full', 'generate_page_content') && !entitlements.bypass) {
       setError(t('ai.upgradeForAction'));
       return;
@@ -268,7 +268,7 @@ export default function PageStructureAssistSection({
         action: 'generate_page_content',
         contextExtra: {
           targets: selectedContentIds,
-          structureSummary: suggestion.summary || '',
+          structureSummary: filteredSuggestion?.summary || suggestion?.summary || '',
         },
       });
       const normalized = normalizeGeneratedPageContent(rawResult);
@@ -350,6 +350,41 @@ export default function PageStructureAssistSection({
       .map((id) => contentLabel(id));
   }, [generatedContent, selectedContentIds, locale, t]);
 
+  const generatedContentPanel = generatedContent && generatedSummary.length > 0 ? (
+    <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 space-y-2">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-500">
+        {t('ai.structure.generatedTitle')}
+      </p>
+      {contentModelLabel && (
+        <p className="text-[10px] text-indigo-600/80">
+          {t('ai.structure.contentModelLabel', { label: contentModelLabel })}
+        </p>
+      )}
+      <ul className="list-disc pl-4 text-[11px] text-indigo-900 space-y-0.5">
+        {generatedSummary.map((label) => (
+          <li key={label}>{label}</li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button
+          type="button"
+          onClick={handleApplyContent}
+          className="rounded-lg border border-indigo-600 bg-indigo-600/10 px-3 py-1.5 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100"
+        >
+          {t('ai.structure.applyContent')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setGeneratedContent(null)}
+          className="rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50"
+        >
+          {t('ai.discard')}
+        </button>
+        <p className="w-full text-[10px] text-indigo-500">{t('ai.reviewHint')}</p>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="space-y-4">
       <p className="text-[11px] text-gray-600 leading-relaxed">
@@ -424,7 +459,25 @@ export default function PageStructureAssistSection({
             </label>
           ))}
         </div>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={handleGenerateContent}
+            disabled={contentBusy || busy || !pageId || !canFull || !selectedContentIds.length}
+            className="rounded-lg border border-indigo-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+          >
+            {contentBusy ? t('ai.generating') : t('ai.structure.generateContent')}
+          </button>
+          {!canFull && (
+            <p className="text-[10px] text-amber-700">{t('ai.upgradeForAction')}</p>
+          )}
+          {canFull && !selectedContentIds.length && (
+            <p className="text-[10px] text-gray-500">{t('ai.structure.selectContentHint')}</p>
+          )}
+        </div>
       </div>
+
+      {generatedContentPanel}
 
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -491,24 +544,6 @@ export default function PageStructureAssistSection({
               );
             })}
           </ul>
-
-          {generatedContent && generatedSummary.length > 0 && (
-            <div className="rounded-lg border border-indigo-100 bg-white/80 px-3 py-2 space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-500">
-                {t('ai.structure.generatedTitle')}
-              </p>
-              {contentModelLabel && (
-                <p className="text-[10px] text-indigo-600/80">
-                  {t('ai.structure.contentModelLabel', { label: contentModelLabel })}
-                </p>
-              )}
-              <ul className="list-disc pl-4 text-[11px] text-indigo-900 space-y-0.5">
-                {generatedSummary.map((label) => (
-                  <li key={label}>{label}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <div className="flex flex-wrap gap-2 pt-1">
             <button

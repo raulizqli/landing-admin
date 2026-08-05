@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BLOG_LAYOUTS,
   createEmptyBlogPost,
@@ -6,15 +7,61 @@ import {
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 import ShowContentToggle from './ShowContentToggle';
+import AiAssistButton from './AiAssistButton';
 import { getDefaultLabelForPage } from '../utils/labels';
+import { useEntitlements } from '../hooks/useEntitlements';
+import { useLocale } from '../i18n/LocaleContext';
+
+function formatPostCurrentValue(post) {
+  const title = String(post?.title ?? '').trim();
+  const text = String(post?.text ?? '').trim();
+  if (title && text) return `Título: ${title}\nTexto: ${text}`;
+  return title || text || '';
+}
 
 export default function BlogFieldsEditor({ formData, onChange, pageId, canToggleSection = true }) {
+  const { t } = useLocale();
+  const entitlements = useEntitlements();
+  const canFull = entitlements.bypass || entitlements.aiLane === 'full';
   const enabled = Boolean(formData.blogSectionEnabled);
   const items = Array.isArray(formData.blogPosts) && formData.blogPosts.length > 0
     ? formData.blogPosts
     : [createEmptyBlogPost()];
   const titlePlaceholder = getDefaultLabelForPage(formData, 'blog.defaultTitle');
   const introPlaceholder = getDefaultLabelForPage(formData, 'blog.defaultIntro');
+  const [selectedPostIndex, setSelectedPostIndex] = useState(0);
+  const prevPostCountRef = useRef(items.length);
+
+  useEffect(() => {
+    if (items.length > prevPostCountRef.current) {
+      const newIndex = items.length - 1;
+      setSelectedPostIndex(newIndex);
+    }
+    prevPostCountRef.current = items.length;
+  }, [items.length]);
+
+  useEffect(() => {
+    if (selectedPostIndex >= items.length) {
+      setSelectedPostIndex(Math.max(0, items.length - 1));
+    }
+  }, [items.length, selectedPostIndex]);
+
+  const selectedPost = items[selectedPostIndex] || items[0];
+
+  const blogAiMenu = useMemo(() => [
+    {
+      action: 'blog_draft',
+      labelKey: 'ai.blog.editPost',
+      fieldPath: `blogPosts[${selectedPostIndex}]`,
+      currentValue: formatPostCurrentValue(selectedPost),
+    },
+    {
+      action: 'blog_draft',
+      labelKey: 'ai.blog.addPost',
+      fieldPath: 'blogPosts[+]',
+      currentValue: '',
+    },
+  ], [selectedPost, selectedPostIndex]);
 
   const updateItems = (nextItems) => {
     onChange({ ...formData, blogPosts: nextItems });
@@ -25,15 +72,23 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
   };
 
   const addItem = () => {
+    const nextIndex = items.length;
     updateItems([...items, createEmptyBlogPost()]);
+    setSelectedPostIndex(nextIndex);
   };
 
   const removeItem = (index) => {
     if (items.length <= 1) {
       updateItems([createEmptyBlogPost()]);
+      setSelectedPostIndex(0);
       return;
     }
     updateItems(items.filter((_, i) => i !== index));
+    setSelectedPostIndex((prev) => {
+      if (prev === index) return Math.max(0, index - 1);
+      if (prev > index) return prev - 1;
+      return prev;
+    });
   };
 
   const moveItem = (index, direction) => {
@@ -43,6 +98,11 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
     const [item] = next.splice(index, 1);
     next.splice(target, 0, item);
     updateItems(next);
+    setSelectedPostIndex((prev) => {
+      if (prev === index) return target;
+      if (prev === target) return index;
+      return prev;
+    });
   };
 
   return (
@@ -106,24 +166,69 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
             )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] text-gray-400">{items.length} entrada{items.length === 1 ? '' : 's'}</p>
-            <button
-              type="button"
-              onClick={addItem}
-              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
-            >
-              + Añadir entrada
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] text-gray-400">
+                {items.length} entrada{items.length === 1 ? '' : 's'}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {t('ai.blog.selectedPost', { n: selectedPostIndex + 1 })}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {canFull && (
+                <AiAssistButton
+                  formData={formData}
+                  onChange={onChange}
+                  pageId={pageId}
+                  action="blog_draft"
+                  fieldPath={`blogPosts[${selectedPostIndex}]`}
+                  currentValue={formatPostCurrentValue(selectedPost)}
+                  label="✨ LeftSide AI"
+                  showLiteMenu={false}
+                  customMenu={blogAiMenu}
+                  workingTaskLabel={t('ai.workingBlog')}
+                />
+              )}
+              <button
+                type="button"
+                onClick={addItem}
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                + Añadir entrada
+              </button>
+            </div>
           </div>
 
           {items.map((item, index) => {
             const meta = getBlogLayoutMeta(item.layout);
+            const selected = index === selectedPostIndex;
             return (
-              <div key={`blog-editor-${index}`} className="border rounded-lg p-4 space-y-3 bg-gray-50/80">
+              <div
+                key={item.id || `blog-editor-${index}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedPostIndex(index)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedPostIndex(index);
+                  }
+                }}
+                className={`border rounded-lg p-4 space-y-3 bg-gray-50/80 cursor-pointer ${
+                  selected ? 'border-indigo-300 ring-1 ring-indigo-100' : 'border-gray-200'
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-gray-700">Entrada {index + 1}</span>
-                  <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-gray-700">
+                    Entrada {index + 1}
+                    {selected && (
+                      <span className="ml-1.5 text-[10px] font-bold uppercase text-indigo-500">
+                        · seleccionada
+                      </span>
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
                     <button
                       type="button"
                       onClick={() => moveItem(index, -1)}
@@ -150,7 +255,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" onClick={(event) => event.stopPropagation()}>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase">Tipo de bloque</label>
                   <select
                     value={item.layout || 'title_text'}
@@ -167,7 +272,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
                 </div>
 
                 {meta.usesTitle && (
-                  <div className="space-y-2">
+                  <div className="space-y-2" onClick={(event) => event.stopPropagation()}>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase">Título</label>
                     <input
                       type="text"
@@ -180,7 +285,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
                 )}
 
                 {meta.usesText && (
-                  <div className="space-y-2">
+                  <div className="space-y-2" onClick={(event) => event.stopPropagation()}>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto</label>
                     <textarea
                       rows="5"
@@ -193,7 +298,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
                 )}
 
                 {meta.usesImage && (
-                  <>
+                  <div onClick={(event) => event.stopPropagation()}>
                     <ImageUrlField
                       label="Imagen"
                       value={item.imageUrl || ''}
@@ -206,7 +311,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
                       previewAlt={`Vista previa blog ${index + 1}`}
                       helperText="Pega una URL o sube una imagen."
                     />
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-3">
                       <label className="block text-[10px] font-bold text-gray-400 uppercase">
                         Texto alternativo (opcional)
                       </label>
@@ -218,7 +323,7 @@ export default function BlogFieldsEditor({ formData, onChange, pageId, canToggle
                         className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
                       />
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             );

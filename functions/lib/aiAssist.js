@@ -145,6 +145,7 @@ function buildSystemPrompt(language, vertical) {
     ].join(" ");
 }
 function buildUserPrompt(payload) {
+    var _a, _b;
     if (payload.action === "suggest_page_structure") {
         return [
             "Action: suggest_page_structure",
@@ -166,6 +167,43 @@ function buildUserPrompt(payload) {
             payload.context.name ? `Brand/name: ${payload.context.name}` : "",
             payload.context.specialty ? `Specialty: ${payload.context.specialty}` : "",
             payload.brief ? `User note:\n${payload.brief}` : "User note: (none)",
+        ].filter(Boolean).join("\n");
+    }
+    if (payload.action === "hero_suggest") {
+        const path = String((_a = payload.fieldPath) !== null && _a !== void 0 ? _a : "").trim();
+        const isAdd = /^heroSlides(?:\[\+]|\.new)$/i.test(path);
+        const match = path.match(/^heroSlides\[(\d+)\]/i);
+        const slideIndex = match ? Number(match[1]) : 0;
+        return [
+            "Action: hero_suggest",
+            isAdd
+                ? "Generate title and subtitle for a NEW hero carousel slide."
+                : `Generate or improve title and subtitle for hero carousel slide #${slideIndex + 1}.`,
+            "Keep copy concise, warm, and ethical. No medical guarantees or invented credentials.",
+            'Return ONLY valid JSON: { "title": "...", "text": "..." }',
+            payload.context.name ? `Brand/name: ${payload.context.name}` : "",
+            payload.context.specialty ? `Specialty: ${payload.context.specialty}` : "",
+            payload.brief ? `Brief: ${payload.brief}` : "",
+            payload.currentValue ? `Current slide content:\n${payload.currentValue}` : "",
+        ].filter(Boolean).join("\n");
+    }
+    if (payload.action === "blog_draft") {
+        const path = String((_b = payload.fieldPath) !== null && _b !== void 0 ? _b : "").trim();
+        const isAdd = /^blogPosts(?:\[\+]|\.new)$/i.test(path) || !/^blogPosts\[\d+\]/i.test(path);
+        const match = path.match(/^blogPosts\[(\d+)\]/i);
+        const postIndex = match ? Number(match[1]) : 0;
+        return [
+            "Action: blog_draft",
+            isAdd
+                ? "Generate title and body text for a NEW blog/news entry."
+                : `Generate or improve title and body text for blog/news entry #${postIndex + 1}.`,
+            'Write 2-4 short paragraphs separated by blank lines in "text". Warm, clear, ethical tone.',
+            "No invented credentials, medical claims, or fake patient stories.",
+            'Return ONLY valid JSON: { "title": "...", "text": "..." }',
+            payload.context.name ? `Brand/name: ${payload.context.name}` : "",
+            payload.context.specialty ? `Specialty: ${payload.context.specialty}` : "",
+            payload.brief ? `Brief: ${payload.brief}` : "",
+            payload.currentValue ? `Current entry content:\n${payload.currentValue}` : "",
         ].filter(Boolean).join("\n");
     }
     if (payload.action === "generate_page_content") {

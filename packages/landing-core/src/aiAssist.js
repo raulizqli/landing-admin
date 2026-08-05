@@ -5,14 +5,15 @@
 
 import { createEmptyBlogPost } from './blog.js';
 import { createEmptyCatalogItem } from './catalog.js';
+import { createEmptySlide } from './heroSlides.js';
+import { createEmptyService } from './services.js';
+import { createEmptyTestimonial } from './testimonials.js';
 import {
   accountHasFeature,
   getAiMonthlyQuota,
   getBillingPlan,
   isBillingAccountActive,
 } from './billingPlans.js';
-import { createEmptyService } from './services.js';
-import { createEmptyTestimonial } from './testimonials.js';
 import { normalizeVertical } from './verticals.js';
 
 export const AI_ASSIST_LANES = ['lite', 'full'];
@@ -127,6 +128,137 @@ export function currentAiUsagePeriod(date = new Date()) {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
+}
+
+/** Parse heroSlides fieldPath for AI apply (edit index N or add new slide). */
+export function parseHeroSlideTarget(fieldPath = '') {
+  const path = String(fieldPath ?? '').trim();
+  if (/^heroSlides(?:\[\+]|\.new)$/i.test(path)) {
+    return { mode: 'add', index: null };
+  }
+  const match = path.match(/^heroSlides\[(\d+)\]/i);
+  if (match) {
+    return { mode: 'edit', index: Number(match[1]) };
+  }
+  return { mode: 'edit', index: 0 };
+}
+
+export function buildHeroSuggestPrompt({
+  fieldPath = '',
+  currentValue = '',
+  brief = '',
+  context = {},
+} = {}) {
+  const target = parseHeroSlideTarget(fieldPath);
+  const name = context.name || '';
+  const specialty = context.specialty || '';
+  return [
+    'Action: hero_suggest',
+    target.mode === 'add'
+      ? 'Generate title and subtitle for a NEW hero carousel slide.'
+      : `Generate or improve title and subtitle for hero carousel slide #${(target.index ?? 0) + 1}.`,
+    'Keep copy concise, warm, and ethical. No medical guarantees or invented credentials.',
+    'Return ONLY valid JSON: { "title": "...", "text": "..." }',
+    name ? `Brand/name: ${name}` : '',
+    specialty ? `Specialty: ${specialty}` : '',
+    brief ? `Brief: ${brief}` : '',
+    currentValue ? `Current slide content:\n${currentValue}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+/** Apply hero_suggest result to a slide index or append a new slide. */
+export function applyHeroSuggestResult(formData = {}, result = {}, fieldPath = '') {
+  const title = sanitizeAiText(result?.title);
+  const text = sanitizeAiText(result?.text);
+  if (!title && !text) return { ...formData };
+
+  const target = parseHeroSlideTarget(fieldPath);
+  const slides = Array.isArray(formData.heroSlides) ? [...formData.heroSlides] : [createEmptySlide()];
+  const slideContent = {
+    title: title || slides[target.index ?? 0]?.title || '',
+    text: text || slides[target.index ?? 0]?.text || '',
+    showTitle: true,
+    showText: Boolean(text || slides[target.index ?? 0]?.text),
+  };
+
+  if (target.mode === 'add') {
+    slides.push({ ...createEmptySlide(), ...slideContent });
+  } else {
+    const index = Number.isFinite(target.index) ? target.index : 0;
+    slides[index] = { ...(slides[index] || createEmptySlide()), ...slideContent };
+  }
+
+  return { ...formData, heroSlides: slides };
+}
+
+/** Parse blogPosts fieldPath for AI apply (edit index N or add new post). */
+export function parseBlogPostTarget(fieldPath = '') {
+  const path = String(fieldPath ?? '').trim();
+  if (/^blogPosts(?:\[\+]|\.new)$/i.test(path)) {
+    return { mode: 'add', index: null };
+  }
+  const match = path.match(/^blogPosts\[(\d+)\]/i);
+  if (match) {
+    return { mode: 'edit', index: Number(match[1]) };
+  }
+  return { mode: 'add', index: null };
+}
+
+export function buildBlogDraftPrompt({
+  fieldPath = '',
+  currentValue = '',
+  brief = '',
+  context = {},
+} = {}) {
+  const target = parseBlogPostTarget(fieldPath);
+  const name = context.name || '';
+  const specialty = context.specialty || '';
+  return [
+    'Action: blog_draft',
+    target.mode === 'add'
+      ? 'Generate title and body text for a NEW blog/news entry.'
+      : `Generate or improve title and body text for blog/news entry #${(target.index ?? 0) + 1}.`,
+    'Write 2-4 short paragraphs separated by blank lines in "text". Warm, clear, ethical tone.',
+    'No invented credentials, medical claims, or fake patient stories.',
+    'Return ONLY valid JSON: { "title": "...", "text": "..." }',
+    name ? `Brand/name: ${name}` : '',
+    specialty ? `Specialty: ${specialty}` : '',
+    brief ? `Brief: ${brief}` : '',
+    currentValue ? `Current entry content:\n${currentValue}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+function normalizeBlogDraftText(result = {}) {
+  const title = sanitizeAiText(result?.title);
+  const rawText = result?.text
+    ?? (Array.isArray(result?.body) ? result.body.join('\n\n') : result?.body)
+    ?? result?.excerpt;
+  const text = sanitizeAiText(rawText);
+  return { title, text };
+}
+
+/** Apply blog_draft result to a post index or append a new post. */
+export function applyBlogDraftResult(formData = {}, result = {}, fieldPath = '') {
+  const { title, text } = normalizeBlogDraftText(result);
+  if (!title && !text) return { ...formData };
+
+  const target = parseBlogPostTarget(fieldPath);
+  const posts = Array.isArray(formData.blogPosts) && formData.blogPosts.length > 0
+    ? [...formData.blogPosts]
+    : [createEmptyBlogPost()];
+  const postContent = {
+    title: title || posts[target.index ?? 0]?.title || '',
+    text: text || posts[target.index ?? 0]?.text || '',
+  };
+
+  if (target.mode === 'add') {
+    posts.push({ ...createEmptyBlogPost(), ...postContent });
+  } else {
+    const index = Number.isFinite(target.index) ? target.index : 0;
+    posts[index] = { ...(posts[index] || createEmptyBlogPost()), ...postContent };
+  }
+
+  return { ...formData, blogPosts: posts, blogSectionEnabled: true };
 }
 
 /** Strip HTML / scripts from model output before applying to form fields. */
@@ -544,16 +676,10 @@ export function applyAiAssistResult(formData = {}, { action, fieldPath, result }
     return next;
   }
   if (normalizedAction === 'hero_suggest' && result?.title != null) {
-    const slides = Array.isArray(next.heroSlides) ? [...next.heroSlides] : [{}];
-    slides[0] = {
-      ...slides[0],
-      title: sanitizeAiText(result.title) || slides[0].title,
-      text: sanitizeAiText(result.text) || slides[0].text,
-      showTitle: true,
-      showText: true,
-    };
-    next.heroSlides = slides;
-    return next;
+    return applyHeroSuggestResult(next, result, fieldPath);
+  }
+  if (normalizedAction === 'blog_draft' && (result?.title != null || result?.text != null || result?.body != null)) {
+    return applyBlogDraftResult(next, result, fieldPath);
   }
   if (normalizedAction === 'seo_meta') {
     next.seo = {
@@ -561,22 +687,6 @@ export function applyAiAssistResult(formData = {}, { action, fieldPath, result }
       defaultTitle: sanitizeAiText(result?.title) || next.seo?.defaultTitle || '',
       defaultDescription: sanitizeAiText(result?.description) || next.seo?.defaultDescription || '',
     };
-    return next;
-  }
-  if (normalizedAction === 'blog_draft' && result?.title) {
-    const posts = Array.isArray(next.blogPosts) ? [...next.blogPosts] : [];
-    posts.unshift({
-      id: `ai-${Date.now()}`,
-      title: sanitizeAiText(result.title),
-      excerpt: sanitizeAiText(result.excerpt || ''),
-      body: Array.isArray(result.body)
-        ? result.body.map(sanitizeAiText).filter(Boolean)
-        : [sanitizeAiText(result.body || text)].filter(Boolean),
-      date: new Date().toISOString().slice(0, 10),
-      enabled: true,
-    });
-    next.blogPosts = posts;
-    next.blogSectionEnabled = true;
     return next;
   }
   if (normalizedAction === 'generate_logo') {
@@ -659,6 +769,14 @@ export function buildAiUserPrompt({
       specialty ? `Specialty: ${specialty}` : '',
       brief ? `User note:\n${brief}` : 'User note: (none)',
     ].filter(Boolean).join('\n');
+  }
+
+  if (normalizedAction === 'hero_suggest') {
+    return buildHeroSuggestPrompt({ fieldPath, currentValue, brief, context });
+  }
+
+  if (normalizedAction === 'blog_draft') {
+    return buildBlogDraftPrompt({ fieldPath, currentValue, brief, context });
   }
 
   const parts = [
