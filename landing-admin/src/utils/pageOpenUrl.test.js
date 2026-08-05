@@ -18,7 +18,10 @@ describe('resolvePageOpenUrl', () => {
     })).toBe('https://ana.example.com/');
   });
 
-  it('returns empty string without pageId', () => {
-    expect(resolvePageOpenUrl({ pageId: '' })).toBe('');
+  it('falls back to template preview with pageId', () => {
+    expect(resolvePageOpenUrl({
+      pageId: 'centro-pale',
+      language: 'es',
+    })).toMatch(/pageId=centro-pale/);
   });
 });

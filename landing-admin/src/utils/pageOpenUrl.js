@@ -35,7 +35,7 @@ export function resolvePageOpenUrl({
 
   const templatePreview = (
     String(import.meta.env.VITE_TEMPLATE_PREVIEW_URL ?? '').trim()
-    || (import.meta.env.DEV ? 'http://localhost:5174' : '')
+    || (import.meta.env.DEV ? 'http://localhost:5174' : 'https://us.leftsidedev.site')
   ).replace(/\/+$/, '');
   if (!templatePreview) return '';
 
