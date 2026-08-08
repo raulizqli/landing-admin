@@ -231,6 +231,26 @@ export default function App() {
     selectLanding({ id: DEMO_PREVIEW_ID });
   };
 
+  const reloadSelectedFromCloud = async () => {
+    if (!selectedId || selectedId === DEMO_PREVIEW_ID || !formData) return;
+    if (!window.confirm(t('common.reloadFromCloudConfirm'))) return;
+    try {
+      const meta = landings.find((page) => page.id === selectedId) || { id: selectedId };
+      const loaded = await loadPageForEditor(selectedId, meta);
+      const hydrated = hydrateForm({ id: selectedId, ...loaded });
+      setFormData(hydrated);
+      setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
+      setLayoutBaseline(hydrated);
+      setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
+      setLandings((current) => current.map((landing) => (
+        landing.id === selectedId ? { id: selectedId, ...hydrated } : landing
+      )));
+    } catch (error) {
+      console.error('Error al recargar la landing:', error);
+      alert(t('common.reloadFromCloudError'));
+    }
+  };
+
   useEffect(() => {
     if (authLoading || !user || !profile) return;
 
@@ -735,6 +755,17 @@ export default function App() {
                   >
                     {t('common.openPage')} ↗
                   </a>
+                )}
+                {!isDemoPreview && (
+                  <button
+                    type="button"
+                    disabled={saving || !canEditSelectedPage}
+                    onClick={reloadSelectedFromCloud}
+                    title={t('common.reloadFromCloudTitle')}
+                    className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {t('common.reloadFromCloud')}
+                  </button>
                 )}
                 <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0">
                   {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}

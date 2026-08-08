@@ -29,6 +29,10 @@ export default {
     openDocs: 'Ver documentación',
     openPage: 'Abrir página',
     openPageTitle: 'Abrir la landing en una pestaña nueva',
+    reloadFromCloud: 'Recargar',
+    reloadFromCloudTitle: 'Descartar cambios locales y volver a cargar desde Firestore',
+    reloadFromCloudConfirm: '¿Recargar desde la nube? Se perderán los cambios no guardados en el formulario.',
+    reloadFromCloudError: 'No se pudo recargar la página desde Firestore.',
     cancel: 'Cancelar',
   },
   login: {

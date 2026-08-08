@@ -29,6 +29,10 @@ export default {
     openDocs: 'View docs',
     openPage: 'Open page',
     openPageTitle: 'Open the landing in a new tab',
+    reloadFromCloud: 'Reload',
+    reloadFromCloudTitle: 'Discard local edits and reload from Firestore',
+    reloadFromCloudConfirm: 'Reload from the cloud? Unsaved form changes will be lost.',
+    reloadFromCloudError: 'Could not reload the page from Firestore.',
     cancel: 'Cancel',
   },
   login: {
