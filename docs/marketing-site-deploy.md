@@ -13,8 +13,8 @@ node scripts/seed-leftsidedev-page.mjs
 
 This writes:
 
-- `pages/leftsidedev` with `siteMode: 'marketing'`, `marketing`, `seo`, `seoArtifacts`
-- `pages/leftsidedev/routes/*` (home, services, cases, blog, estimate, resources, contact)
+- A page with `siteMode: 'marketing'`, `marketing`, `seo`, `seoArtifacts` (demo tenant; LeftSideDev product showcase uses `siteMode: 'landing'` via `seed-leftsidedev-page.mjs`)
+- `pages/{pageId}/routes/*` (home, services, cases, blog, estimate, resources, contact)
 
 Local preview:
 

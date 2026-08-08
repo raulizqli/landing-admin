@@ -43,6 +43,7 @@ export default function BillingPlansPanel({ open, onClose }) {
   const [busyKey, setBusyKey] = useState('');
   const [error, setError] = useState('');
   const [banner, setBanner] = useState('');
+  const [providerChoicePlanId, setProviderChoicePlanId] = useState('');
   const [addonAccountId, setAddonAccountId] = useState('');
   const [aiMode, setAiMode] = useState('platform');
   const [aiProvider, setAiProvider] = useState('openai');
@@ -57,6 +58,10 @@ export default function BillingPlansPanel({ open, onClose }) {
   useEffect(() => {
     setCurrency(defaultBillingCurrencyForLocale(locale));
   }, [locale]);
+
+  useEffect(() => {
+    if (!open) setProviderChoicePlanId('');
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -96,6 +101,7 @@ export default function BillingPlansPanel({ open, onClose }) {
 
   const startCheckout = async (planId, provider) => {
     setError('');
+    setProviderChoicePlanId('');
     setBusyKey(`${planId}:${provider}`);
     try {
       const data = await createBillingCheckout({
@@ -532,24 +538,17 @@ export default function BillingPlansPanel({ open, onClose }) {
                           {t('billing.currentPlan')}
                         </p>
                       ) : (
-                        <>
-                          <button
-                            type="button"
-                            disabled={Boolean(busyKey) || bypass}
-                            onClick={() => startCheckout(plan.id, 'stripe')}
-                            className="w-full text-sm font-semibold rounded-lg bg-[#4A5D4E] text-white py-2 hover:bg-[#3d4d41] disabled:opacity-50"
-                          >
-                            {busyKey === `${plan.id}:stripe` ? t('common.loading') : t('billing.payWithStripe')}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={Boolean(busyKey) || bypass}
-                            onClick={() => startCheckout(plan.id, 'mercadopago')}
-                            className="w-full text-sm font-semibold rounded-lg border border-[#2A342D]/20 text-[#2A342D] py-2 hover:bg-[#F4F1EA] disabled:opacity-50"
-                          >
-                            {busyKey === `${plan.id}:mercadopago` ? t('common.loading') : t('billing.payWithMercadoPago')}
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          disabled={Boolean(busyKey) || bypass}
+                          onClick={() => {
+                            setError('');
+                            setProviderChoicePlanId(plan.id);
+                          }}
+                          className="w-full text-sm font-semibold rounded-lg bg-[#4A5D4E] text-white py-2 hover:bg-[#3d4d41] disabled:opacity-50"
+                        >
+                          {busyKey.startsWith(`${plan.id}:`) ? t('common.loading') : t('billing.pay')}
+                        </button>
                       )}
                     </div>
                   )}
@@ -559,6 +558,61 @@ export default function BillingPlansPanel({ open, onClose }) {
           </div>
         </div>
       </div>
+
+      {providerChoicePlanId ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#2A342D]/45 p-4"
+          role="presentation"
+          onClick={() => !busyKey && setProviderChoicePlanId('')}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="billing-provider-title"
+            className="w-full max-w-sm rounded-2xl border border-[#2A342D]/10 bg-white p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="billing-provider-title" className="font-serif text-xl text-[#2A342D]">
+              {t('billing.chooseProviderTitle')}
+            </h3>
+            <p className="mt-1 text-xs text-[#2A342D]/60">
+              {t('billing.chooseProviderHint', {
+                plan: t(`billing.plans.${providerChoicePlanId}.name`),
+              })}
+            </p>
+            <div className="mt-4 space-y-2">
+              <button
+                type="button"
+                disabled={Boolean(busyKey)}
+                onClick={() => startCheckout(providerChoicePlanId, 'stripe')}
+                className="w-full text-sm font-semibold rounded-lg bg-[#4A5D4E] text-white py-2.5 hover:bg-[#3d4d41] disabled:opacity-50"
+              >
+                {busyKey === `${providerChoicePlanId}:stripe`
+                  ? t('common.loading')
+                  : t('billing.payWithStripe')}
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(busyKey)}
+                onClick={() => startCheckout(providerChoicePlanId, 'mercadopago')}
+                className="w-full text-sm font-semibold rounded-lg border border-[#2A342D]/20 text-[#2A342D] py-2.5 hover:bg-[#F4F1EA] disabled:opacity-50"
+              >
+                {busyKey === `${providerChoicePlanId}:mercadopago`
+                  ? t('common.loading')
+                  : t('billing.payWithMercadoPago')}
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(busyKey)}
+                onClick={() => setProviderChoicePlanId('')}
+                className="w-full text-xs font-medium text-[#2A342D]/60 py-2 hover:text-[#2A342D] disabled:opacity-50"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -46,7 +46,7 @@ function buildCustomVisualClasses(customStyle) {
     },
     media: 'overflow-hidden',
     body: 'p-5 sm:p-6 flex flex-col flex-1',
-    title: 'font-serif text-lg sm:text-xl text-[#2A342D] leading-snug',
+    title: 'font-serif text-lg sm:text-xl text-[#0A5C3A] leading-snug',
     entrance: entranceClass(style.entrance),
     gapClass: gapClassForCustom(style.gap),
   };

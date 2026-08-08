@@ -149,15 +149,16 @@ npm run dev:site
 
 Plan e implementación: [leftsidedev-optimization-plan.md](./leftsidedev-optimization-plan.md).
 
-### Seed legacy del Landing CMS (`pages/leftsidedev`)
+### Seed showcase de landings (`pages/leftsidedev`)
 
-El seed sigue disponible para la landing del producto CMS en el template:
+El seed publica la landing de producto LeftSideDev (promueve **landings profesionales**, no el panel CMS; colorimetría dark + accent mint) en el template:
 
 ```bash
 cd functions
 node scripts/seed-leftsidedev-page.mjs
 ```
 
+Vista: `http://localhost:5174/?pageId=leftsidedev` o `https://us.leftsidedev.site/?pageId=leftsidedev`.  
 Ejecuta el script únicamente con las credenciales y el proyecto Firebase correctos.
 
 ## App Check

@@ -23,12 +23,14 @@ function PublicLanguageSwitcher({
   language,
   interactive,
   onLanguageChange,
+  textColor,
+  surfaceColor,
 }) {
   if (languages.length < 2) return null;
 
   return (
     <div
-      className="shrink-0 inline-flex items-center rounded-full border border-[#2A342D]/15 bg-white/60 p-0.5"
+      className="shrink-0 inline-flex items-center rounded-full border border-current/25 bg-current/10 p-0.5"
       role="group"
       aria-label={language === 'es' ? 'Cambiar idioma' : 'Change language'}
     >
@@ -36,21 +38,25 @@ function PublicLanguageSwitcher({
         .filter((option) => languages.includes(option.value))
         .map((option) => {
           const active = option.value === language;
-          const className = `rounded-full px-2 py-1 text-[10px] font-semibold transition ${
-            active ? 'bg-[#2A342D] text-white' : 'text-[#2A342D]/65 hover:text-[#2A342D]'
-          }`;
+          const className = 'rounded-full px-2 py-1 text-[10px] font-semibold transition';
+          const style = active
+            ? { backgroundColor: textColor, color: surfaceColor }
+            : { color: 'inherit', opacity: 0.7 };
           return interactive ? (
             <button
               key={option.value}
               type="button"
-              className={className}
+              className={`${className} ${active ? '' : 'hover:opacity-100'}`}
+              style={style}
               aria-pressed={active}
               onClick={() => onLanguageChange?.(option.value)}
             >
               {option.shortLabel}
             </button>
           ) : (
-            <span key={option.value} className={className}>{option.shortLabel}</span>
+            <span key={option.value} className={className} style={style}>
+              {option.shortLabel}
+            </span>
           );
         })}
     </div>
@@ -67,8 +73,8 @@ function BrandBlock({
   specialtyCase,
 }) {
   const specialtyClass = specialtyCase === 'capitalize'
-    ? 'text-[10px] sm:text-xs tracking-wide text-[#4A5D4E]/80 mt-0.5 truncate'
-    : 'text-[10px] sm:text-xs uppercase tracking-widest text-[#4A5D4E]/80 mt-0.5 truncate';
+    ? 'text-[10px] sm:text-xs tracking-wide text-current/70 mt-0.5 truncate'
+    : 'text-[10px] sm:text-xs uppercase tracking-widest text-current/70 mt-0.5 truncate';
   if (logoMode) {
     if (logoUrl) {
       return (
@@ -82,7 +88,7 @@ function BrandBlock({
 
     return (
       <div className="min-w-0 text-left">
-        <p className="font-serif font-semibold text-[#2A342D] text-base sm:text-lg truncate">
+        <p className="font-serif font-semibold text-current text-base sm:text-lg truncate">
           {displayName}
         </p>
         {displaySpecialty ? (
@@ -102,7 +108,7 @@ function BrandBlock({
     <div className="min-w-0 flex items-center gap-3">
       {iconElement}
       <div className="min-w-0 text-left">
-        <p className="font-serif font-semibold text-[#2A342D] text-base sm:text-lg truncate">
+        <p className="font-serif font-semibold text-current text-base sm:text-lg truncate">
           {displayName}
         </p>
         {displaySpecialty ? (
@@ -126,12 +132,12 @@ function MenuLinks({ items, interactive, onNavigate, className = '' }) {
             <a
               href={`#${item.id}`}
               onClick={() => onNavigate?.()}
-              className="text-xs sm:text-sm text-[#2A342D]/75 hover:text-[#4A5D4E] transition-colors"
+              className="text-xs sm:text-sm text-current/80 hover:text-current transition-colors"
             >
               {item.label}
             </a>
           ) : (
-            <span className="text-xs sm:text-sm text-[#2A342D]/75">{item.label}</span>
+            <span className="text-xs sm:text-sm text-current/80">{item.label}</span>
           )}
         </li>
       ))}
@@ -176,6 +182,9 @@ export default function Navbar({
   const ctaLabel = getLabel(labels, 'nav.bookAppointment');
   const ctaBgColor = parseColorToHex(data?.navCtaBgColor, DEFAULT_NAV_CTA_BG_COLOR);
   const ctaTextColor = parseColorToHex(data?.navCtaTextColor, DEFAULT_NAV_CTA_TEXT_COLOR);
+  const navTheme = getSectionTheme(data, 'nav');
+  const navTextColor = parseColorToHex(navTheme?.textColor, '#2A342D');
+  const navSurfaceColor = parseColorToHex(navTheme?.backgroundColor, '#F4F1EA');
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -198,18 +207,19 @@ export default function Navbar({
     />
   ) : (
     <div
-      className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-full bg-[#4A5D4E]/15 flex items-center justify-center font-serif text-sm text-[#4A5D4E]"
+      className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-full bg-current/15 flex items-center justify-center font-serif text-sm text-current"
       aria-hidden={!iconOnly}
     >
       {displayName.charAt(0).toUpperCase()}
     </div>
   );
 
-  const ctaClassName = 'shrink-0 text-xs sm:text-sm font-medium px-4 py-2 rounded-full transition-[filter,opacity] hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#F4F1EA]';
+  const ctaClassName = 'shrink-0 text-xs sm:text-sm font-medium px-4 py-2 rounded-full transition-[filter,opacity] hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-offset-2';
   const ctaStyle = {
     backgroundColor: ctaBgColor,
     color: ctaTextColor,
     '--tw-ring-color': ctaBgColor,
+    '--tw-ring-offset-color': navSurfaceColor,
   };
 
   const ctaLinkProps = ctaExternal
@@ -252,6 +262,8 @@ export default function Navbar({
       language={language}
       interactive={interactive}
       onLanguageChange={onLanguageChange}
+      textColor={navTextColor}
+      surfaceColor={navSurfaceColor}
     />
   );
 
@@ -266,7 +278,7 @@ export default function Navbar({
   const mobileToggle = showMenu && menuItems.length > 0 ? (
     <button
       type="button"
-      className="md:hidden shrink-0 text-xs font-medium text-[#2A342D] border border-[#2A342D]/15 rounded-full px-3 py-1.5"
+      className="md:hidden shrink-0 text-xs font-medium text-current border border-current/25 rounded-full px-3 py-1.5"
       aria-expanded={menuOpen}
       aria-controls="nav-mobile-menu"
       onClick={() => setMenuOpen((open) => !open)}
@@ -292,7 +304,7 @@ export default function Navbar({
         right: 'justify-end',
       }[align] || 'justify-between';
 
-  const navStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'nav'), { sectionKey: 'nav' });
+  const navStyle = buildSectionBackgroundStyle(navTheme, { sectionKey: 'nav' });
 
   let rowContent;
   if (align === 'spread') {
@@ -332,7 +344,7 @@ export default function Navbar({
     <header
       id={SECTION_IDS.nav}
       data-preview-section={SECTION_IDS.nav}
-      className="sticky top-0 z-20 border-b border-[#2A342D]/10"
+      className="sticky top-0 z-20 border-b border-current/15"
       style={navStyle}
     >
       <div className={`max-w-5xl mx-auto px-5 py-4 flex items-center gap-4 ${rowClass}`}>
@@ -342,7 +354,7 @@ export default function Navbar({
       {menuOpen && showMenu && menuItems.length > 0 && (
         <div
           id="nav-mobile-menu"
-          className="md:hidden border-t border-[#2A342D]/10 px-5 py-4"
+          className="md:hidden border-t border-current/15 px-5 py-4"
         >
           <MenuLinks
             items={menuItems}

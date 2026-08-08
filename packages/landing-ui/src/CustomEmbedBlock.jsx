@@ -135,6 +135,13 @@ function CtaSection({ embed, interactive, copy }) {
   );
 }
 
+/** Light cards on dark page themes: solid mist surface + ink / strong-green type (not text-current). */
+const LIGHT_CARD =
+  'rounded-2xl border border-[#070B0A]/10 bg-[#F4F7F5] shadow-sm';
+const CARD_TITLE = 'text-[#0A5C3A]';
+const CARD_BODY = 'text-[#1A2420]/80';
+const CARD_MUTED = 'text-[#0A5C3A]/55';
+
 function FaqSection({ embed, copy }) {
   const items = (embed.faqItems || []).filter((item) => item.question && item.answer);
 
@@ -145,13 +152,15 @@ function FaqSection({ embed, copy }) {
         {items.map((item, index) => (
           <details
             key={`${embed.id}-faq-${index}`}
-            className="group rounded-xl border border-[#2A342D]/10 bg-white/60 px-4 py-3"
+            className={`group ${LIGHT_CARD} px-4 py-3`}
           >
-            <summary className="cursor-pointer list-none font-medium text-sm sm:text-base text-current flex items-center justify-between gap-3">
+            <summary
+              className={`cursor-pointer list-none font-medium text-sm sm:text-base ${CARD_TITLE} flex items-center justify-between gap-3`}
+            >
               <span>{item.question}</span>
-              <span className="text-current/40 group-open:rotate-45 transition-transform text-lg leading-none">+</span>
+              <span className={`${CARD_MUTED} group-open:rotate-45 transition-transform text-lg leading-none`}>+</span>
             </summary>
-            <p className="mt-3 text-sm text-current/70 leading-relaxed whitespace-pre-line">
+            <p className={`mt-3 text-sm ${CARD_BODY} leading-relaxed whitespace-pre-line`}>
               {item.answer}
             </p>
           </details>
@@ -171,16 +180,16 @@ function StepsSection({ embed, copy }) {
         {items.map((item, index) => (
           <li
             key={`${embed.id}-step-${index}`}
-            className="rounded-2xl border border-[#2A342D]/10 bg-white/50 p-5"
+            className={`${LIGHT_CARD} p-5`}
           >
-            <p className="text-[11px] uppercase tracking-[0.2em] text-current/45 mb-3">
+            <p className={`text-[11px] uppercase tracking-[0.2em] ${CARD_MUTED} mb-3`}>
               {String(index + 1).padStart(2, '0')}
             </p>
             {item.title && (
-              <h3 className="font-serif text-lg sm:text-xl text-current mb-2 leading-snug">{item.title}</h3>
+              <h3 className={`font-serif text-lg sm:text-xl ${CARD_TITLE} mb-2 leading-snug`}>{item.title}</h3>
             )}
             {item.description && (
-              <p className="text-sm text-current/70 leading-relaxed">{item.description}</p>
+              <p className={`text-sm ${CARD_BODY} leading-relaxed`}>{item.description}</p>
             )}
           </li>
         ))}
