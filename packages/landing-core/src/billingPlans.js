@@ -15,6 +15,7 @@ export const BILLING_PLANS = [
     rank: 1,
     pageLimit: 1,
     locationLimit: 1,
+    qrCodeLimit: 0,
     monthlyPriceUsd: 10,
     monthlyPriceMxn: 189,
     aiMonthlyGenerationsLite: 30,
@@ -46,6 +47,7 @@ export const BILLING_PLANS = [
     rank: 2,
     pageLimit: 1,
     locationLimit: null,
+    qrCodeLimit: 2,
     monthlyPriceUsd: 25,
     monthlyPriceMxn: 469,
     aiMonthlyGenerationsLite: 30,
@@ -77,6 +79,7 @@ export const BILLING_PLANS = [
     rank: 3,
     pageLimit: 5,
     locationLimit: null,
+    qrCodeLimit: null,
     monthlyPriceUsd: 75,
     monthlyPriceMxn: 1399,
     aiMonthlyGenerationsLite: 30,
@@ -108,6 +111,7 @@ export const BILLING_PLANS = [
     rank: 4,
     pageLimit: null,
     locationLimit: null,
+    qrCodeLimit: null,
     monthlyPriceUsd: null,
     monthlyPriceMxn: null,
     aiMonthlyGenerationsLite: 30,
@@ -374,6 +378,19 @@ export function getAccountAiLogoLimit(account, { bypass = false } = {}) {
   const plan = getBillingPlan(account?.plan);
   if (plan.aiLogoMonthlyLimit == null) return null;
   return Number(plan.aiLogoMonthlyLimit) || 0;
+}
+
+/**
+ * Concurrent QR codes the admin can generate/download.
+ * Pro = 2; Agency/Enterprise = unlimited (null); Starter/unpaid = 0.
+ */
+export function getAccountQrCodeLimit(account, { bypass = false } = {}) {
+  if (bypass) return null;
+  if (!isBillingAccountActive(account)) return 0;
+  if (!planHasFeature(account?.plan, 'qrCodes')) return 0;
+  const plan = getBillingPlan(account?.plan);
+  if (plan.qrCodeLimit == null) return null;
+  return Number(plan.qrCodeLimit) || 0;
 }
 
 /**

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncDomainIndexes = exports.askOllamaCloud = exports.ensureBootstrapRoot = exports.createCmsPage = exports.getAiAssistUsage = exports.setAiProviderConfig = exports.runAiAssist = exports.generateLandingDraft = exports.syncSiteAccessDaily = exports.setBillingMonetization = exports.setBillingAccountAddons = exports.assertMarketingSiteAccess = exports.marketingRobots = exports.marketingRss = exports.marketingSitemap = exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.updateCmsUser = exports.listCmsUsers = exports.generateCmsUserInvitation = exports.deleteCmsUser = exports.createCmsUser = void 0;
+exports.syncDomainIndexes = exports.askOllamaCloud = exports.ensureBootstrapRoot = exports.reportSystemIncident = exports.listCmsTickets = exports.updateCmsTicket = exports.createCmsTicket = exports.markAllNotificationsRead = exports.markNotificationRead = exports.listMyNotifications = exports.listPageAudits = exports.recordPageAudit = exports.createCmsPage = exports.getAiAssistUsage = exports.setAiProviderConfig = exports.runAiAssist = exports.generateLandingDraft = exports.syncSiteAccessDaily = exports.setBillingMonetization = exports.setBillingAccountAddons = exports.assertMarketingSiteAccess = exports.marketingRobots = exports.marketingRss = exports.marketingSitemap = exports.mercadoPagoBillingWebhook = exports.stripeBillingWebhook = exports.setBillingPlanManual = exports.createBillingCheckout = exports.ensureBillingAccount = exports.triggerHostingDeploy = exports.rejectCmsAccess = exports.approveCmsAccess = exports.requestPasswordResetEmail = exports.requestCmsAccess = exports.updateCmsUser = exports.listCmsUsers = exports.generateCmsUserInvitation = exports.deleteCmsUser = exports.createCmsUser = void 0;
 const firebase_functions_1 = require("firebase-functions");
 (0, firebase_functions_1.setGlobalOptions)({ maxInstances: 10 });
 var cmsUsers_js_1 = require("./cmsUsers.js");
@@ -9,6 +9,10 @@ Object.defineProperty(exports, "deleteCmsUser", { enumerable: true, get: functio
 Object.defineProperty(exports, "generateCmsUserInvitation", { enumerable: true, get: function () { return cmsUsers_js_1.generateCmsUserInvitation; } });
 Object.defineProperty(exports, "listCmsUsers", { enumerable: true, get: function () { return cmsUsers_js_1.listCmsUsers; } });
 Object.defineProperty(exports, "updateCmsUser", { enumerable: true, get: function () { return cmsUsers_js_1.updateCmsUser; } });
+Object.defineProperty(exports, "requestCmsAccess", { enumerable: true, get: function () { return cmsUsers_js_1.requestCmsAccess; } });
+Object.defineProperty(exports, "requestPasswordResetEmail", { enumerable: true, get: function () { return cmsUsers_js_1.requestPasswordResetEmail; } });
+Object.defineProperty(exports, "approveCmsAccess", { enumerable: true, get: function () { return cmsUsers_js_1.approveCmsAccess; } });
+Object.defineProperty(exports, "rejectCmsAccess", { enumerable: true, get: function () { return cmsUsers_js_1.rejectCmsAccess; } });
 var hostingDeploy_js_1 = require("./hostingDeploy.js");
 Object.defineProperty(exports, "triggerHostingDeploy", { enumerable: true, get: function () { return hostingDeploy_js_1.triggerHostingDeploy; } });
 var billing_js_1 = require("./billing.js");
@@ -34,6 +38,16 @@ Object.defineProperty(exports, "setAiProviderConfig", { enumerable: true, get: f
 Object.defineProperty(exports, "getAiAssistUsage", { enumerable: true, get: function () { return aiAssist_js_1.getAiAssistUsage; } });
 var cmsPages_js_1 = require("./cmsPages.js");
 Object.defineProperty(exports, "createCmsPage", { enumerable: true, get: function () { return cmsPages_js_1.createCmsPage; } });
+var cmsInbox_js_1 = require("./cmsInbox.js");
+Object.defineProperty(exports, "recordPageAudit", { enumerable: true, get: function () { return cmsInbox_js_1.recordPageAudit; } });
+Object.defineProperty(exports, "listPageAudits", { enumerable: true, get: function () { return cmsInbox_js_1.listPageAudits; } });
+Object.defineProperty(exports, "listMyNotifications", { enumerable: true, get: function () { return cmsInbox_js_1.listMyNotifications; } });
+Object.defineProperty(exports, "markNotificationRead", { enumerable: true, get: function () { return cmsInbox_js_1.markNotificationRead; } });
+Object.defineProperty(exports, "markAllNotificationsRead", { enumerable: true, get: function () { return cmsInbox_js_1.markAllNotificationsRead; } });
+Object.defineProperty(exports, "createCmsTicket", { enumerable: true, get: function () { return cmsInbox_js_1.createCmsTicket; } });
+Object.defineProperty(exports, "updateCmsTicket", { enumerable: true, get: function () { return cmsInbox_js_1.updateCmsTicket; } });
+Object.defineProperty(exports, "listCmsTickets", { enumerable: true, get: function () { return cmsInbox_js_1.listCmsTickets; } });
+Object.defineProperty(exports, "reportSystemIncident", { enumerable: true, get: function () { return cmsInbox_js_1.reportSystemIncident; } });
 var bootstrapRoot_js_1 = require("./bootstrapRoot.js");
 Object.defineProperty(exports, "ensureBootstrapRoot", { enumerable: true, get: function () { return bootstrapRoot_js_1.ensureBootstrapRoot; } });
 var askOllamaCloud_js_1 = require("./askOllamaCloud.js");

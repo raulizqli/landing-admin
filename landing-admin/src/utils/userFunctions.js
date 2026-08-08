@@ -103,3 +103,47 @@ export async function ensureBootstrapRootRemote() {
     throw mapCallableError(error);
   }
 }
+
+/** Public self-registration (no auth session). */
+export async function requestCmsAccess(payload) {
+  try {
+    const callable = httpsCallable(getHubFunctions(), 'requestCmsAccess');
+    const result = await callable(payload);
+    return result.data;
+  } catch (error) {
+    throw mapCallableError(error);
+  }
+}
+
+/** Public password reset via Resend (no auth session). */
+export async function requestPasswordResetEmailRemote(email) {
+  try {
+    const callable = httpsCallable(getHubFunctions(), 'requestPasswordResetEmail');
+    const result = await callable({ email });
+    return result.data;
+  } catch (error) {
+    throw mapCallableError(error);
+  }
+}
+
+export async function approveCmsAccess(payload) {
+  try {
+    await assertCallableAuthSession();
+    const callable = httpsCallable(getHubFunctions(), 'approveCmsAccess');
+    const result = await callable(payload);
+    return result.data;
+  } catch (error) {
+    throw mapCallableError(error);
+  }
+}
+
+export async function rejectCmsAccess(uid) {
+  try {
+    await assertCallableAuthSession();
+    const callable = httpsCallable(getHubFunctions(), 'rejectCmsAccess');
+    const result = await callable({ uid });
+    return result.data;
+  } catch (error) {
+    throw mapCallableError(error);
+  }
+}

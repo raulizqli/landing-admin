@@ -18,19 +18,21 @@ function bootstrapRootEmail() {
     return String((_a = process.env.BOOTSTRAP_ROOT_EMAIL) !== null && _a !== void 0 ? _a : "").trim().toLowerCase();
 }
 function normalizeProfile(uid, data = {}) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     return {
         uid,
         email: String((_a = data.email) !== null && _a !== void 0 ? _a : "").trim().toLowerCase(),
         displayName: String((_b = data.displayName) !== null && _b !== void 0 ? _b : "").trim(),
-        role: String((_c = data.role) !== null && _c !== void 0 ? _c : "").trim().toLowerCase(),
-        accountId: String((_d = data.accountId) !== null && _d !== void 0 ? _d : "").trim(),
+        phone: String((_c = data.phone) !== null && _c !== void 0 ? _c : "").trim(),
+        role: String((_d = data.role) !== null && _d !== void 0 ? _d : "").trim().toLowerCase(),
+        accountId: String((_e = data.accountId) !== null && _e !== void 0 ? _e : "").trim(),
         assignedPageIds: Array.isArray(data.assignedPageIds) ? data.assignedPageIds : [],
-        pageId: String((_e = data.pageId) !== null && _e !== void 0 ? _e : "").trim(),
+        pageId: String((_f = data.pageId) !== null && _f !== void 0 ? _f : "").trim(),
         isDemo: data.isDemo === true,
         disabled: data.disabled === true,
-        updatedAt: (_f = data.updatedAt) !== null && _f !== void 0 ? _f : null,
-        createdAt: (_g = data.createdAt) !== null && _g !== void 0 ? _g : null,
+        approvalStatus: String((_g = data.approvalStatus) !== null && _g !== void 0 ? _g : (data.role ? "approved" : "pending")).trim().toLowerCase(),
+        updatedAt: (_h = data.updatedAt) !== null && _h !== void 0 ? _h : null,
+        createdAt: (_j = data.createdAt) !== null && _j !== void 0 ? _j : null,
     };
 }
 const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
@@ -60,6 +62,7 @@ exports.ensureBootstrapRoot = (0, https_1.onCall)(callableOptions, async (reques
                 assignedPageIds: [],
                 pageId: "",
                 isDemo: false,
+                approvalStatus: "approved",
                 createdAt: data.createdAt || now,
                 updatedAt: now,
             };
@@ -79,6 +82,7 @@ exports.ensureBootstrapRoot = (0, https_1.onCall)(callableOptions, async (reques
         assignedPageIds: [],
         pageId: "",
         isDemo: false,
+        approvalStatus: "approved",
         createdAt: now,
         updatedAt: now,
     };

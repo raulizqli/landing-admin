@@ -7,8 +7,7 @@
  * 2. VITE_MARKETING_URL / template showcase (configured marketing landing)
  */
 
-export const DEFAULT_PRODUCTION_MARKETING_URL =
-  'https://landing-template-9452e.web.app/?pageId=leftsidedev';
+import { getDefaultMarketingShowcaseUrl } from './landingBaseUrl.js';
 
 function normalizePublicUrl(raw) {
   const url = String(raw ?? '').trim();
@@ -27,12 +26,7 @@ export function getCorporateSiteUrl() {
 export function getMarketingUrl() {
   const fromEnv = normalizePublicUrl(import.meta.env.VITE_MARKETING_URL);
   if (fromEnv) return fromEnv;
-
-  if (import.meta.env.DEV) {
-    return 'http://localhost:5174/?pageId=leftsidedev';
-  }
-
-  return DEFAULT_PRODUCTION_MARKETING_URL;
+  return getDefaultMarketingShowcaseUrl();
 }
 
 /**

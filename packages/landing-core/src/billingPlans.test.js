@@ -8,6 +8,7 @@ import {
   getAccountAiLogoLimit,
   getAccountLocationLimit,
   getAccountPageCount,
+  getAccountQrCodeLimit,
   isBillingAccountActive,
   isPageSelfServePlan,
   normalizeBillingPlanId,
@@ -50,6 +51,15 @@ describe('qrCodes entitlement', () => {
     expect(accountHasFeature({ plan: 'pro', status: 'active' }, 'qrCodes')).toBe(true);
     expect(accountHasFeature({ plan: 'agency', status: 'active' }, 'qrCodes')).toBe(true);
     expect(accountHasFeature({ plan: 'enterprise', status: 'active' }, 'qrCodes')).toBe(true);
+  });
+
+  it('limits Pro to 2 QR codes and Agency to unlimited', () => {
+    expect(getAccountQrCodeLimit({ plan: 'starter', status: 'active' })).toBe(0);
+    expect(getAccountQrCodeLimit({ plan: 'pro', status: 'active' })).toBe(2);
+    expect(getAccountQrCodeLimit({ plan: 'agency', status: 'active' })).toBe(null);
+    expect(getAccountQrCodeLimit({ plan: 'enterprise', status: 'active' })).toBe(null);
+    expect(getAccountQrCodeLimit({ plan: 'pro', status: 'past_due' })).toBe(0);
+    expect(getAccountQrCodeLimit({ plan: 'pro' }, { bypass: true })).toBe(null);
   });
 });
 

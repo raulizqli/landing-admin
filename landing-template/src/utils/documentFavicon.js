@@ -1,6 +1,6 @@
 /**
  * Updates the document favicon to the page profile icon (navIconUrl).
- * Falls back to the static /favicon.svg when empty.
+ * Falls back to LeftSideDev brand /favicon.svg when empty.
  */
 
 const DEFAULT_FAVICON = '/favicon.svg';

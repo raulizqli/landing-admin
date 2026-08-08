@@ -8,6 +8,10 @@ export {
   generateCmsUserInvitation,
   listCmsUsers,
   updateCmsUser,
+  requestCmsAccess,
+  requestPasswordResetEmail,
+  approveCmsAccess,
+  rejectCmsAccess,
 } from "./cmsUsers.js";
 export { triggerHostingDeploy } from "./hostingDeploy.js";
 export {
@@ -37,6 +41,17 @@ export {
   getAiAssistUsage,
 } from "./aiAssist.js";
 export { createCmsPage } from "./cmsPages.js";
+export {
+  recordPageAudit,
+  listPageAudits,
+  listMyNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  createCmsTicket,
+  updateCmsTicket,
+  listCmsTickets,
+  reportSystemIncident,
+} from "./cmsInbox.js";
 export { ensureBootstrapRoot } from "./bootstrapRoot.js";
 export { askOllamaCloud } from "./askOllamaCloud.js";
 export { syncDomainIndexes } from "./domainIndex.js";

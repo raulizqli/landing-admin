@@ -57,6 +57,19 @@ export function canManageUsers(profile) {
   return normalizeRole(profile?.role) === ROLES.ROOT;
 }
 
+/** Inbox / tickets module: root, admin, or billing account owner. */
+export function canUseCmsInbox(profile, uid) {
+  const role = normalizeRole(profile?.role);
+  if (role === ROLES.ROOT || role === ROLES.ADMIN) return true;
+  return isBillingAccountOwner(profile, uid);
+}
+
+/** Create/list CMS tickets: root or admin. */
+export function canManageCmsTickets(profile) {
+  const role = normalizeRole(profile?.role);
+  return role === ROLES.ROOT || role === ROLES.ADMIN;
+}
+
 /**
  * Billing account owner = accountId defaults to uid (owner's Firebase uid).
  */
@@ -120,4 +133,14 @@ export function isSinglePageUser(profile) {
   if (normalizeRole(profile?.role) !== ROLES.USER) return false;
   // Agency owners (role user) with multiple assigned pages need the sidebar list.
   return getAccessiblePageIds(profile).length <= 1;
+}
+
+/**
+ * Root and multi-page actors (Agency owners, admins) can use /app/pages overview.
+ * Single-page users stay on the editor shell.
+ */
+export function canViewPagesOverview(profile) {
+  if (canManageUsers(profile)) return true;
+  if (!normalizeRole(profile?.role)) return false;
+  return !isSinglePageUser(profile);
 }

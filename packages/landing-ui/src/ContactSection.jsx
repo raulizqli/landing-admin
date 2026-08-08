@@ -108,10 +108,10 @@ function LocationAddressRow({
             rel="noopener noreferrer"
             className="text-sm text-[#4A5D4E] hover:underline focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] rounded"
           >
-            {location.address || maps.linkUrl}
+            {location.address || title || maps.linkUrl}
           </a>
         ) : (
-          <p className="text-sm text-[#2A342D]/80">{location.address}</p>
+          <p className="text-sm text-[#2A342D]/80">{location.address || title}</p>
         )}
       </div>
     </div>

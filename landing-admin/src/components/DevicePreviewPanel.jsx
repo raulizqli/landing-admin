@@ -5,10 +5,9 @@ import {
 } from '../utils/mirrorPreview';
 import MirrorPreviewPortal from './MirrorPreviewPortal';
 
-const TEMPLATE_PREVIEW_URL = (
-  import.meta.env.VITE_TEMPLATE_PREVIEW_URL?.replace(/\/$/, '')
-  || (import.meta.env.DEV ? 'http://localhost:5174' : 'https://us.leftsidedev.site')
-);
+import { getLandingBaseUrl } from '../utils/landingBaseUrl.js';
+
+const TEMPLATE_PREVIEW_URL = getLandingBaseUrl();
 
 const MOBILE_FRAME = { width: 390, height: 844 };
 const PREVIEW_SOURCE_HELP = [

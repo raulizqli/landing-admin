@@ -3,6 +3,18 @@ import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, type Firestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { sensitiveCallableOptions } from "./callableOptions.js";
+import {
+  sendAccessApprovedEmail,
+  sendInvitationEmail,
+  sendPasswordResetEmail,
+} from "./approvalEmail.js";
+import {
+  isValidEmail,
+  normalizeApprovalStatus,
+  normalizeEmail,
+  normalizeMxUsPhone,
+  type PhoneCountry,
+} from "./contactValidation.js";
 
 initializeApp();
 
@@ -24,10 +36,35 @@ interface UserProfilePayload {
 
 interface CreateUserPayload extends UserProfilePayload {
   createInvitation?: boolean;
+  phone?: string;
+}
+
+interface RequestAccessPayload {
+  email?: string;
+  password?: string;
+  displayName?: string;
+  phone?: string;
+  phoneCountry?: string;
+}
+
+interface ApproveAccessPayload {
+  uid?: string;
+  role?: string;
+  assignedPageIds?: string[];
+  pageId?: string;
+  displayName?: string;
+}
+
+interface RejectAccessPayload {
+  uid?: string;
 }
 
 interface GenerateInvitationPayload {
   uid?: string;
+}
+
+interface RequestPasswordResetPayload {
+  email?: string;
 }
 
 interface UpdateUserPayload extends UserProfilePayload {
@@ -132,6 +169,8 @@ async function assertRootCaller(request: CallableRequest) {
 }
 
 const callableOptions = sensitiveCallableOptions();
+/** Public self-registration from /login (App Check not available before sign-in). */
+const publicRegistrationOptions = sensitiveCallableOptions({ enforceAppCheck: false });
 
 function getAdminPublicUrl() {
   return String(process.env.ADMIN_PUBLIC_URL ?? "http://localhost:5173").trim().replace(/\/+$/, "");
@@ -301,6 +340,8 @@ export const createCmsUser = onCall(
     try {
       await db.collection(USERS_COLLECTION).doc(userRecord.uid).set({
         ...profileData,
+        approvalStatus: "approved",
+        phone: String(request.data?.phone ?? "").trim(),
         createdAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
@@ -315,9 +356,18 @@ export const createCmsUser = onCall(
 
     let invitationLink: string | null = null;
     let invitationError: string | null = null;
+    let invitationEmailSent = false;
+    let invitationEmailReason: string | null = null;
     if (request.data?.createInvitation === true) {
       try {
         invitationLink = await generateInvitationLink(String(profileData.email));
+        const emailResult = await sendInvitationEmail({
+          to: String(profileData.email),
+          invitationLink,
+          displayName: String(profileData.displayName || ""),
+        });
+        invitationEmailSent = emailResult.sent === true;
+        invitationEmailReason = emailResult.reason ?? null;
       } catch (error) {
         invitationError = error instanceof HttpsError
           ? error.message
@@ -332,6 +382,8 @@ export const createCmsUser = onCall(
       role: profileData.role,
       invitationLink,
       invitationError,
+      invitationEmailSent,
+      invitationEmailReason,
     };
   },
 );
@@ -360,12 +412,65 @@ export const generateCmsUserInvitation = onCall(
       throw new HttpsError("failed-precondition", "El usuario no tiene un email asociado.");
     }
 
+    const invitationLink = await generateInvitationLink(userRecord.email);
+    const emailResult = await sendInvitationEmail({
+      to: userRecord.email,
+      invitationLink,
+      displayName: userRecord.displayName ?? "",
+    });
+
     return {
       uid,
       email: userRecord.email,
       displayName: userRecord.displayName ?? "",
-      invitationLink: await generateInvitationLink(userRecord.email),
+      invitationLink,
+      emailSent: emailResult.sent === true,
+      emailReason: emailResult.reason ?? null,
     };
+  },
+);
+
+/**
+ * Public password reset: generates Admin SDK link and sends via Resend.
+ * Always returns success to avoid email enumeration.
+ */
+export const requestPasswordResetEmail = onCall(
+  publicRegistrationOptions,
+  async (request: CallableRequest<RequestPasswordResetPayload>) => {
+    const email = normalizeEmail(request.data?.email);
+    if (!isValidEmail(email)) {
+      throw new HttpsError("invalid-argument", "El email no es válido.");
+    }
+
+    try {
+      const userRecord = await getAuth().getUserByEmail(email);
+      const resetLink = await generateInvitationLink(email);
+      const emailResult = await sendPasswordResetEmail({
+        to: email,
+        resetLink,
+        displayName: userRecord.displayName ?? "",
+      });
+
+      if (emailResult.sent !== true) {
+        console.error(
+          "requestPasswordResetEmail: link generated but email not sent:",
+          emailResult.reason,
+        );
+      }
+    } catch (error: unknown) {
+      const code = getAuthErrorCode(error);
+      if (code === "auth/user-not-found") {
+        // Enumeration protection: pretend success.
+        return { ok: true };
+      }
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      console.error("requestPasswordResetEmail error:", code || "unknown", error);
+      throw new HttpsError("internal", "No se pudo enviar el correo de recuperación.");
+    }
+
+    return { ok: true };
   },
 );
 
@@ -414,16 +519,19 @@ export const listCmsUsers = onCall(callableOptions, async (request: CallableRequ
       const profilePageIds = pageIdsFromProfile(data);
       const accountId = String(data.accountId ?? "").trim();
       const billing = await resolveBillingSummary(db, uid, accountId, profilePageIds);
+      const role = String(data.role ?? "").trim().toLowerCase();
 
       return {
         uid,
         email: String(data.email ?? "").trim().toLowerCase(),
         displayName: String(data.displayName ?? "").trim(),
-        role: String(data.role ?? "").trim().toLowerCase(),
+        phone: String(data.phone ?? "").trim(),
+        role,
         assignedPageIds: normalizePageIdList(data.assignedPageIds),
         pageId: String(data.pageId ?? "").trim(),
         accountId,
         isDemo: data.isDemo === true,
+        approvalStatus: normalizeApprovalStatus(data.approvalStatus, { hasRole: Boolean(role) }),
         passwordStatus,
         disabled,
         lastSignInAt,
@@ -431,8 +539,9 @@ export const listCmsUsers = onCall(callableOptions, async (request: CallableRequ
         plan: billing.plan,
         planStatus: billing.planStatus,
         subscriptionLabel: billing.subscriptionLabel,
+        requestedAt: data.requestedAt ?? null,
         createdAt: data.createdAt ?? null,
-        createdAtMs: toMillis(data.createdAt),
+        createdAtMs: toMillis(data.requestedAt ?? data.createdAt),
         updatedAt: data.updatedAt ?? null,
       };
     }),
@@ -602,5 +711,228 @@ export const deleteCmsUser = onCall(
     }
 
     return { uid };
+  },
+);
+
+/**
+ * Public self-registration: creates Auth user + pending profile.
+ * Login is gated until root calls approveCmsAccess.
+ */
+export const requestCmsAccess = onCall(
+  publicRegistrationOptions,
+  async (request: CallableRequest<RequestAccessPayload>) => {
+    const email = normalizeEmail(request.data?.email);
+    const password = String(request.data?.password ?? "");
+    const displayName = String(request.data?.displayName ?? "").trim();
+    const phoneCountryRaw = String(request.data?.phoneCountry ?? "").trim().toLowerCase();
+    const phoneCountry: "" | PhoneCountry =
+      phoneCountryRaw === "mx" || phoneCountryRaw === "us" ? phoneCountryRaw : "";
+
+    if (!isValidEmail(email)) {
+      throw new HttpsError("invalid-argument", "El email no es válido.");
+    }
+    if (password.length < 6) {
+      throw new HttpsError("invalid-argument", "La contraseña debe tener al menos 6 caracteres.");
+    }
+
+    const phoneResult = normalizeMxUsPhone(request.data?.phone, phoneCountry);
+    if (!phoneResult.ok) {
+      throw new HttpsError(
+        "invalid-argument",
+        "El teléfono no es válido. Usa un número de México (+52) o Estados Unidos (+1).",
+      );
+    }
+
+    const auth = getAuth();
+    const db = getFirestore();
+
+    let userRecord;
+    try {
+      userRecord = await auth.createUser({
+        email,
+        password,
+        displayName: displayName || undefined,
+        emailVerified: false,
+        disabled: false,
+      });
+    } catch (error: unknown) {
+      const code = getAuthErrorCode(error);
+      if (code === "auth/email-already-exists") {
+        throw new HttpsError("already-exists", "Ya existe una cuenta con ese email.");
+      }
+      if (code === "auth/invalid-email") {
+        throw new HttpsError("invalid-argument", "El email no es válido.");
+      }
+      if (code === "auth/invalid-password" || code === "auth/weak-password") {
+        throw new HttpsError(
+          "invalid-argument",
+          "La contraseña no cumple la política de seguridad.",
+        );
+      }
+      console.error("requestCmsAccess auth error:", code || "unknown", error);
+      throw new HttpsError("internal", "No se pudo crear la cuenta.");
+    }
+
+    try {
+      await db.collection(USERS_COLLECTION).doc(userRecord.uid).set({
+        email,
+        displayName,
+        phone: phoneResult.e164,
+        phoneCountry: phoneResult.country,
+        role: "",
+        assignedPageIds: [],
+        pageId: "",
+        isDemo: false,
+        disabled: false,
+        approvalStatus: "pending",
+        requestedAt: FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      try {
+        await auth.deleteUser(userRecord.uid);
+      } catch (rollbackError) {
+        console.error("requestCmsAccess rollback error:", rollbackError);
+      }
+      console.error("requestCmsAccess firestore error:", error);
+      throw new HttpsError("internal", "No se pudo guardar la solicitud de acceso.");
+    }
+
+    return {
+      uid: userRecord.uid,
+      email,
+      approvalStatus: "pending",
+    };
+  },
+);
+
+export const approveCmsAccess = onCall(
+  callableOptions,
+  async (request: CallableRequest<ApproveAccessPayload>) => {
+    await assertRootCaller(request);
+
+    const uid = String(request.data?.uid ?? "").trim();
+    if (!uid) {
+      throw new HttpsError("invalid-argument", "El UID es obligatorio.");
+    }
+
+    const db = getFirestore();
+    const auth = getAuth();
+    const userRef = db.collection(USERS_COLLECTION).doc(uid);
+    const existing = await userRef.get();
+    if (!existing.exists) {
+      throw new HttpsError("not-found", "No existe la solicitud de acceso.");
+    }
+
+    const current = existing.data() ?? {};
+    const currentStatus = normalizeApprovalStatus(current.approvalStatus, {
+      hasRole: Boolean(normalizeRole(current.role)),
+    });
+    if (currentStatus === "approved" && normalizeRole(current.role)) {
+      throw new HttpsError("failed-precondition", "Esta cuenta ya está aprobada.");
+    }
+    if (normalizeRole(current.role) === "root") {
+      throw new HttpsError("failed-precondition", "No se puede reprocesar una cuenta root.");
+    }
+
+    const profileData = buildUserProfileData({
+      email: String(current.email ?? ""),
+      displayName: request.data?.displayName !== undefined
+        ? request.data.displayName
+        : current.displayName,
+      role: request.data?.role,
+      assignedPageIds: request.data?.assignedPageIds,
+      pageId: request.data?.pageId,
+      isDemo: false,
+    }, { requireEmail: false });
+
+    delete profileData.email;
+
+    try {
+      await auth.updateUser(uid, {
+        disabled: false,
+        displayName: String(profileData.displayName || current.displayName || "") || undefined,
+      });
+    } catch (error: unknown) {
+      if (getAuthErrorCode(error) === "auth/user-not-found") {
+        throw new HttpsError("not-found", "El usuario no existe en Authentication.");
+      }
+      console.error("approveCmsAccess auth error:", error);
+      throw new HttpsError("internal", "No se pudo habilitar la cuenta.");
+    }
+
+    await userRef.set({
+      ...profileData,
+      approvalStatus: "approved",
+      disabled: false,
+      approvedAt: FieldValue.serverTimestamp(),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    const email = normalizeEmail(current.email);
+    let emailResult: { sent: boolean; reason?: string } = { sent: false };
+    if (email) {
+      emailResult = await sendAccessApprovedEmail({
+        to: email,
+        displayName: String(profileData.displayName || current.displayName || ""),
+        loginUrl: buildLoginContinueUrl(getAdminPublicUrl(), email),
+      });
+    }
+
+    return {
+      uid,
+      approvalStatus: "approved",
+      role: profileData.role,
+      emailSent: emailResult.sent === true,
+      emailReason: emailResult.reason ?? null,
+    };
+  },
+);
+
+/** Soft reject: keep Auth + Firestore, disable login. */
+export const rejectCmsAccess = onCall(
+  callableOptions,
+  async (request: CallableRequest<RejectAccessPayload>) => {
+    await assertRootCaller(request);
+
+    const uid = String(request.data?.uid ?? "").trim();
+    if (!uid) {
+      throw new HttpsError("invalid-argument", "El UID es obligatorio.");
+    }
+
+    const db = getFirestore();
+    const auth = getAuth();
+    const userRef = db.collection(USERS_COLLECTION).doc(uid);
+    const existing = await userRef.get();
+    if (!existing.exists) {
+      throw new HttpsError("not-found", "No existe la solicitud de acceso.");
+    }
+
+    const current = existing.data() ?? {};
+    if (normalizeRole(current.role) === "root") {
+      throw new HttpsError("failed-precondition", "No se puede rechazar una cuenta root.");
+    }
+
+    try {
+      // Soft reject: keep Auth account usable enough to show a clear rejection
+      // message after profile load (do not Auth-disable, which maps to "blocked").
+      await auth.updateUser(uid, { disabled: false });
+    } catch (error: unknown) {
+      if (getAuthErrorCode(error) === "auth/user-not-found") {
+        throw new HttpsError("not-found", "El usuario no existe en Authentication.");
+      }
+      console.error("rejectCmsAccess auth error:", error);
+      throw new HttpsError("internal", "No se pudo actualizar la cuenta.");
+    }
+
+    await userRef.set({
+      approvalStatus: "rejected",
+      disabled: true,
+      rejectedAt: FieldValue.serverTimestamp(),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    return { uid, approvalStatus: "rejected" };
   },
 );

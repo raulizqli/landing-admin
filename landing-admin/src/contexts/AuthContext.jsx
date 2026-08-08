@@ -15,12 +15,15 @@ import { normalizeBillingAccount } from '../utils/billingPlans';
 import { isBillingBypass } from '../utils/permissions';
 import { getLoginBlockReason } from '../utils/appEnv';
 import { initHubAppCheck } from '../utils/appCheck';
+import { requestPasswordResetEmailRemote } from '../utils/userFunctions';
 
 const AuthContext = createContext(null);
 
 function loginBlockErrorKey(reason) {
   if (reason === 'disabled') return 'login.errorDisabled';
   if (reason === 'demo') return 'login.errorDemo';
+  if (reason === 'pending') return 'login.errorPending';
+  if (reason === 'rejected') return 'login.errorRejected';
   return 'login.errorGeneric';
 }
 
@@ -137,11 +140,21 @@ export function AuthProvider({ children }) {
         const message = loginBlockErrorKey(blockReason);
         setAuthError(message);
         const err = new Error(message);
-        err.code = blockReason === 'disabled' ? 'auth/user-disabled' : 'auth/demo-forbidden';
+        if (blockReason === 'disabled') err.code = 'auth/user-disabled';
+        else if (blockReason === 'demo') err.code = 'auth/demo-forbidden';
+        else if (blockReason === 'pending') err.code = 'auth/approval-pending';
+        else if (blockReason === 'rejected') err.code = 'auth/approval-rejected';
+        else err.code = 'auth/access-denied';
         throw err;
       }
     } catch (error) {
-      if (error?.code === 'auth/demo-forbidden' || error?.code === 'auth/user-disabled') {
+      if (
+        error?.code === 'auth/demo-forbidden'
+        || error?.code === 'auth/user-disabled'
+        || error?.code === 'auth/approval-pending'
+        || error?.code === 'auth/approval-rejected'
+        || error?.code === 'auth/access-denied'
+      ) {
         throw error;
       }
       const code = String(error?.code ?? '');
@@ -170,6 +183,48 @@ export function AuthProvider({ children }) {
         message = 'login.errorAppCheck';
       } else if (/profile|permission-denied/i.test(`${code} ${raw}`)) {
         message = 'login.errorProfile';
+      }
+      setAuthError(message);
+      throw error;
+    }
+  };
+
+  const clearAuthError = useCallback(() => {
+    setAuthError('');
+  }, []);
+
+  const sendPasswordReset = async (email) => {
+    setAuthError('');
+    const trimmed = String(email ?? '').trim();
+    if (!trimmed) {
+      const message = 'login.resetErrorEmail';
+      setAuthError(message);
+      const err = new Error(message);
+      err.code = 'auth/invalid-email';
+      throw err;
+    }
+
+    try {
+      await requestPasswordResetEmailRemote(trimmed);
+    } catch (error) {
+      const code = String(error?.code ?? '');
+      const raw = String(error?.message ?? '');
+      // Do not reveal whether the email exists (enumeration protection).
+      if (code === 'auth/user-not-found') {
+        return;
+      }
+      let message = 'login.resetErrorGeneric';
+      if (code === 'auth/invalid-email') {
+        message = 'login.resetErrorEmail';
+      } else if (code === 'auth/too-many-requests') {
+        message = 'login.errorTooMany';
+      } else if (
+        code.includes('network-request-failed')
+        || /network-request-failed|Failed to fetch|NetworkError/i.test(raw)
+      ) {
+        message = 'login.errorNetwork';
+      } else if (/app.?check|recaptcha/i.test(`${code} ${raw}`)) {
+        message = 'login.errorAppCheck';
       }
       setAuthError(message);
       throw error;
@@ -217,13 +272,15 @@ export function AuthProvider({ children }) {
     billingAccount,
     loading,
     authError,
+    clearAuthError,
     signIn,
+    sendPasswordReset,
     signOut,
     refreshProfile,
     refreshBillingAccount,
     isAuthenticated: Boolean(user),
     hasAccess: Boolean(user && profile?.role && !getLoginBlockReason(profile)),
-  }), [user, profile, billingAccount, loading, authError, loadBillingForProfile, rejectUnauthorizedSession]);
+  }), [user, profile, billingAccount, loading, authError, clearAuthError, loadBillingForProfile, rejectUnauthorizedSession]);
 
   return (
     <AuthContext.Provider value={value}>

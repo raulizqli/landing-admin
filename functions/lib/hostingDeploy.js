@@ -6,6 +6,7 @@ const https_1 = require("firebase-functions/v2/https");
 const callableOptions_js_1 = require("./callableOptions.js");
 const app_1 = require("firebase-admin/app");
 const node_net_1 = require("node:net");
+const cmsInbox_js_1 = require("./cmsInbox.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
@@ -218,7 +219,7 @@ async function dispatchGithubWorkflow(page, pageId, token) {
 }
 const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
     const pageId = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.pageId) !== null && _b !== void 0 ? _b : "").trim();
     if (!pageId) {
         throw new https_1.HttpsError("invalid-argument", "El pageId es obligatorio.");
@@ -241,33 +242,54 @@ exports.triggerHostingDeploy = (0, https_1.onCall)(callableOptions, async (reque
         source: "landing-admin",
         triggeredAt: new Date().toISOString(),
     };
-    if (provider === "github") {
-        const token = String((_m = process.env.GITHUB_DEPLOY_TOKEN) !== null && _m !== void 0 ? _m : "").trim();
-        const result = await dispatchGithubWorkflow(effective, pageId, token);
+    try {
+        if (provider === "github") {
+            const token = String((_m = process.env.GITHUB_DEPLOY_TOKEN) !== null && _m !== void 0 ? _m : "").trim();
+            const result = await dispatchGithubWorkflow(effective, pageId, token);
+            return {
+                ok: true,
+                provider,
+                pageId,
+                message: `Workflow ${result.workflow} disparado en ${result.owner}/${result.repo}@${result.ref}.`,
+                publicUrl: String((_o = effective.hostingPublicUrl) !== null && _o !== void 0 ? _o : "").trim() || null,
+                detail: result,
+            };
+        }
+        const webhookUrl = resolveWebhookUrl(effective, provider);
+        if (!webhookUrl) {
+            throw new https_1.HttpsError("failed-precondition", provider === "hub"
+                ? "Configura un Deploy Hook en esta página o el env DEFAULT_TEMPLATE_DEPLOY_HOOK_URL en Cloud Functions."
+                : "Pegá la URL del Deploy Hook (Vercel/Netlify/Cloudflare) en esta página.");
+        }
+        const safeUrl = assertSafeDeployHookUrl(webhookUrl);
+        const result = await postWebhook(safeUrl, payload);
         return {
             ok: true,
             provider,
             pageId,
-            message: `Workflow ${result.workflow} disparado en ${result.owner}/${result.repo}@${result.ref}.`,
-            publicUrl: String((_o = effective.hostingPublicUrl) !== null && _o !== void 0 ? _o : "").trim() || null,
+            message: "Deploy Hook disparado correctamente.",
+            publicUrl: String((_p = effective.hostingPublicUrl) !== null && _p !== void 0 ? _p : "").trim() || null,
             detail: result,
         };
     }
-    const webhookUrl = resolveWebhookUrl(effective, provider);
-    if (!webhookUrl) {
-        throw new https_1.HttpsError("failed-precondition", provider === "hub"
-            ? "Configura un Deploy Hook en esta página o el env DEFAULT_TEMPLATE_DEPLOY_HOOK_URL en Cloud Functions."
-            : "Pegá la URL del Deploy Hook (Vercel/Netlify/Cloudflare) en esta página.");
+    catch (error) {
+        const message = error instanceof https_1.HttpsError
+            ? error.message
+            : String((error === null || error === void 0 ? void 0 : error.message) || error);
+        try {
+            await (0, cmsInbox_js_1.createSystemIncident)({
+                pageId,
+                category: "deploy",
+                subject: `Deploy fallido: ${pageId}`,
+                body: message.slice(0, 500),
+                createdByUid: ((_q = request.auth) === null || _q === void 0 ? void 0 : _q.uid) || "system",
+                createTicket: true,
+            });
+        }
+        catch (incidentError) {
+            console.error("createSystemIncident after deploy failure:", incidentError);
+        }
+        throw error;
     }
-    const safeUrl = assertSafeDeployHookUrl(webhookUrl);
-    const result = await postWebhook(safeUrl, payload);
-    return {
-        ok: true,
-        provider,
-        pageId,
-        message: "Deploy Hook disparado correctamente.",
-        publicUrl: String((_p = effective.hostingPublicUrl) !== null && _p !== void 0 ? _p : "").trim() || null,
-        detail: result,
-    };
 });
 //# sourceMappingURL=hostingDeploy.js.map

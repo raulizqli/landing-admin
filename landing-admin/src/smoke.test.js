@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PROD_DEFAULT_LANDING_BASE_URL } from './utils/landingBaseUrl.js';
 import { getRootPublicUrl, isExternalPublicUrl } from './utils/marketingUrl.js';
 
 describe('landing-admin smoke', () => {
@@ -7,8 +8,8 @@ describe('landing-admin smoke', () => {
     expect(typeof isExternalPublicUrl).toBe('function');
     expect(
       isExternalPublicUrl(
-        'https://landing-template-9452e.web.app/?pageId=leftsidedev',
-        'https://landing-admin-9452e.web.app',
+        `${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`,
+        'https://admin.leftsidedev.site',
       ),
     ).toBe(true);
   });

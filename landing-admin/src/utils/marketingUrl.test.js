@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PROD_DEFAULT_LANDING_BASE_URL } from './landingBaseUrl.js';
 import {
-  DEFAULT_PRODUCTION_MARKETING_URL,
   getCorporateSiteUrl,
   getMarketingUrl,
   getRootPublicUrl,
@@ -11,8 +11,8 @@ describe('isExternalPublicUrl', () => {
   it('returns true when public origin differs from the current admin origin', () => {
     expect(
       isExternalPublicUrl(
-        'https://landing-template-9452e.web.app/?pageId=leftsidedev',
-        'https://landing-admin-9452e.web.app',
+        `${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`,
+        'https://admin.leftsidedev.site',
       ),
     ).toBe(true);
   });
@@ -62,7 +62,7 @@ describe('getMarketingUrl', () => {
   it('falls back to the production default outside DEV when unset', () => {
     vi.stubEnv('VITE_MARKETING_URL', '');
     vi.stubEnv('DEV', false);
-    expect(getMarketingUrl()).toBe(DEFAULT_PRODUCTION_MARKETING_URL);
+    expect(getMarketingUrl()).toBe(`${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`);
   });
 });
 

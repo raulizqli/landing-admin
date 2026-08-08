@@ -41,11 +41,15 @@ export function allowsDemoUserLogin(env = resolveAppEnv()) {
 }
 
 /**
- * @returns {null | 'disabled' | 'demo'}
+ * @returns {null | 'disabled' | 'demo' | 'pending' | 'rejected'}
  */
 export function getLoginBlockReason(profile, env = resolveAppEnv()) {
   if (!profile) return null;
+  const approval = String(profile.approvalStatus ?? '').trim().toLowerCase();
+  if (approval === 'rejected') return 'rejected';
   if (profile.disabled === true) return 'disabled';
+  if (approval === 'pending') return 'pending';
+  if (!profile.role) return 'pending';
   if (profile.isDemo === true && !allowsDemoUserLogin(env)) return 'demo';
   return null;
 }

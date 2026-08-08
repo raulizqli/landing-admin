@@ -5,6 +5,7 @@ const firestore_1 = require("firebase-admin/firestore");
 const app_1 = require("firebase-admin/app");
 const https_1 = require("firebase-functions/v2/https");
 const callableOptions_js_1 = require("./callableOptions.js");
+const cmsInbox_js_1 = require("./cmsInbox.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
@@ -97,7 +98,7 @@ const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
  * Root: unrestricted. Pro/Agency account owners: up to pageLimit.
  */
 exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -190,10 +191,29 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
         throw denial;
     }
     const createdSnap = await pageRef.get();
+    const pageData = ((_k = createdSnap.data()) !== null && _k !== void 0 ? _k : {});
+    try {
+        await (0, cmsInbox_js_1.writePageAuditAndNotify)({
+            pageId,
+            actor: {
+                uid,
+                role: String((_l = profile.role) !== null && _l !== void 0 ? _l : ""),
+                email: String((_m = profile.email) !== null && _m !== void 0 ? _m : ""),
+                displayName: String((_o = profile.displayName) !== null && _o !== void 0 ? _o : ""),
+            },
+            before: {},
+            after: pageData,
+            action: "page_create",
+            notify: true,
+        });
+    }
+    catch (auditError) {
+        console.error("createCmsPage audit skipped:", auditError);
+    }
     return {
         ok: true,
         pageId,
-        page: Object.assign({ id: pageId }, ((_k = createdSnap.data()) !== null && _k !== void 0 ? _k : {})),
+        page: Object.assign({ id: pageId }, pageData),
         accountId,
     };
 });

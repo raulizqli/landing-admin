@@ -155,5 +155,38 @@ service cloud.firestore {
         allow read, write: if false;
       }
     }
+
+    /**
+     * Page change audits — written only by Cloud Functions (Admin SDK).
+     */
+    match /pageAudits/{auditId} {
+      allow read: if isSignedIn()
+        && (isRoot() || canEditPage(resource.data.pageId));
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * In-app notifications — create via CF; recipient can mark read.
+     */
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn()
+        && (isRoot() || resource.data.recipientUid == request.auth.uid);
+      allow create, delete: if false;
+      allow update: if isSignedIn()
+        && resource.data.recipientUid == request.auth.uid
+        && request.resource.data.recipientUid == resource.data.recipientUid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'readAt']);
+    }
+
+    /**
+     * Internal CMS tickets — root/admin via CF primarily; client read for assigned pages.
+     */
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn()
+        && (isRoot()
+          || (isAdmin() && canEditPage(resource.data.pageId)));
+      allow create, update, delete: if false;
+    }
   }
 }

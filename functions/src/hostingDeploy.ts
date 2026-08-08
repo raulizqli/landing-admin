@@ -3,6 +3,7 @@ import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https
 import { sensitiveCallableOptions } from "./callableOptions.js";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { isIP } from "node:net";
+import { createSystemIncident } from "./cmsInbox.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -332,38 +333,57 @@ export const triggerHostingDeploy = onCall(
       triggeredAt: new Date().toISOString(),
     };
 
-    if (provider === "github") {
-      const token = String(process.env.GITHUB_DEPLOY_TOKEN ?? "").trim();
-      const result = await dispatchGithubWorkflow(effective, pageId, token);
+    try {
+      if (provider === "github") {
+        const token = String(process.env.GITHUB_DEPLOY_TOKEN ?? "").trim();
+        const result = await dispatchGithubWorkflow(effective, pageId, token);
+        return {
+          ok: true,
+          provider,
+          pageId,
+          message: `Workflow ${result.workflow} disparado en ${result.owner}/${result.repo}@${result.ref}.`,
+          publicUrl: String(effective.hostingPublicUrl ?? "").trim() || null,
+          detail: result,
+        };
+      }
+
+      const webhookUrl = resolveWebhookUrl(effective, provider);
+      if (!webhookUrl) {
+        throw new HttpsError(
+          "failed-precondition",
+          provider === "hub"
+            ? "Configura un Deploy Hook en esta página o el env DEFAULT_TEMPLATE_DEPLOY_HOOK_URL en Cloud Functions."
+            : "Pegá la URL del Deploy Hook (Vercel/Netlify/Cloudflare) en esta página.",
+        );
+      }
+
+      const safeUrl = assertSafeDeployHookUrl(webhookUrl);
+      const result = await postWebhook(safeUrl, payload);
       return {
         ok: true,
         provider,
         pageId,
-        message: `Workflow ${result.workflow} disparado en ${result.owner}/${result.repo}@${result.ref}.`,
+        message: "Deploy Hook disparado correctamente.",
         publicUrl: String(effective.hostingPublicUrl ?? "").trim() || null,
         detail: result,
       };
+    } catch (error) {
+      const message = error instanceof HttpsError
+        ? error.message
+        : String((error as Error)?.message || error);
+      try {
+        await createSystemIncident({
+          pageId,
+          category: "deploy",
+          subject: `Deploy fallido: ${pageId}`,
+          body: message.slice(0, 500),
+          createdByUid: request.auth?.uid || "system",
+          createTicket: true,
+        });
+      } catch (incidentError) {
+        console.error("createSystemIncident after deploy failure:", incidentError);
+      }
+      throw error;
     }
-
-    const webhookUrl = resolveWebhookUrl(effective, provider);
-    if (!webhookUrl) {
-      throw new HttpsError(
-        "failed-precondition",
-        provider === "hub"
-          ? "Configura un Deploy Hook en esta página o el env DEFAULT_TEMPLATE_DEPLOY_HOOK_URL en Cloud Functions."
-          : "Pegá la URL del Deploy Hook (Vercel/Netlify/Cloudflare) en esta página.",
-      );
-    }
-
-    const safeUrl = assertSafeDeployHookUrl(webhookUrl);
-    const result = await postWebhook(safeUrl, payload);
-    return {
-      ok: true,
-      provider,
-      pageId,
-      message: "Deploy Hook disparado correctamente.",
-      publicUrl: String(effective.hostingPublicUrl ?? "").trim() || null,
-      detail: result,
-    };
   },
 );

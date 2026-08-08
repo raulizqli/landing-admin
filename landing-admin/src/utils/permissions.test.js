@@ -3,6 +3,7 @@ import {
   canAccessPage,
   canCreatePages,
   canManagePageLayout,
+  canViewPagesOverview,
   getAccessiblePageIds,
   isBillingAccountOwner,
 } from './permissions.js';
@@ -37,6 +38,24 @@ describe('isSinglePageUser', () => {
     expect(isSinglePageUser({ role: 'user', pageId: 'a', assignedPageIds: ['a'] })).toBe(true);
     expect(isSinglePageUser({ role: 'user', pageId: 'a', assignedPageIds: ['a', 'b'] })).toBe(false);
     expect(isSinglePageUser({ role: 'admin', assignedPageIds: ['a'] })).toBe(false);
+  });
+});
+
+describe('canViewPagesOverview', () => {
+  it('allows root and multi-page actors, not single-page users', () => {
+    expect(canViewPagesOverview({ role: 'root' })).toBe(true);
+    expect(canViewPagesOverview({ role: 'admin', assignedPageIds: ['a'] })).toBe(true);
+    expect(canViewPagesOverview({
+      role: 'user',
+      pageId: 'a',
+      assignedPageIds: ['a', 'b'],
+    })).toBe(true);
+    expect(canViewPagesOverview({
+      role: 'user',
+      pageId: 'a',
+      assignedPageIds: ['a'],
+    })).toBe(false);
+    expect(canViewPagesOverview({})).toBe(false);
   });
 });
 

@@ -44,7 +44,7 @@ jobs:
           VITE_TEMPLATE_PREVIEW_URL: https://us.leftsidedev.site
           VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
           # Point marketing away from the admin host so guest / never self-redirects in previews.
-          VITE_MARKETING_URL: https://landing-template-9452e.web.app/?pageId=leftsidedev
+          VITE_MARKETING_URL: https://us.leftsidedev.site/?pageId=leftsidedev
           VITE_CORPORATE_SITE_URL: ${{ vars.VITE_CORPORATE_SITE_URL }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

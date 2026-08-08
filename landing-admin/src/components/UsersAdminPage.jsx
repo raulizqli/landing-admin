@@ -13,6 +13,8 @@ import {
   generateCmsUserInvitation,
   listCmsUsersRemote,
   updateCmsUser,
+  approveCmsAccess,
+  rejectCmsAccess,
 } from '../utils/userFunctions';
 import { canManageUsers, getRoleLabel, ROLES } from '../utils/permissions';
 import {
@@ -40,7 +42,7 @@ function PasswordStatusBadge({ status }) {
   if (status === 'pending') {
     return (
       <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
-        Pendiente
+        Sin contraseña
       </span>
     );
   }
@@ -49,6 +51,31 @@ function PasswordStatusBadge({ status }) {
       —
     </span>
   );
+}
+
+function ApprovalStatusBadge({ status }) {
+  if (status === 'pending') {
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
+        Pendiente aprobación
+      </span>
+    );
+  }
+  if (status === 'rejected') {
+    return (
+      <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+        Rechazado
+      </span>
+    );
+  }
+  if (status === 'approved') {
+    return (
+      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+        Aprobado
+      </span>
+    );
+  }
+  return null;
 }
 
 export default function UsersAdminPage() {
@@ -67,6 +94,9 @@ export default function UsersAdminPage() {
   const [invitationStatus, setInvitationStatus] = useState('');
   const [resendDraft, setResendDraft] = useState(null);
   const [resendBusy, setResendBusy] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [approveDraft, setApproveDraft] = useState(null);
+  const [approveBusy, setApproveBusy] = useState(false);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -91,22 +121,32 @@ export default function UsersAdminPage() {
     loadUsers();
   }, [profile]);
 
+  const pendingCount = useMemo(
+    () => users.filter((user) => user.approvalStatus === 'pending').length,
+    [users],
+  );
+
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return users;
     return users.filter((user) => {
+      if (statusFilter === 'pending' && user.approvalStatus !== 'pending') return false;
+      if (statusFilter === 'approved' && user.approvalStatus !== 'approved') return false;
+      if (statusFilter === 'rejected' && user.approvalStatus !== 'rejected') return false;
+      if (!q) return true;
       const haystack = [
         user.email,
         user.displayName,
+        user.phone,
         user.role,
         user.plan,
         user.subscriptionLabel,
+        user.approvalStatus,
         user.isDemo ? 'demo' : '',
         user.disabled ? 'bloqueado' : '',
       ].join(' ').toLowerCase();
       return haystack.includes(q);
     });
-  }, [users, query]);
+  }, [users, query, statusFilter]);
 
   if (!canManageUsers(profile)) {
     return <Navigate to="/app" replace />;
@@ -159,8 +199,13 @@ export default function UsersAdminPage() {
             invitationLink: result.invitationLink,
             channel: form.invitationChannel,
             phone: form.whatsappPhone,
+            emailSent: result.invitationEmailSent === true,
           });
-          setInvitationStatus('');
+          setInvitationStatus(
+            result.invitationEmailSent === true && form.invitationChannel === INVITATION_CHANNELS.EMAIL
+              ? 'Email enviado automáticamente.'
+              : '',
+          );
         } else if (result.invitationError) {
           setError(
             `Usuario creado, pero no se generó la invitación: ${result.invitationError} `
@@ -227,8 +272,56 @@ export default function UsersAdminPage() {
       email: user.email,
       displayName: user.displayName || '',
       channel: INVITATION_CHANNELS.EMAIL,
-      phone: '',
+      phone: user.phone || '',
     });
+  };
+
+  const openApprove = (user) => {
+    setError('');
+    setApproveDraft({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || '',
+      phone: user.phone || '',
+      role: ROLES.USER,
+      pageId: '',
+      assignedPageIds: '',
+    });
+  };
+
+  const handleApprove = async (event) => {
+    event.preventDefault();
+    if (!approveDraft?.uid) return;
+    setApproveBusy(true);
+    setError('');
+    try {
+      const result = await approveCmsAccess({
+        uid: approveDraft.uid,
+        displayName: approveDraft.displayName,
+        role: approveDraft.role,
+        pageId: approveDraft.pageId,
+        assignedPageIds: parsePageIdsInput(approveDraft.assignedPageIds),
+      });
+      setApproveDraft(null);
+      await loadUsers();
+      if (result?.emailSent === false) {
+        setError(
+          'Usuario aprobado, pero no se pudo enviar el email automático. '
+            + 'Configura RESEND_API_KEY + APPROVAL_EMAIL_FROM en Functions, o la extensión Trigger Email.',
+        );
+      }
+    } catch (approveError) {
+      setError(approveError.message || 'No se pudo aprobar el acceso.');
+    } finally {
+      setApproveBusy(false);
+    }
+  };
+
+  const handleReject = (user) => {
+    if (!window.confirm(`¿Rechazar la solicitud de ${user.email}? La cuenta se bloquea (soft).`)) {
+      return;
+    }
+    runUserAction(user.uid, () => rejectCmsAccess(user.uid));
   };
 
   const handleConfirmResend = async () => {
@@ -248,8 +341,17 @@ export default function UsersAdminPage() {
         displayName: result.displayName || resendDraft.displayName || '',
         channel: resendDraft.channel,
         phone: resendDraft.phone,
+        emailSent: result.emailSent === true,
       });
       setResendDraft(null);
+      if (result?.emailSent === true && resendDraft.channel === INVITATION_CHANNELS.EMAIL) {
+        setInvitationStatus('Email enviado automáticamente.');
+      } else if (result?.emailSent === false) {
+        setError(
+          'Enlace generado, pero no se pudo enviar el email automático. '
+            + 'Copia el enlace manualmente o configura RESEND_API_KEY + RESEND_FROM en Functions.',
+        );
+      }
     } catch (invitationError) {
       setError(invitationError.message || 'No se pudo preparar la invitación.');
     } finally {
@@ -278,10 +380,10 @@ export default function UsersAdminPage() {
               + Nuevo
             </button>
             <Link
-              to="/app"
+              to="/app/pages"
               className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
             >
-              Volver al editor
+              Volver a páginas
             </Link>
           </div>
         </div>
@@ -296,9 +398,30 @@ export default function UsersAdminPage() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Email, plan, demo, bloqueado…"
+                placeholder="Email, teléfono, plan, demo, bloqueado…"
                 className="w-full rounded-lg border bg-white px-3 py-2 text-xs"
               />
+            </div>
+            <div className="flex flex-wrap gap-1 pb-0.5">
+              {[
+                { id: 'all', label: 'Todos' },
+                { id: 'pending', label: `Pendientes${pendingCount ? ` (${pendingCount})` : ''}` },
+                { id: 'approved', label: 'Aprobados' },
+                { id: 'rejected', label: 'Rechazados' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`rounded-lg px-3 py-2 text-[11px] font-semibold border ${
+                    statusFilter === tab.id
+                      ? 'bg-[#4A5D4E] text-white border-[#4A5D4E]'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
             <p className="text-[11px] text-gray-500 pb-2">
               {filteredUsers.length} de {users.length} usuarios
@@ -335,15 +458,18 @@ export default function UsersAdminPage() {
                     const busy = busyUid === user.uid;
                     const isRootUser = user.role === ROLES.ROOT;
                     return (
-                      <tr key={user.uid} className={`border-t border-gray-100 ${user.disabled ? 'bg-rose-50/40' : ''}`}>
+                      <tr key={user.uid} className={`border-t border-gray-100 ${user.disabled ? 'bg-rose-50/40' : ''} ${user.approvalStatus === 'pending' ? 'bg-amber-50/30' : ''}`}>
                         <td className="px-3 py-3 align-top">
                           <p className="font-semibold text-gray-900">{user.email || user.uid}</p>
                           {user.displayName ? (
                             <p className="text-gray-500 mt-0.5">{user.displayName}</p>
                           ) : null}
+                          {user.phone ? (
+                            <p className="text-[10px] text-gray-500 mt-0.5 tabular-nums">{user.phone}</p>
+                          ) : null}
                           <p className="text-[10px] text-gray-400 font-mono mt-1">{user.uid}</p>
                         </td>
-                        <td className="px-3 py-3 align-top">{getRoleLabel(user.role)}</td>
+                        <td className="px-3 py-3 align-top">{user.role ? getRoleLabel(user.role) : '—'}</td>
                         <td className="px-3 py-3 align-top">
                           <p className="tabular-nums font-medium">{formatPageCount(user)}</p>
                           <p
@@ -356,6 +482,7 @@ export default function UsersAdminPage() {
                         <td className="px-3 py-3 align-top capitalize">{formatSubscriptionLabel(user)}</td>
                         <td className="px-3 py-3 align-top">
                           <div className="flex flex-wrap gap-1">
+                            <ApprovalStatusBadge status={user.approvalStatus} />
                             <PasswordStatusBadge status={user.passwordStatus} />
                             {user.isDemo && (
                               <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 border border-violet-200">
@@ -371,6 +498,26 @@ export default function UsersAdminPage() {
                         </td>
                         <td className="px-3 py-3 align-top">
                           <div className="flex flex-wrap justify-end gap-1">
+                            {user.approvalStatus === 'pending' ? (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => openApprove(user)}
+                                  className="px-2 py-1 rounded bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                                >
+                                  Aprobar
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => handleReject(user)}
+                                  className="px-2 py-1 rounded bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                                >
+                                  Rechazar
+                                </button>
+                              </>
+                            ) : null}
                             <button
                               type="button"
                               disabled={busy}
@@ -379,7 +526,7 @@ export default function UsersAdminPage() {
                             >
                               Editar
                             </button>
-                            {!isRootUser && (
+                            {!isRootUser && user.approvalStatus === 'approved' && (
                               <button
                                 type="button"
                                 disabled={busy}
@@ -399,14 +546,16 @@ export default function UsersAdminPage() {
                                 {user.disabled ? 'Desbloquear' : 'Bloquear'}
                               </button>
                             )}
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => handlePrepareInvitation(user)}
-                              className="px-2 py-1 rounded bg-sky-50 text-sky-700 hover:bg-sky-100 disabled:opacity-50"
-                            >
-                              Invitar
-                            </button>
+                            {user.approvalStatus === 'approved' && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => handlePrepareInvitation(user)}
+                                className="px-2 py-1 rounded bg-sky-50 text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+                              >
+                                Invitar
+                              </button>
+                            )}
                             {!isRootUser && (
                               <button
                                 type="button"
@@ -450,6 +599,90 @@ export default function UsersAdminPage() {
               variant="panel"
             />
           </aside>
+        </div>
+      )}
+
+      {approveDraft && (
+        <div className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleApprove}
+            className="w-full max-w-md rounded-2xl bg-white border border-gray-200 shadow-2xl p-5 space-y-4"
+          >
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Aprobar acceso</h3>
+              <p className="mt-1 text-xs text-gray-500">{approveDraft.email}</p>
+              {approveDraft.phone ? (
+                <p className="text-[11px] text-gray-500 tabular-nums">{approveDraft.phone}</p>
+              ) : null}
+              <p className="mt-2 text-[11px] text-gray-500 leading-relaxed">
+                Asigna rol y páginas. Se enviará un email automático de aprobación.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Nombre</label>
+              <input
+                type="text"
+                value={approveDraft.displayName}
+                onChange={(event) => setApproveDraft({ ...approveDraft, displayName: event.target.value })}
+                className="w-full rounded-lg border px-3 py-2 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Rol</label>
+              <select
+                value={approveDraft.role}
+                onChange={(event) => setApproveDraft({ ...approveDraft, role: event.target.value })}
+                className="w-full rounded-lg border px-3 py-2 text-xs bg-white"
+              >
+                <option value={ROLES.USER}>Usuario</option>
+                <option value={ROLES.ADMIN}>Admin</option>
+              </select>
+            </div>
+            {approveDraft.role === ROLES.USER ? (
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Página</label>
+                <select
+                  required
+                  value={approveDraft.pageId}
+                  onChange={(event) => setApproveDraft({ ...approveDraft, pageId: event.target.value })}
+                  className="w-full rounded-lg border px-3 py-2 text-xs bg-white"
+                >
+                  <option value="">Selecciona…</option>
+                  {pageOptions.map((page) => (
+                    <option key={page.id} value={page.id}>{page.name || page.id}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Páginas (una por línea)</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={approveDraft.assignedPageIds}
+                  onChange={(event) => setApproveDraft({ ...approveDraft, assignedPageIds: event.target.value })}
+                  className="w-full rounded-lg border px-3 py-2 text-xs font-mono"
+                  placeholder={pageOptions.map((p) => p.id).slice(0, 3).join('\n')}
+                />
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={approveBusy}
+                className="flex-1 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {approveBusy ? 'Aprobando…' : 'Aprobar y notificar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setApproveDraft(null)}
+                className="rounded-lg border px-3 py-2 text-xs"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

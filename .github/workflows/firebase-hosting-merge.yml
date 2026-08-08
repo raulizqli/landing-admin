@@ -51,7 +51,7 @@ jobs:
           VITE_TEMPLATE_PREVIEW_URL: https://us.leftsidedev.site
           VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
           # Login «back to site» / marketing links (admin `/` is session → /login|/app).
-          VITE_MARKETING_URL: https://landing-template-9452e.web.app/?pageId=leftsidedev
+          VITE_MARKETING_URL: https://us.leftsidedev.site/?pageId=leftsidedev
           VITE_CORPORATE_SITE_URL: ${{ vars.VITE_CORPORATE_SITE_URL }}
           VITE_APP_ENV: prod
           VITE_GOOGLE_ADS_CLIENT: ${{ secrets.VITE_GOOGLE_ADS_CLIENT }}

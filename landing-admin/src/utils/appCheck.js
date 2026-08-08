@@ -1,10 +1,16 @@
 // Keep in sync with landing-template/src/utils/appCheck.js
 
-import { initializeAppCheck, ReCaptchaV3Provider, getToken } from 'firebase/app-check';
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider,
+  ReCaptchaV3Provider,
+  getToken,
+} from 'firebase/app-check';
 import { getHubApp } from './firebaseClients';
 
 let initialized = false;
 let appCheckInstance = null;
+let warmUpPromise = null;
 
 /**
  * MUST run before any initializeAppCheck(). The Firebase SDK reads
@@ -31,6 +37,52 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function recaptchaSiteKey() {
+  return String(import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim();
+}
+
+function useRecaptchaEnterprise() {
+  const flag = String(import.meta.env.VITE_RECAPTCHA_ENTERPRISE ?? '').trim().toLowerCase();
+  if (flag === '1' || flag === 'true' || flag === 'yes') return true;
+  if (flag === '0' || flag === 'false' || flag === 'no') return false;
+  // Default: Enterprise keys created in Google Cloud (gcloud recaptcha keys).
+  return true;
+}
+
+function buildRecaptchaProvider(siteKey) {
+  if (useRecaptchaEnterprise()) {
+    return new ReCaptchaEnterpriseProvider(siteKey);
+  }
+  return new ReCaptchaV3Provider(siteKey);
+}
+
+function loadRecaptchaScript(siteKey) {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.grecaptcha?.execute || window.grecaptcha?.enterprise?.execute) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-recaptcha-v3]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('recaptcha script load failed')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = useRecaptchaEnterprise()
+      ? `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`
+      : `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.recaptchaV3 = '1';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('recaptcha script load failed'));
+    document.head.appendChild(script);
+  });
+}
+
 function formatAppCheckTokenError(detail) {
   const host = typeof window !== 'undefined' ? window.location.hostname : '';
   const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
@@ -44,7 +96,7 @@ function formatAppCheckTokenError(detail) {
       'En local:',
       '1) Confirma que VITE_APP_CHECK_DEBUG_TOKEN está en .env.local y reinicia Vite.',
       '2) Registra ese UUID en Firebase Console → App Check → Manage debug tokens.',
-      '3) La site key de VITE_RECAPTCHA_SITE_KEY debe ser reCAPTCHA v3 (no v2) y tener localhost / 127.0.0.1 en dominios permitidos.',
+      '3) La site key de VITE_RECAPTCHA_SITE_KEY debe ser reCAPTCHA v3/Enterprise (score) y tener localhost / 127.0.0.1 en dominios permitidos.',
       '4) Desactiva bloqueadores que corten www.google.com/recaptcha.',
     );
     if (!hasDebugEnv) {
@@ -52,7 +104,10 @@ function formatAppCheckTokenError(detail) {
     }
   } else {
     lines.push(
-      'En producción: comprueba VITE_RECAPTCHA_SITE_KEY, que el dominio esté en reCAPTCHA v3, y que App Check use la misma site key para esta app web.',
+      `Dominio actual: ${host || '(desconocido)'}.`,
+      'En producción: comprueba VITE_RECAPTCHA_SITE_KEY (debe coincidir con Firebase → App Check → reCAPTCHA),',
+      'que este dominio esté en la clave reCAPTCHA, y que App Check use la misma site key para esta app web.',
+      'Dominios típicos del admin: admin.leftsidedev.site, landing-admin-9452e.web.app, landing-admin-9452e.firebaseapp.com.',
     );
   }
 
@@ -67,11 +122,11 @@ function formatAppCheckTokenError(detail) {
 export function initHubAppCheck() {
   if (initialized || typeof window === 'undefined') return appCheckInstance;
 
-  const siteKey = String(import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim();
+  const siteKey = recaptchaSiteKey();
   if (!siteKey) {
     if (import.meta.env.DEV) {
       console.warn(
-        '[App Check] Falta VITE_RECAPTCHA_SITE_KEY. Crea una clave reCAPTCHA v3 y regístrala en Firebase Console → App Check.',
+        '[App Check] Falta VITE_RECAPTCHA_SITE_KEY. Crea una clave reCAPTCHA v3/Enterprise y regístrala en Firebase Console → App Check.',
       );
     }
     return null;
@@ -80,7 +135,7 @@ export function initHubAppCheck() {
   applyDebugTokenGlobal();
 
   appCheckInstance = initializeAppCheck(getHubApp(), {
-    provider: new ReCaptchaV3Provider(siteKey),
+    provider: buildRecaptchaProvider(siteKey),
     isTokenAutoRefreshEnabled: true,
   });
 
@@ -103,8 +158,29 @@ export function initHubAppCheck() {
   return appCheckInstance;
 }
 
+async function warmUpAppCheck() {
+  if (warmUpPromise) return warmUpPromise;
+
+  warmUpPromise = (async () => {
+    const siteKey = recaptchaSiteKey();
+    if (!siteKey) return null;
+
+    try {
+      await loadRecaptchaScript(siteKey);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('[App Check] Preload reCAPTCHA script failed:', error);
+      }
+    }
+
+    return initHubAppCheck();
+  })();
+
+  return warmUpPromise;
+}
+
 export function isAppCheckConfigured() {
-  return Boolean(String(import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim());
+  return Boolean(recaptchaSiteKey());
 }
 
 /**
@@ -113,7 +189,7 @@ export function isAppCheckConfigured() {
  * Forced refresh often surfaces as auth/network-request-failed on flaky networks.
  */
 export async function ensureCallableSession(auth) {
-  initHubAppCheck();
+  await warmUpAppCheck();
 
   const currentUser = auth?.currentUser;
   if (!currentUser) {
@@ -154,8 +230,10 @@ export async function ensureCallableSession(auth) {
   if (appCheckInstance) {
     const attempts = [
       { force: false, waitMs: 0 },
-      { force: false, waitMs: 400 },
+      { force: false, waitMs: 500 },
+      { force: false, waitMs: 1200 },
       { force: true, waitMs: 0 },
+      { force: true, waitMs: 800 },
     ];
     let lastError = null;
     for (const attempt of attempts) {

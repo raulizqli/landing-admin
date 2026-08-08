@@ -22,12 +22,14 @@ function normalizeProfile(uid: string, data: Record<string, unknown> = {}) {
     uid,
     email: String(data.email ?? "").trim().toLowerCase(),
     displayName: String(data.displayName ?? "").trim(),
+    phone: String(data.phone ?? "").trim(),
     role: String(data.role ?? "").trim().toLowerCase(),
     accountId: String(data.accountId ?? "").trim(),
     assignedPageIds: Array.isArray(data.assignedPageIds) ? data.assignedPageIds : [],
     pageId: String(data.pageId ?? "").trim(),
     isDemo: data.isDemo === true,
     disabled: data.disabled === true,
+    approvalStatus: String(data.approvalStatus ?? (data.role ? "approved" : "pending")).trim().toLowerCase(),
     updatedAt: data.updatedAt ?? null,
     createdAt: data.createdAt ?? null,
   };
@@ -64,6 +66,7 @@ export const ensureBootstrapRoot = onCall(
           assignedPageIds: [],
           pageId: "",
           isDemo: false,
+          approvalStatus: "approved",
           createdAt: data.createdAt || now,
           updatedAt: now,
         };
@@ -88,6 +91,7 @@ export const ensureBootstrapRoot = onCall(
       assignedPageIds: [],
       pageId: "",
       isDemo: false,
+      approvalStatus: "approved",
       createdAt: now,
       updatedAt: now,
     };

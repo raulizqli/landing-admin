@@ -1,6 +1,7 @@
 import {
   extractMapsInput,
   CONTACT_MAP_LAYOUTS,
+  mapsUrlNeedsAddressFallback,
   resolveMapsUrlsForLocation,
   shouldShowLocationMap,
 } from '../utils/maps';
@@ -22,6 +23,7 @@ export default function LocationFieldsEditor({
   canUseMapBeside = true,
   onUpgradePlan,
   upgradeLabel = 'Upgrade',
+  sharedContactFields = null,
 }) {
   const locations = normalizeLocations(formData.locations, formData, { keepEmpty: true });
   const contactMode = normalizeLocationsContactMode(formData.locationsContactMode);
@@ -96,9 +98,14 @@ export default function LocationFieldsEditor({
         ))}
         <p className="text-[10px] text-gray-400">
           {perLocationContact
-            ? 'Cada ubicación tendrá su propio email y teléfono abajo.'
-            : 'El email y teléfono públicos (debajo) se usan para todas las ubicaciones.'}
+            ? 'Cada ubicación tendrá su propio email y teléfono en su tarjeta.'
+            : 'El email y teléfono públicos de abajo se usan para todas las ubicaciones.'}
         </p>
+        {!perLocationContact && sharedContactFields ? (
+          <div className="space-y-3 pt-1">
+            {sharedContactFields}
+          </div>
+        ) : null}
       </fieldset>
 
       <fieldset className="space-y-2">
@@ -226,9 +233,19 @@ export default function LocationFieldsEditor({
               />
               Mostrar mapa embebido
             </label>
-            {location.showMap && !shouldShowLocationMap(location) && !location.address && !maps.embedUrl && (
+            {location.showMap && !shouldShowLocationMap(location) && (
               <p className="text-[10px] text-amber-600">
-                Añade una dirección o enlace de Google Maps para mostrar el mapa.
+                No se pudo armar el mapa. Revisa el enlace/embed de Google Maps o escribe una dirección visible.
+              </p>
+            )}
+            {location.showMap && mapsUrlNeedsAddressFallback(location) && (
+              <p className="text-[10px] text-amber-700">
+                El enlace de Maps no se puede embeber solo; se usará la dirección visible para el mapa.
+              </p>
+            )}
+            {location.showMap && shouldShowLocationMap(location) && maps.source === 'address' && location.mapsUrl && (
+              <p className="text-[10px] text-gray-400">
+                Mapa generado desde la dirección visible (prioridad porque el enlace no era usable).
               </p>
             )}
           </div>

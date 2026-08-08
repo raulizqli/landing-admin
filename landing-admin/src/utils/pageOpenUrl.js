@@ -1,3 +1,5 @@
+import { getLandingBaseUrl } from './landingBaseUrl.js';
+
 /**
  * Best-effort public URL for opening a landing in a new tab.
  * Prefers the configured hosting URL, then custom domain, then template preview.
@@ -33,10 +35,7 @@ export function resolvePageOpenUrl({
     }
   }
 
-  const templatePreview = (
-    String(import.meta.env.VITE_TEMPLATE_PREVIEW_URL ?? '').trim()
-    || (import.meta.env.DEV ? 'http://localhost:5174' : 'https://us.leftsidedev.site')
-  ).replace(/\/+$/, '');
+  const templatePreview = getLandingBaseUrl();
   if (!templatePreview) return '';
 
   try {

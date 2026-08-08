@@ -100,8 +100,13 @@ export default function UserManagement({ pageOptions = [], onClose }) {
             invitationLink: result.invitationLink,
             channel: form.invitationChannel,
             phone: form.whatsappPhone,
+            emailSent: result.invitationEmailSent === true,
           });
-          setInvitationStatus('');
+          setInvitationStatus(
+            result.invitationEmailSent === true && form.invitationChannel === INVITATION_CHANNELS.EMAIL
+              ? 'Email enviado automáticamente.'
+              : '',
+          );
         } else if (result.invitationError) {
           setError(
             `Usuario creado, pero no se generó la invitación: ${result.invitationError} `

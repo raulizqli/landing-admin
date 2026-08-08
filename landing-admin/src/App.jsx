@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { listPageDocuments } from './utils/firestoreAccess';
 import { db } from './firebase';
 import { createEmptySlide } from './utils/heroSlides';
@@ -44,14 +45,19 @@ import { hydrateFormSocial } from './utils/socialLinks';
 import { loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
 import { resolvePageOpenUrl } from './utils/pageOpenUrl';
 import { createCmsPageRemote } from './utils/aiAssistFunctions';
+import { recordPageAuditRemote } from './utils/inboxFunctions';
 import { useAuth } from './contexts/AuthContext';
 import { useLocale, LanguageSwitcher } from './i18n/LocaleContext';
 import { useEntitlements } from './hooks/useEntitlements';
+import { useInboxNotifications } from './hooks/useInboxNotifications';
 import {
   canCreatePages,
   canEditPage,
+  canManageCmsTickets,
   canManagePageLayout,
   canManageUsers,
+  canUseCmsInbox,
+  canViewPagesOverview,
   filterAccessiblePages,
   getAccessiblePageIds,
   getRoleLabel,
@@ -61,12 +67,14 @@ import { applyLockedPageLayout } from './utils/layoutLock';
 import { isFlagEnabled } from './utils/sectionVisibility';
 import { normalizeCustomEmbeds } from './utils/customEmbeds';
 import { getEditorSectionFill } from './utils/editorSectionFill';
+import PageAuditSection from './components/PageAuditSection';
 import {
   normalizePageLanguage,
   resolvePageLanguage,
   updatePageTranslation,
 } from '@raulizqli/landing-core/pageTranslations';
 import { isMarketingSite, normalizeMarketingRoutes } from '@raulizqli/landing-core/marketingSite';
+import { buildPageAuditSnapshot } from '@raulizqli/landing-core/pageAudit';
 import { syncDomainIndexesRemote } from './utils/domainFunctions';
 const DEMO_PREVIEW_ID = 'preview-demo';
 const SIDEBAR_COLLAPSED_KEY = 'landing-admin:pages-sidebar-collapsed';
@@ -100,6 +108,8 @@ export default function App() {
   } = useAuth();
   const { t } = useLocale();
   const entitlements = useEntitlements();
+  const { unreadCount: inboxUnreadCount } = useInboxNotifications({ pollMs: 90000 });
+  const [searchParams, setSearchParams] = useSearchParams();
   const [landings, setLandings] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [formData, setFormData] = useState(null);
@@ -120,10 +130,7 @@ export default function App() {
 
   const accessibleLandings = profile ? filterAccessiblePages(landings, profile) : [];
   const showPageList = !isSinglePageUser(profile);
-  const selectedLanding = accessibleLandings.find((landing) => landing.id === selectedId)
-    || (selectedId === DEMO_PREVIEW_ID ? { id: DEMO_PREVIEW_ID, name: t('shell.demoPreview') } : null);
-  const selectedPageLabel = selectedLanding?.name || selectedLanding?.id || selectedId || '·';
-  const selectedPageInitial = String(selectedPageLabel).trim().charAt(0).toUpperCase() || '·';
+  const showPagesOverviewLink = canViewPagesOverview(profile);
 
   const setSidebarCollapsed = (collapsed) => {
     setPagesSidebarCollapsed(collapsed);
@@ -182,13 +189,19 @@ export default function App() {
     setPreviewSectionKey(sectionKey);
   }, []);
 
-  const selectLanding = async (landing) => {
+  const selectLanding = async (landing, { syncUrl = true } = {}) => {
     if (!canEditPage(profile, landing.id)) {
       alert('No tienes permiso para editar esta página.');
       return;
     }
 
     setSelectedId(landing.id);
+    if (syncUrl && landing.id !== DEMO_PREVIEW_ID) {
+      setSearchParams({ pageId: landing.id }, { replace: true });
+    } else if (syncUrl && landing.id === DEMO_PREVIEW_ID) {
+      setSearchParams({}, { replace: true });
+    }
+
     if (landing.id === DEMO_PREVIEW_ID) {
       const hydrated = hydrateForm(landing);
       setFormData(hydrated);
@@ -240,10 +253,27 @@ export default function App() {
         }
 
         const allowed = filterAccessiblePages(list, profile);
+        const requestedId = String(searchParams.get('pageId') ?? '').trim();
+        const requested = requestedId
+          ? allowed.find((page) => page.id === requestedId)
+          : null;
 
-        if (allowed.length > 0) {
+        if (requested) {
+          setSelectedId(requested.id);
+          const loaded = await loadPageForEditor(requested.id, requested);
+          const hydrated = hydrateForm({ id: requested.id, ...loaded });
+          setFormData(hydrated);
+          setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
+          setLayoutBaseline(hydrated);
+          setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
+        } else if (allowed.length > 0) {
           const first = allowed[0];
           setSelectedId(first.id);
+          if (requestedId && requestedId !== first.id) {
+            setSearchParams({ pageId: first.id }, { replace: true });
+          } else if (!requestedId) {
+            setSearchParams({ pageId: first.id }, { replace: true });
+          }
           const loaded = await loadPageForEditor(first.id, first);
           const hydrated = hydrateForm({ id: first.id, ...loaded });
           setFormData(hydrated);
@@ -290,6 +320,8 @@ export default function App() {
     };
 
     loadLandings();
+    // Only re-run on auth/profile; pageId deep-link is read once at load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile, authLoading]);
 
   const handleSelectLanding = async (landing) => {
@@ -309,6 +341,7 @@ export default function App() {
     }
     setSaving(true);
     try {
+      const beforeSnapshot = buildPageAuditSnapshot(layoutBaseline || formData || {});
       let dataToSave = canManageLayout || !layoutBaseline
         ? formData
         : applyLockedPageLayout(formData, layoutBaseline);
@@ -317,6 +350,16 @@ export default function App() {
         dataToSave = { ...dataToSave, siteMode: 'landing' };
       }
       const result = await savePageFromEditor(selectedId, dataToSave);
+      try {
+        await recordPageAuditRemote({
+          pageId: selectedId,
+          before: beforeSnapshot,
+          action: 'page_update',
+          notify: true,
+        });
+      } catch (auditError) {
+        console.warn('page audit skipped:', auditError?.message || auditError);
+      }
       const hydrated = hydrateForm({
         id: selectedId,
         ...dataToSave,
@@ -384,6 +427,7 @@ export default function App() {
       });
       setAccessError('');
       setSelectedId(pageId);
+      setSearchParams({ pageId }, { replace: true });
       const loaded = await loadPageForEditor(pageId, created);
       const hydrated = hydrateForm({ id: pageId, ...loaded });
       setFormData(hydrated);
@@ -481,56 +525,19 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh w-full max-w-full flex-col bg-gray-100 text-gray-800 overflow-hidden font-sans">
+    <div className="relative flex h-dvh w-full max-w-full flex-col bg-gray-100 text-gray-800 overflow-hidden font-sans">
       {entitlements.freeTier ? (
         <AdminFreeTierAdsBanner onUpgrade={openBilling} />
       ) : null}
-      <div className="flex min-h-0 flex-1 max-lg:pb-11">
+      <div className="relative flex min-h-0 flex-1 max-lg:pb-11">
       {/* 1. BARRA LATERAL */}
       <div
-        className={`bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0 min-h-0 transition-[width] duration-200 ease-out ${
-          pagesSidebarCollapsed ? 'w-14' : 'w-64'
+        className={`bg-gray-950 text-white flex flex-col border-r border-gray-800 shrink-0 min-h-0 overflow-hidden transition-[width] duration-200 ease-out ${
+          pagesSidebarCollapsed ? 'w-0 border-r-0' : 'w-64'
         }`}
+        aria-hidden={pagesSidebarCollapsed}
       >
-        {pagesSidebarCollapsed ? (
-          <div className="flex flex-col items-center gap-3 py-3 px-1.5 min-h-0 h-full">
-            <button
-              type="button"
-              onClick={() => setSidebarCollapsed(false)}
-              className="w-10 h-10 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-600/40 transition flex items-center justify-center"
-              title={t('shell.expandSidebar')}
-              aria-label={t('shell.expandSidebar')}
-              aria-expanded={false}
-            >
-              <span className="text-sm font-bold" aria-hidden>»</span>
-            </button>
-            <div
-              className="w-10 h-10 rounded-full bg-indigo-600 text-white text-sm font-semibold flex items-center justify-center shrink-0"
-              title={selectedPageLabel}
-            >
-              {selectedPageInitial}
-            </div>
-            <div className="flex-1" />
-            <button
-              type="button"
-              onClick={openBilling}
-              className="w-10 h-10 rounded-lg bg-emerald-700/40 text-emerald-100 hover:bg-emerald-600/60 text-[10px] font-bold"
-              title={t('common.billing')}
-              aria-label={t('common.billing')}
-            >
-              $
-            </button>
-            <button
-              type="button"
-              onClick={signOut}
-              className="w-10 h-10 rounded-lg bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700 text-[10px] font-semibold"
-              title={t('common.exit')}
-              aria-label={t('common.exit')}
-            >
-              ⎋
-            </button>
-          </div>
-        ) : (
+        {!pagesSidebarCollapsed ? (
           <>
             <div className="p-4 border-b border-gray-800">
               <div className="flex items-start justify-between gap-2">
@@ -561,6 +568,14 @@ export default function App() {
                 />
                 <LanguageSwitcher className="text-gray-300" />
                 <div className="flex flex-wrap gap-2">
+                  {showPagesOverviewLink && (
+                    <Link
+                      to="/app/pages"
+                      className="flex-1 text-center text-[10px] px-2 py-1.5 rounded bg-gray-900 text-indigo-200 hover:bg-gray-800 border border-indigo-500/40 font-semibold"
+                    >
+                      {t('pagesOverview.navLabel')}
+                    </Link>
+                  )}
                   <button
                     type="button"
                     onClick={openBilling}
@@ -588,6 +603,27 @@ export default function App() {
                         </span>
                       )}
                     </button>
+                  )}
+                  {canUseCmsInbox(profile, user?.uid) && (
+                    <Link
+                      to="/app/inbox"
+                      className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700 text-center font-semibold relative"
+                    >
+                      Inbox
+                      {inboxUnreadCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-indigo-500 text-white text-[9px] font-bold flex items-center justify-center">
+                          {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
+                        </span>
+                      )}
+                    </Link>
+                  )}
+                  {canManageCmsTickets(profile) && (
+                    <Link
+                      to="/app/tickets"
+                      className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-700 text-center font-semibold"
+                    >
+                      Tickets
+                    </Link>
                   )}
                   {canManageUsers(profile) && (
                     <button
@@ -656,8 +692,21 @@ export default function App() {
               )}
             </div>
           </>
-        )}
+        ) : null}
       </div>
+
+      {pagesSidebarCollapsed ? (
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(false)}
+          className="absolute left-0 top-1/2 z-30 -translate-y-1/2 flex h-16 w-6 items-center justify-center rounded-r-lg border border-l-0 border-indigo-500/50 bg-gray-950 text-indigo-200 shadow-lg hover:bg-indigo-900/80 hover:text-white transition"
+          title={t('shell.expandSidebar')}
+          aria-label={t('shell.expandSidebar')}
+          aria-expanded={false}
+        >
+          <span className="text-xs font-bold" aria-hidden>»</span>
+        </button>
+      ) : null}
 
       {/* 2. FORMULARIO */}
       <div className={`min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-6 bg-white border-r border-gray-200 shadow-inner max-lg:!grow max-lg:!shrink max-lg:!basis-0 max-sm:p-3 transition-[flex-grow,flex-basis] duration-500 ease-in-out ${
@@ -1000,16 +1049,16 @@ export default function App() {
                   canUseMapBeside={entitlements.canUseContactMapBeside}
                   onUpgradePlan={openBilling}
                   upgradeLabel={upgradeLabel}
+                  sharedContactFields={(
+                    <>
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-bold text-gray-400 uppercase">Email Público</label>
+                        <input type="email" value={editorData.email || ''} onChange={e => handleEditorChange({...editorData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
+                      </div>
+                      <PhoneFieldsEditor formData={editorData} onChange={handleEditorChange} />
+                    </>
+                  )}
                 />
-                {(editorData.locationsContactMode || 'shared') !== 'per_location' && (
-                  <>
-                    <div className="space-y-2">
-                      <label className="block text-[11px] font-bold text-gray-400 uppercase">Email Público</label>
-                      <input type="email" value={editorData.email || ''} onChange={e => handleEditorChange({...editorData, email: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg" />
-                    </div>
-                    <PhoneFieldsEditor formData={editorData} onChange={handleEditorChange} />
-                  </>
-                )}
                 <LabelsFieldsEditor key={`labels-contact-messages-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['contact', 'messages']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
@@ -1032,7 +1081,7 @@ export default function App() {
               label={upgradeLabel}
               onUpgrade={openBilling}
               lockedTitle={t('billing.features.qrCodes')}
-              lockedDescription="Genera y descarga códigos QR del sitio y de tus redes sociales (Pro+)."
+              lockedDescription="Genera y descarga códigos QR del sitio y redes (Pro: máx. 2 · Agency: ilimitados)."
             >
               <EditorSection
                 sectionKey="qrCodes"
@@ -1044,6 +1093,8 @@ export default function App() {
                   formData={editorData}
                   pageId={selectedId}
                   pageOpenUrl={pageOpenUrl}
+                  qrCodeLimit={entitlements.bypass ? null : entitlements.qrCodeLimit}
+                  onUpgrade={openBilling}
                 />
               </EditorSection>
             </PlanGate>
@@ -1107,6 +1158,16 @@ export default function App() {
               <LegalDocumentsFieldsEditor formData={editorData} onChange={handleEditorChange} language={editingLanguage} />
               <PageAppearanceEditor formData={editorData} onChange={handleEditorChange} sections={['footer']} />
               <LabelsFieldsEditor key={`labels-footer-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['footer']} showLanguagePicker={false} compact language={editingLanguage} />
+            </EditorSection>
+
+            <EditorSection
+              sectionKey="audit"
+              fillStatus={{ filled: true, label: 'Historial' }}
+              title="Historial de cambios"
+              description="Auditoría de quién guardó y qué campos cambiaron"
+              onActivate={activatePreviewSection}
+            >
+              <PageAuditSection pageId={selectedId} />
             </EditorSection>
           </form>
         ) : (

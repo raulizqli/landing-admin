@@ -56,9 +56,15 @@ describe('appEnv', () => {
   });
 
   it('blocks disabled always and demo only in prod', () => {
-    expect(getLoginBlockReason({ disabled: true, isDemo: false }, 'dev')).toBe('disabled');
-    expect(getLoginBlockReason({ disabled: false, isDemo: true }, 'prod')).toBe('demo');
-    expect(getLoginBlockReason({ disabled: false, isDemo: true }, 'stage')).toBe(null);
-    expect(getLoginBlockReason({ disabled: false, isDemo: false }, 'prod')).toBe(null);
+    expect(getLoginBlockReason({ disabled: true, isDemo: false, role: 'user', approvalStatus: 'approved' }, 'dev')).toBe('disabled');
+    expect(getLoginBlockReason({ disabled: false, isDemo: true, role: 'user', approvalStatus: 'approved' }, 'prod')).toBe('demo');
+    expect(getLoginBlockReason({ disabled: false, isDemo: true, role: 'user', approvalStatus: 'approved' }, 'stage')).toBe(null);
+    expect(getLoginBlockReason({ disabled: false, isDemo: false, role: 'user', approvalStatus: 'approved' }, 'prod')).toBe(null);
+  });
+
+  it('blocks pending and rejected self-registrations', () => {
+    expect(getLoginBlockReason({ approvalStatus: 'pending', role: '' }, 'prod')).toBe('pending');
+    expect(getLoginBlockReason({ approvalStatus: 'rejected', role: '' }, 'prod')).toBe('rejected');
+    expect(getLoginBlockReason({ approvalStatus: 'approved', role: '' }, 'prod')).toBe('pending');
   });
 });

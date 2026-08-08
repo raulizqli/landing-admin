@@ -9,6 +9,7 @@ const scheduler_1 = require("firebase-functions/v2/scheduler");
 const app_1 = require("firebase-admin/app");
 const siteAccessPolicy_js_1 = require("./siteAccessPolicy.js");
 const callableOptions_js_1 = require("./callableOptions.js");
+const cmsInbox_js_1 = require("./cmsInbox.js");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
@@ -63,7 +64,7 @@ async function syncAccountSiteAccess(accountId) {
  * Apply billing patch and keep unpaidSince + denormalized page siteAccess in sync.
  */
 async function applyBillingPatchWithSiteAccess(accountId, patch) {
-    var _a, _b;
+    var _a, _b, _c;
     const db = (0, firestore_1.getFirestore)();
     const ref = db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
     const previous = await ref.get();
@@ -85,6 +86,25 @@ async function applyBillingPatchWithSiteAccess(accountId, patch) {
     const nextData = (_b = nextSnap.data()) !== null && _b !== void 0 ? _b : {};
     const pageIds = Array.isArray(nextData.pageIds) ? nextData.pageIds.map(String) : [];
     await writeSiteAccessToPages(pageIds, siteAccess);
+    const previousStage = String(((_c = previousData.siteAccess) === null || _c === void 0 ? void 0 : _c.stage) || "paid");
+    const nextStage = String(siteAccess.stage || "paid");
+    if (previousStage !== nextStage && (nextStage === "ads" || nextStage === "offline" || nextStage === "grace")) {
+        for (const pageId of pageIds.slice(0, 20)) {
+            try {
+                await (0, cmsInbox_js_1.createSystemIncident)({
+                    pageId,
+                    category: "billing",
+                    subject: `Acceso del sitio: ${nextStage} (${pageId})`,
+                    body: `La cuenta de facturación pasó de ${previousStage} a ${nextStage}.`,
+                    createdByUid: "system",
+                    createTicket: nextStage === "offline",
+                });
+            }
+            catch (error) {
+                console.error("billing incident notify failed:", pageId, error);
+            }
+        }
+    }
     return Object.assign(Object.assign({ id: accountId }, nextData), { siteAccess });
 }
 /** Root: mark whether Google Ads publicity is earning enough to keep sites online. */

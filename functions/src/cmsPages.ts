@@ -2,6 +2,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { sensitiveCallableOptions } from "./callableOptions.js";
+import { writePageAuditAndNotify } from "./cmsInbox.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -248,10 +249,29 @@ export const createCmsPage = onCall(
     }
 
     const createdSnap = await pageRef.get();
+    const pageData = (createdSnap.data() ?? {}) as Record<string, unknown>;
+    try {
+      await writePageAuditAndNotify({
+        pageId,
+        actor: {
+          uid,
+          role: String(profile.role ?? ""),
+          email: String((profile as { email?: string }).email ?? ""),
+          displayName: String((profile as { displayName?: string }).displayName ?? ""),
+        },
+        before: {},
+        after: pageData,
+        action: "page_create",
+        notify: true,
+      });
+    } catch (auditError) {
+      console.error("createCmsPage audit skipped:", auditError);
+    }
+
     return {
       ok: true,
       pageId,
-      page: { id: pageId, ...(createdSnap.data() ?? {}) },
+      page: { id: pageId, ...pageData },
       accountId,
     };
   },

@@ -56,7 +56,7 @@ jobs:
           VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
           VITE_TEMPLATE_PREVIEW_URL: https://us.leftsidedev.site
-          VITE_MARKETING_URL: https://landing-template-9452e.web.app/?pageId=leftsidedev
+          VITE_MARKETING_URL: https://us.leftsidedev.site/?pageId=leftsidedev
           VITE_CORPORATE_SITE_URL: ${{ vars.VITE_CORPORATE_SITE_URL }}
           VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
 

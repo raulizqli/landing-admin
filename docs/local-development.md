@@ -164,12 +164,13 @@ Ejecuta el script únicamente con las credenciales y el proyecto Firebase correc
 
 App Check protege escrituras del CMS y llamadas sensibles:
 
-1. Crea una clave **reCAPTCHA v3**; no uses el checkbox v2.
-2. Registra `localhost`, `127.0.0.1` y los dominios de producción.
-3. Añade la site key como `VITE_RECAPTCHA_SITE_KEY`.
-4. Para desarrollo, define un UUID estable en `VITE_APP_CHECK_DEBUG_TOKEN` y regístralo en Firebase Console → App Check → Manage debug tokens (o copia el token que imprime la consola del navegador).
-5. Reinicia Vite tras cambiar `.env.local`.
-6. Empieza con modo **Monitor** y valida el tráfico antes de activar **Enforce**.
+1. Crea una clave **reCAPTCHA Enterprise (score)** o **reCAPTCHA v3** clásica; no uses el checkbox v2.
+2. Registra dominios del admin: `admin.leftsidedev.site`, `landing-admin-9452e.web.app`, `landing-admin-9452e.firebaseapp.com`, `localhost`, `127.0.0.1`.
+3. Añade la site key como `VITE_RECAPTCHA_SITE_KEY`. Si la clave es Enterprise (Google Cloud / `gcloud recaptcha keys`), usa `VITE_RECAPTCHA_ENTERPRISE=true`.
+4. En Firebase Console → App Check → tu app web, registra la **misma** site key.
+5. Para desarrollo, define un UUID estable en `VITE_APP_CHECK_DEBUG_TOKEN` y regístralo en Firebase Console → App Check → Manage debug tokens (o copia el token que imprime la consola del navegador).
+6. Reinicia Vite tras cambiar `.env.local`.
+7. Empieza con modo **Monitor** y valida el tráfico antes de activar **Enforce**.
 
 Sin debug token registrado, las callables contra Functions de prod desde localhost suelen fallar con `functions/unauthenticated` (no es un problema de cuota ni de rol).
 

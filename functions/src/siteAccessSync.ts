@@ -9,6 +9,7 @@ import {
   SiteAccessSnapshot,
 } from "./siteAccessPolicy.js";
 import { sensitiveCallableOptions } from "./callableOptions.js";
+import { createSystemIncident } from "./cmsInbox.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -108,6 +109,25 @@ export async function applyBillingPatchWithSiteAccess(
   const nextData = nextSnap.data() ?? {};
   const pageIds = Array.isArray(nextData.pageIds) ? nextData.pageIds.map(String) : [];
   await writeSiteAccessToPages(pageIds, siteAccess);
+
+  const previousStage = String((previousData.siteAccess as { stage?: string } | undefined)?.stage || "paid");
+  const nextStage = String(siteAccess.stage || "paid");
+  if (previousStage !== nextStage && (nextStage === "ads" || nextStage === "offline" || nextStage === "grace")) {
+    for (const pageId of pageIds.slice(0, 20)) {
+      try {
+        await createSystemIncident({
+          pageId,
+          category: "billing",
+          subject: `Acceso del sitio: ${nextStage} (${pageId})`,
+          body: `La cuenta de facturación pasó de ${previousStage} a ${nextStage}.`,
+          createdByUid: "system",
+          createTicket: nextStage === "offline",
+        });
+      } catch (error) {
+        console.error("billing incident notify failed:", pageId, error);
+      }
+    }
+  }
 
   return { id: accountId, ...nextData, siteAccess };
 }

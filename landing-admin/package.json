@@ -7,7 +7,7 @@
     "predev": "node scripts/free-port.js 5173",
     "prepreview": "node scripts/free-port.js 5173",
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/build-production.mjs",
     "build:staging": "vite build --mode staging",
     "lint": "eslint .",
     "preview": "vite preview",

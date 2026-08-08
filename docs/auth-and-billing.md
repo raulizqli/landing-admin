@@ -16,9 +16,42 @@ Perfil:
   "role": "admin",
   "accountId": "billing-account-id",
   "assignedPageIds": ["dra-maria", "clinica-centro"],
-  "pageId": ""
+  "pageId": "",
+  "phone": "+525512345678",
+  "approvalStatus": "approved"
 }
 ```
+
+## Auto-registro (pendiente de root)
+
+Desde `/login` → **Crear cuenta**, un visitante puede solicitar acceso con nombre, email, teléfono (MX/US) y contraseña.
+
+1. Callable pública `requestCmsAccess` crea Auth + `users/{uid}` con `approvalStatus: "pending"` (sin rol ni páginas).
+2. El login está bloqueado (`getLoginBlockReason` → `pending`) hasta que root apruebe.
+3. Root en `/app/users` (filtro Pendientes) → **Aprobar** (asigna rol/páginas) o **Rechazar** (soft: `approvalStatus: "rejected"` + Auth `disabled`).
+4. Al aprobar, `approveCmsAccess` envía email automático vía **Resend** (o cola Firestore `mail` para la extensión Trigger Email).
+
+### Email transaccional (Resend)
+
+Los correos del CMS (aprobación de acceso, recuperación de contraseña e invitaciones) se envían con [Resend](https://resend.com) cuando Functions tiene:
+
+```env
+RESEND_API_KEY=re_...
+RESEND_FROM=TapSite <noreply@tudominio.com>
+```
+
+(`APPROVAL_EMAIL_FROM` es alias de `RESEND_FROM`.)
+
+| Flujo | Callable / acción |
+|---|---|
+| Recuperar contraseña (`/login`) | `requestPasswordResetEmail` (pública) |
+| Invitación al crear usuario | `createCmsUser` con `createInvitation: true` |
+| Reenviar invitación | `generateCmsUserInvitation` |
+| Aprobar auto-registro | `approveCmsAccess` |
+
+El dominio del remitente debe estar verificado en Resend (p. ej. `leftsidedev.site`). El enlace de reset/invitación sigue generándose con Firebase Admin; solo cambia quién entrega el email (Resend en lugar de `noreply@*.firebaseapp.com`).
+
+Validación de teléfono: solo México (`+52`) y Estados Unidos (`+1`).
 
 ## Roles
 
@@ -64,7 +97,7 @@ Un root puede crear usuarios desde el panel. La Function `createCmsUser`:
 
 ## Invitaciones de usuario (enlace para contraseña)
 
-Root crea usuarios sin contraseña; el enlace de invitación es un **password reset** generado por Firebase Admin.
+Root crea usuarios sin contraseña; el enlace de invitación es un **password reset** generado por Firebase Admin y enviado por email vía Resend (`sendInvitationEmail`).
 
 El enlace tiene **dos dominios distintos**:
 

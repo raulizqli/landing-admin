@@ -30,6 +30,37 @@ describe('resolveMapsUrls host allowlist (F13)', () => {
     expect(maps.embedUrl).not.toContain('evil.example');
   });
 
+  it('accepts maps.google.com/?q= share links and prefers them over address', () => {
+    const maps = resolveMapsUrls({
+      locationMapsUrl: 'https://maps.google.com/?q=Monterrey+Nuevo+Leon',
+      location: 'Should not win',
+    });
+    expect(maps.source).toBe('mapsUrl');
+    expect(maps.linkUrl).toBe('https://maps.google.com/?q=Monterrey+Nuevo+Leon');
+    expect(maps.embedUrl).toContain('output=embed');
+    expect(maps.embedUrl).toContain(encodeURIComponent('Monterrey Nuevo Leon'));
+    expect(maps.embedUrl).not.toContain('Should');
+  });
+
+  it('falls back to visible address when the Maps URL is invalid', () => {
+    const maps = resolveMapsUrls({
+      locationMapsUrl: 'https://evil.example/not-maps',
+      location: 'Monterrey, Nuevo Leon',
+    });
+    expect(maps.source).toBe('address');
+    expect(maps.embedUrl).toContain(encodeURIComponent('Monterrey, Nuevo Leon'));
+    expect(maps.embedUrl).not.toContain('evil.example');
+  });
+
+  it('falls back to address when a short Maps link cannot be expanded', () => {
+    const maps = resolveMapsUrls({
+      locationMapsUrl: 'https://maps.app.goo.gl/abc123',
+      location: 'Roma Norte, CDMX',
+    });
+    expect(maps.source).toBe('address');
+    expect(maps.embedUrl).toContain(encodeURIComponent('Roma Norte, CDMX'));
+  });
+
   it('rejects javascript and http (non-https) map URLs', () => {
     expect(resolveMapsUrls({
       locationMapsUrl: 'javascript:alert(1)',
@@ -37,7 +68,8 @@ describe('resolveMapsUrls host allowlist (F13)', () => {
 
     expect(resolveMapsUrls({
       locationMapsUrl: 'http://www.google.com/maps?q=x&output=embed',
-    }).embedUrl).toBe('');
+      location: 'Fallback Addr',
+    }).embedUrl).toContain(encodeURIComponent('Fallback Addr'));
   });
 });
 

@@ -27,6 +27,7 @@
     "./labels": "./src/labels.js",
     "./verticals": "./src/verticals.js",
     "./phone": "./src/phone.js",
+    "./contactValidation": "./src/contactValidation.js",
     "./bookingCta": "./src/bookingCta.js",
     "./customEmbeds": "./src/customEmbeds.js",
     "./sectionAnchors": "./src/sectionAnchors.js",
@@ -59,7 +60,8 @@
     "./marketingSite": "./src/marketingSite.js",
     "./marketingSeo": "./src/marketingSeo.js",
     "./siteAccess": "./src/siteAccess.js",
-    "./aiAssist": "./src/aiAssist.js"
+    "./aiAssist": "./src/aiAssist.js",
+    "./pageAudit": "./src/pageAudit.js"
   },
   "devDependencies": {
     "vitest": "^4.1.10"

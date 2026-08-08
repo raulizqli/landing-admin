@@ -3,6 +3,7 @@ export * from './hostname.js';
 export * from './labels.js';
 export * from './verticals.js';
 export * from './phone.js';
+export * from './contactValidation.js';
 export * from './bookingCta.js';
 export * from './customEmbeds.js';
 export * from './sectionAnchors.js';

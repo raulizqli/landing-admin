@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { USERS_COLLECTION } from './firestorePaths';
 import { normalizePageIdList, normalizeRole } from './permissions';
+import { normalizeApprovalStatus } from './contactValidation';
 
 const BOOTSTRAP_ROOT_EMAIL = String(import.meta.env.VITE_BOOTSTRAP_ROOT_EMAIL ?? '').trim().toLowerCase();
 
@@ -18,14 +19,17 @@ export function normalizeUserProfile(uid, data = {}) {
     uid,
     email: String(data.email ?? '').trim().toLowerCase(),
     displayName: String(data.displayName ?? '').trim(),
+    phone: String(data.phone ?? '').trim(),
     role,
     accountId: String(data.accountId ?? '').trim(),
     assignedPageIds: normalizePageIdList(data.assignedPageIds),
     pageId: String(data.pageId ?? '').trim(),
     isDemo: data.isDemo === true,
     disabled: data.disabled === true,
+    approvalStatus: normalizeApprovalStatus(data.approvalStatus, { hasRole: Boolean(role) }),
     updatedAt: data.updatedAt ?? null,
     createdAt: data.createdAt ?? null,
+    requestedAt: data.requestedAt ?? null,
   };
 }
 
