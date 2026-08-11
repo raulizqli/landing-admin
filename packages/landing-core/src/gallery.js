@@ -10,9 +10,9 @@ export function createEmptyGalleryItem() {
   };
 }
 
-export function normalizeGalleryItem(item = {}) {
+export function normalizeGalleryItem(item = {}, index = 0) {
   return {
-    id: normalizeContentId(item.id, createContentId('gallery')),
+    id: normalizeContentId(item.id, `gallery-${index + 1}`),
     imageUrl: String(item.imageUrl || item.imagenUrl || '').trim(),
     caption: String(item.caption || item.leyenda || item.title || item.titulo || '').trim(),
     alt: String(item.alt || item.textoAlt || '').trim(),
@@ -21,7 +21,7 @@ export function normalizeGalleryItem(item = {}) {
 
 export function normalizeGalleryItems(items) {
   if (!Array.isArray(items)) return [];
-  return items.map(normalizeGalleryItem);
+  return items.map((item, index) => normalizeGalleryItem(item, index));
 }
 
 export function getVisibleGalleryItems(data) {

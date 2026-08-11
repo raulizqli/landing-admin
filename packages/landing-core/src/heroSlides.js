@@ -53,9 +53,9 @@ export function createEmptySlide() {
   };
 }
 
-export function normalizeHeroSlide(slide = {}) {
+export function normalizeHeroSlide(slide = {}, index = 0) {
   return {
-    id: normalizeContentId(slide.id, createContentId('slide')),
+    id: normalizeContentId(slide.id, `slide-${index + 1}`),
     imageUrl: slide.imageUrl || slide.imagenUrl || '',
     videoUrl: slide.videoUrl || slide.videoLink || '',
     title: slide.title || '',
@@ -70,7 +70,7 @@ export function normalizeHeroSlide(slide = {}) {
 
 export function normalizeHeroSlides(data) {
   if (Array.isArray(data?.heroSlides) && data.heroSlides.length > 0) {
-    return data.heroSlides.map(normalizeHeroSlide);
+    return data.heroSlides.map((slide, index) => normalizeHeroSlide(slide, index));
   }
 
   const title = String(data?.heroTitle ?? '').trim();
@@ -81,7 +81,7 @@ export function normalizeHeroSlides(data) {
     return [createEmptySlide()];
   }
 
-  return [{
+  return [normalizeHeroSlide({
     imageUrl: '',
     title,
     text,
@@ -90,7 +90,7 @@ export function normalizeHeroSlides(data) {
     showButtons,
     showGradient: true,
     buttonsPosition: 'center',
-  }];
+  }, 0)];
 }
 
 export function hydrateFormHeroSlides(formData) {

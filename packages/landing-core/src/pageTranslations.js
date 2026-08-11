@@ -88,10 +88,16 @@ function pickLocalizedValue(activeValue, fallbackValue, baseValue) {
   return cloneTextValue(baseValue);
 }
 
-function pickEditingValue(activeValue, baseValue) {
+function pickEditingValue(activeValue, baseValue, { useRootWhenMissing = true } = {}) {
   // Preserve explicit blanks and in-progress spaces while typing in the editor.
   if (activeValue !== undefined && activeValue !== null) {
     return cloneTextValue(activeValue);
+  }
+  // Default language: missing keys should show root/shared content (matches live landing).
+  // Secondary language: keep blanks so translators see what still needs copy.
+  if (useRootWhenMissing) {
+    if (Array.isArray(baseValue)) return baseValue.map((item) => String(item ?? ''));
+    return cloneTextValue(baseValue);
   }
   return Array.isArray(baseValue) ? [] : '';
 }
@@ -149,6 +155,101 @@ function translationBucketHasContent(bucket) {
     if (value && typeof value === 'object') return translationBucketHasContent(value);
     return hasValue(value);
   });
+}
+
+function mergeMissingNestedTranslations(bucketNested, extractedNested, fields) {
+  const sourceBucket = bucketNested && typeof bucketNested === 'object' && !Array.isArray(bucketNested)
+    ? bucketNested
+    : {};
+  const sourceExtracted = extractedNested && typeof extractedNested === 'object' && !Array.isArray(extractedNested)
+    ? extractedNested
+    : {};
+  const ids = [...new Set([...Object.keys(sourceExtracted), ...Object.keys(sourceBucket)])];
+  const result = {};
+
+  ids.forEach((id) => {
+    const bucketItem = sourceBucket[id] && typeof sourceBucket[id] === 'object' ? sourceBucket[id] : {};
+    const extractedItem = sourceExtracted[id] && typeof sourceExtracted[id] === 'object'
+      ? sourceExtracted[id]
+      : {};
+    const merged = { ...bucketItem };
+    fields.forEach((field) => {
+      if (merged[field] === undefined) {
+        merged[field] = cloneTextValue(extractedItem[field]);
+      }
+    });
+    result[id] = merged;
+  });
+
+  return result;
+}
+
+/**
+ * Fill gaps in a translation bucket from the page root/shared collections.
+ * Keeps explicit blanks; only copies when a key is missing (undefined).
+ * Rematches collection items by id, then by stable index key, then by position.
+ */
+function mergeMissingTranslationFields(bucket, page = {}) {
+  const extracted = extractPageTranslation(page);
+  const result = normalizeTranslationBucket(bucket);
+
+  ROOT_TEXT_FIELDS.forEach((field) => {
+    if (result[field] === undefined) {
+      result[field] = cloneTextValue(extracted[field]);
+    }
+  });
+
+  Object.entries(COLLECTION_SPECS).forEach(([collection, spec]) => {
+    const pageItems = Array.isArray(page[collection]) ? page[collection] : [];
+    const bucketItems = result[collection] && typeof result[collection] === 'object'
+      ? { ...result[collection] }
+      : {};
+    const extractedItems = extracted[collection] || {};
+    const unusedBucketIds = new Set(Object.keys(bucketItems));
+    const mergedItems = {};
+
+    pageItems.forEach((item, index) => {
+      const id = getItemId(item, index, collection);
+      const indexKey = `${collection}-${index + 1}`;
+      let source = bucketItems[id];
+
+      if (source) {
+        unusedBucketIds.delete(id);
+      } else if (bucketItems[indexKey]) {
+        source = bucketItems[indexKey];
+        unusedBucketIds.delete(indexKey);
+      } else {
+        const positionalId = [...unusedBucketIds][0];
+        if (positionalId) {
+          source = bucketItems[positionalId];
+          unusedBucketIds.delete(positionalId);
+        }
+      }
+
+      const extractedItem = extractedItems[id] || {};
+      const merged = normalizeTranslationItem(source || {}, spec);
+
+      spec.fields.forEach((field) => {
+        if (merged[field] === undefined) {
+          merged[field] = cloneTextValue(extractedItem[field]);
+        }
+      });
+
+      Object.entries(spec.nested || {}).forEach(([nestedCollection, fields]) => {
+        merged[nestedCollection] = mergeMissingNestedTranslations(
+          merged[nestedCollection],
+          extractedItem[nestedCollection],
+          fields,
+        );
+      });
+
+      mergedItems[id] = merged;
+    });
+
+    result[collection] = mergedItems;
+  });
+
+  return result;
 }
 
 function getItemId(item, index, collection) {
@@ -223,6 +324,10 @@ export function normalizePageTranslations(value, page = {}, defaultLanguage = 'e
 
   if (!translationBucketHasContent(result[fallback])) {
     result[fallback] = extractPageTranslation(page);
+  } else {
+    // Partial buckets (common after incremental i18n saves) left the CMS editor blank
+    // while the public landing still fell back to root fields — heal gaps on load.
+    result[fallback] = mergeMissingTranslationFields(result[fallback], page);
   }
 
   return result;
@@ -235,6 +340,7 @@ function resolveNestedCollection(
   fields,
   collection,
   fallbackEnabled,
+  useRootWhenMissing = true,
 ) {
   return (Array.isArray(sharedItems) ? sharedItems : []).map((item, index) => {
     const id = getItemId(item, index, collection);
@@ -244,7 +350,7 @@ function resolveNestedCollection(
     fields.forEach((field) => {
       resolved[field] = fallbackEnabled
         ? pickLocalizedValue(active[field], fallback[field], item?.[field])
-        : pickEditingValue(active[field], item?.[field]);
+        : pickEditingValue(active[field], item?.[field], { useRootWhenMissing });
     });
     return resolved;
   });
@@ -257,6 +363,7 @@ function resolveTranslatedCollection(
   collection,
   spec,
   fallbackEnabled,
+  useRootWhenMissing = true,
 ) {
   return (Array.isArray(items) ? items : []).map((item, index) => {
     const id = getItemId(item, index, collection);
@@ -267,7 +374,7 @@ function resolveTranslatedCollection(
     spec.fields.forEach((field) => {
       resolved[field] = fallbackEnabled
         ? pickLocalizedValue(active[field], fallback[field], item?.[field])
-        : pickEditingValue(active[field], item?.[field]);
+        : pickEditingValue(active[field], item?.[field], { useRootWhenMissing });
     });
 
     Object.entries(spec.nested || {}).forEach(([nestedCollection, fields]) => {
@@ -278,6 +385,7 @@ function resolveTranslatedCollection(
         fields,
         nestedCollection,
         fallbackEnabled,
+        useRootWhenMissing,
       );
     });
 
@@ -295,6 +403,7 @@ export function resolvePageLanguage(page = {}, requestedLanguage, options = {}) 
   const fallbackBucket = translations[defaultLanguage] || {};
   // Respect explicit fallback:false in the editor so blank values and trailing spaces survive.
   const fallbackEnabled = options.fallback !== false;
+  const useRootWhenMissing = language === defaultLanguage;
   const result = {
     ...page,
     defaultLanguage,
@@ -307,7 +416,7 @@ export function resolvePageLanguage(page = {}, requestedLanguage, options = {}) 
   ROOT_TEXT_FIELDS.forEach((field) => {
     result[field] = fallbackEnabled
       ? pickLocalizedValue(activeBucket[field], fallbackBucket[field], page[field])
-      : pickEditingValue(activeBucket[field], page[field]);
+      : pickEditingValue(activeBucket[field], page[field], { useRootWhenMissing });
   });
 
   Object.entries(COLLECTION_SPECS).forEach(([collection, spec]) => {
@@ -318,6 +427,7 @@ export function resolvePageLanguage(page = {}, requestedLanguage, options = {}) 
       collection,
       spec,
       fallbackEnabled,
+      useRootWhenMissing,
     );
   });
 

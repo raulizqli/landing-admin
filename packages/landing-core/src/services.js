@@ -70,7 +70,7 @@ export function serviceListItemsToText(items) {
   return normalizeServiceListItems(items).join('\n');
 }
 
-export function normalizeService(item = {}) {
+export function normalizeService(item = {}, index = 0) {
   const layout = normalizeServiceLayout(item.layout || item.tipo || item.itemLayout);
   const description = item.description || item.descripcion || item.text || item.texto || '';
   let listItems = normalizeServiceListItems(item.listItems ?? item.items ?? item.lista);
@@ -80,7 +80,7 @@ export function normalizeService(item = {}) {
   }
 
   return {
-    id: normalizeContentId(item.id, createContentId('service')),
+    id: normalizeContentId(item.id, `service-${index + 1}`),
     layout,
     title: item.title || item.titulo || '',
     description,
@@ -91,7 +91,7 @@ export function normalizeService(item = {}) {
 
 export function normalizeServices(items) {
   if (!Array.isArray(items)) return [];
-  return items.map(normalizeService);
+  return items.map((item, index) => normalizeService(item, index));
 }
 
 export function isServiceItemVisible(item) {
