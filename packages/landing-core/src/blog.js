@@ -67,9 +67,9 @@ export function createEmptyBlogPost(layout = 'title_text') {
   };
 }
 
-export function normalizeBlogPost(item = {}) {
+export function normalizeBlogPost(item = {}, index = 0) {
   return {
-    id: normalizeContentId(item.id, createContentId('post')),
+    id: normalizeContentId(item.id, `post-${index + 1}`),
     layout: normalizeBlogLayout(item.layout || item.tipo || item.blockType),
     title: String(item.title || item.titulo || '').trim(),
     text: String(item.text || item.texto || item.body || '').trim(),
@@ -80,7 +80,7 @@ export function normalizeBlogPost(item = {}) {
 
 export function normalizeBlogPosts(items) {
   if (!Array.isArray(items)) return [];
-  return items.map(normalizeBlogPost);
+  return items.map((item, index) => normalizeBlogPost(item, index));
 }
 
 export function isBlogPostVisible(item = {}) {

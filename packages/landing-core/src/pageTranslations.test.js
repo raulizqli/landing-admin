@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   normalizeEnabledLanguages,
   normalizePageLanguage,
+  normalizePageTranslations,
   resolvePageLanguage,
   updatePageTranslation,
 } from './pageTranslations.js';
+import { hydratePageForm } from './pageModel.js';
 
 describe('normalizePageLanguage', () => {
   it('accepts es and en only', () => {
@@ -46,6 +48,93 @@ describe('resolvePageLanguage', () => {
     const resolved = resolvePageLanguage(page, 'en');
     expect(resolved.aboutTagline).toBe('Hello');
     expect(resolved.activeLanguage).toBe('en');
+  });
+
+  it('fills CMS editor fields from root when default translation bucket is partial', () => {
+    const page = hydratePageForm({
+      name: 'Ana',
+      aboutTagline: 'Frase raíz',
+      aboutBio: 'Bio raíz completa',
+      specialty: 'Psicología clínica',
+      defaultLanguage: 'es',
+      enabledLanguages: ['es', 'en'],
+      translations: {
+        // Partial bucket: common after incremental i18n saves.
+        es: { aboutTagline: 'Frase en translations' },
+        en: {},
+      },
+      heroSlides: [{ id: 'slide-1', title: 'Bienvenida', text: 'Un espacio seguro', showTitle: true, showText: true }],
+      services: [{ id: 'service-1', title: 'Terapia individual', description: 'Sesiones 50 min' }],
+    });
+
+    const editor = resolvePageLanguage(page, 'es', { fallback: false });
+    expect(editor.aboutTagline).toBe('Frase en translations');
+    expect(editor.aboutBio).toBe('Bio raíz completa');
+    expect(editor.specialty).toBe('Psicología clínica');
+    expect(editor.heroSlides[0].title).toBe('Bienvenida');
+    expect(editor.heroSlides[0].text).toBe('Un espacio seguro');
+    expect(editor.services[0].title).toBe('Terapia individual');
+
+    const live = resolvePageLanguage(page, 'es');
+    expect(live.aboutBio).toBe(editor.aboutBio);
+    expect(live.heroSlides[0].title).toBe(editor.heroSlides[0].title);
+  });
+
+  it('rematches collection translations when item ids drift', () => {
+    const page = hydratePageForm({
+      defaultLanguage: 'es',
+      enabledLanguages: ['es'],
+      heroSlides: [{ id: 'slide-new', title: 'Nuevo id', text: 'Texto raíz' }],
+      translations: {
+        es: {
+          heroSlides: {
+            'slide-old': { title: 'Título guardado', text: 'Texto guardado' },
+          },
+        },
+      },
+    });
+
+    const editor = resolvePageLanguage(page, 'es', { fallback: false });
+    expect(editor.heroSlides[0].id).toBe('slide-new');
+    expect(editor.heroSlides[0].title).toBe('Título guardado');
+    expect(editor.heroSlides[0].text).toBe('Texto guardado');
+  });
+
+  it('preserves explicit blank values while editing', () => {
+    const page = hydratePageForm({
+      aboutTagline: 'Raíz',
+      specialty: 'Clínica',
+      defaultLanguage: 'es',
+      enabledLanguages: ['es'],
+      translations: {
+        // Bucket must have some content or normalize rebuilds it from root.
+        es: { specialty: 'Clínica', aboutTagline: '' },
+      },
+    });
+
+    const editor = resolvePageLanguage(page, 'es', { fallback: false });
+    expect(editor.specialty).toBe('Clínica');
+    expect(editor.aboutTagline).toBe('');
+  });
+});
+
+describe('normalizePageTranslations', () => {
+  it('heals missing default-language fields from page root', () => {
+    const healed = normalizePageTranslations(
+      { es: { aboutTagline: 'Hola' }, en: {} },
+      {
+        aboutTagline: 'Hola',
+        aboutBio: 'Bio',
+        specialty: 'Clínica',
+        heroSlides: [{ id: 'slide-1', title: 'Hero', text: 'Sub' }],
+      },
+      'es',
+    );
+
+    expect(healed.es.aboutTagline).toBe('Hola');
+    expect(healed.es.aboutBio).toBe('Bio');
+    expect(healed.es.specialty).toBe('Clínica');
+    expect(healed.es.heroSlides['slide-1'].title).toBe('Hero');
   });
 });
 

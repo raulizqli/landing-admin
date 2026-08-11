@@ -32,18 +32,18 @@ export function createEmptyLocation(overrides = {}) {
   };
 }
 
-export function normalizeLocation(value = {}) {
+export function normalizeLocation(value = {}, index = 0) {
   const source = value && typeof value === 'object' ? value : {};
-  return createEmptyLocation({
-    id: source.id,
-    label: source.label ?? source.name ?? '',
-    address: source.address ?? source.location ?? '',
-    mapsUrl: source.mapsUrl ?? source.locationMapsUrl ?? '',
+  return {
+    id: normalizeContentId(source.id, `location-${index + 1}`),
+    label: String(source.label ?? source.name ?? '').trim(),
+    address: String(source.address ?? source.location ?? '').trim(),
+    mapsUrl: extractMapsInput(source.mapsUrl ?? source.locationMapsUrl ?? ''),
     showMap: source.showMap === true || source.showLocationMap === true,
-    email: source.email ?? '',
-    phone: source.phone ?? '',
+    email: String(source.email ?? '').trim(),
+    phone: String(source.phone ?? '').trim(),
     phoneIsWhatsapp: source.phoneIsWhatsapp === true,
-  });
+  };
 }
 
 function locationHasContent(location) {
@@ -62,7 +62,7 @@ function locationHasContent(location) {
  */
 export function normalizeLocations(list, legacyPage = {}, { keepEmpty = false } = {}) {
   const fromList = Array.isArray(list)
-    ? list.map((item) => normalizeLocation(item))
+    ? list.map((item, index) => normalizeLocation(item, index))
     : [];
   const prepared = keepEmpty ? fromList : fromList.filter(locationHasContent);
 

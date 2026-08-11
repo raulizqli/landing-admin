@@ -26,9 +26,9 @@ export function createEmptyCatalogItem() {
   };
 }
 
-export function normalizeCatalogItem(item = {}) {
+export function normalizeCatalogItem(item = {}, index = 0) {
   return {
-    id: normalizeContentId(item.id, createContentId('catalog')),
+    id: normalizeContentId(item.id, `catalog-${index + 1}`),
     title: item.title || item.titulo || item.name || '',
     description: item.description || item.descripcion || item.text || item.texto || '',
     imageUrl: item.imageUrl || item.imagenUrl || '',
@@ -39,7 +39,7 @@ export function normalizeCatalogItem(item = {}) {
 
 export function normalizeCatalogItems(items) {
   if (!Array.isArray(items)) return [];
-  return items.map(normalizeCatalogItem);
+  return items.map((item, index) => normalizeCatalogItem(item, index));
 }
 
 export function getVisibleCatalogItems(data) {

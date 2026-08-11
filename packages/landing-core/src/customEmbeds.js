@@ -164,8 +164,8 @@ export function createEmptyStepItem(overrides = {}) {
 
 function normalizeFaqItems(items) {
   if (!Array.isArray(items)) return [];
-  return items.map((item) => ({
-    id: normalizeContentId(item?.id, createContentId('faq')),
+  return items.map((item, index) => ({
+    id: normalizeContentId(item?.id, `faq-${index + 1}`),
     question: String(item?.question ?? item?.pregunta ?? '').trim(),
     answer: String(item?.answer ?? item?.respuesta ?? '').trim(),
   }));
@@ -173,8 +173,8 @@ function normalizeFaqItems(items) {
 
 function normalizeStepItems(items) {
   if (!Array.isArray(items)) return [];
-  return items.map((item) => ({
-    id: normalizeContentId(item?.id, createContentId('step')),
+  return items.map((item, index) => ({
+    id: normalizeContentId(item?.id, `step-${index + 1}`),
     title: String(item?.title ?? item?.titulo ?? '').trim(),
     description: String(item?.description ?? item?.descripcion ?? '').trim(),
   }));
@@ -182,7 +182,7 @@ function normalizeStepItems(items) {
 
 function normalizeServiceItems(items) {
   if (!Array.isArray(items)) return [];
-  return items.map(normalizeService);
+  return items.map((item, index) => normalizeService(item, index));
 }
 
 export function getVisibleServiceItems(items) {

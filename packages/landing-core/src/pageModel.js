@@ -290,7 +290,7 @@ export function normalizePageData(data = {}) {
   }
 
   if (Array.isArray(next.heroSlides) && next.heroSlides.length > 0) {
-    next.heroSlides = next.heroSlides.map(normalizeHeroSlide);
+    next.heroSlides = next.heroSlides.map((slide, index) => normalizeHeroSlide(slide, index));
   } else if (next.heroTitle || next.heroSubtitle) {
     next.heroSlides = normalizeHeroSlidesFromLegacy(next);
   } else if (!Array.isArray(next.heroSlides)) {

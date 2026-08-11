@@ -10,9 +10,9 @@ export function createEmptyTestimonial() {
   };
 }
 
-export function normalizeTestimonial(item = {}) {
+export function normalizeTestimonial(item = {}, index = 0) {
   return {
-    id: normalizeContentId(item.id, createContentId('testimonial')),
+    id: normalizeContentId(item.id, `testimonial-${index + 1}`),
     title: item.title || item.titulo || '',
     quote: item.quote || item.frase || item.text || item.texto || '',
     imageUrl: item.imageUrl || item.imagenUrl || item.fotoUrl || '',
@@ -21,7 +21,7 @@ export function normalizeTestimonial(item = {}) {
 
 export function normalizeTestimonials(items) {
   if (!Array.isArray(items)) return [];
-  return items.map(normalizeTestimonial);
+  return items.map((item, index) => normalizeTestimonial(item, index));
 }
 
 export function getVisibleTestimonials(data) {
