@@ -21,8 +21,9 @@ describe('landing-admin smoke', () => {
     expect(typeof repo.createPageInHub).toBe('function');
   });
 
-  it('exposes createCmsPage remote helper', async () => {
+  it('exposes createCmsPage and Meta import remote helpers', async () => {
     const ai = await import('./utils/aiAssistFunctions.js');
     expect(typeof ai.createCmsPageRemote).toBe('function');
+    expect(typeof ai.importMetaBusinessProfileRemote).toBe('function');
   });
 });

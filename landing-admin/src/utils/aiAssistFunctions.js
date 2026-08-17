@@ -141,6 +141,31 @@ export async function createCmsPageRemote(payload) {
   }
 }
 
+export async function importMetaBusinessProfileRemote(payload) {
+  try {
+    await ensureCallableSession(getHubAuth());
+    const callable = httpsCallable(getHubFunctions(), 'importMetaBusinessProfile', { timeout: 60000 });
+    const result = await callable(payload);
+    return result.data;
+  } catch (error) {
+    const code = String(error?.code ?? '');
+    const detail = extractCallableErrorDetail(error);
+    if (code.includes('failed-precondition')) {
+      throw new Error(detail || 'Facebook/Instagram no está configurado o la cuenta no tiene Páginas.');
+    }
+    if (code.includes('not-found')) {
+      throw new Error('Cloud Function importMetaBusinessProfile no desplegada.');
+    }
+    if (code.includes('unauthenticated')) {
+      throw new Error(`${detail || 'Debes iniciar sesión.'}${appCheckDevHint()}`);
+    }
+    if (code.includes('permission-denied') || code.includes('invalid-argument')) {
+      throw new Error(detail || 'Facebook no concedió acceso a esa Página.');
+    }
+    throw new Error(detail || mapAiError(error));
+  }
+}
+
 export async function setAiProviderConfigRemote(payload) {
   try {
     await ensureCallableSession(getHubAuth());

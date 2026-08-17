@@ -431,7 +431,7 @@ export default function App() {
     await performSaveChanges();
   };
 
-  const handleCreatePage = async ({ pageId, name, specialty, vertical }) => {
+  const handleCreatePage = async ({ pageId, name, specialty, vertical, draft = null }) => {
     setCreatingPage(true);
     try {
       const response = await createCmsPageRemote({
@@ -439,6 +439,7 @@ export default function App() {
         name,
         specialty,
         vertical,
+        draft,
       });
       const created = response?.page || { id: pageId, name, specialty, vertical };
       setLandings((current) => {

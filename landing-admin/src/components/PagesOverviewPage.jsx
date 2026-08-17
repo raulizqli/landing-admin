@@ -110,10 +110,10 @@ export default function PagesOverviewPage() {
     navigate(`/app?pageId=${encodeURIComponent(pageId)}`);
   };
 
-  const handleCreatePage = async ({ pageId, name, specialty, vertical }) => {
+  const handleCreatePage = async ({ pageId, name, specialty, vertical, draft = null }) => {
     setCreatingPage(true);
     try {
-      await createCmsPageRemote({ pageId, name, specialty, vertical });
+      await createCmsPageRemote({ pageId, name, specialty, vertical, draft });
       try {
         await refreshProfile?.();
       } catch {

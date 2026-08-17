@@ -61,6 +61,7 @@
     "./marketingSeo": "./src/marketingSeo.js",
     "./siteAccess": "./src/siteAccess.js",
     "./aiAssist": "./src/aiAssist.js",
+    "./metaImport": "./src/metaImport.js",
     "./pageAudit": "./src/pageAudit.js"
   },
   "devDependencies": {

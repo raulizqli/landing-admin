@@ -41,6 +41,7 @@ export {
   getAiAssistUsage,
 } from "./aiAssist.js";
 export { createCmsPage } from "./cmsPages.js";
+export { importMetaBusinessProfile } from "./metaImport.js";
 export {
   recordPageAudit,
   listPageAudits,

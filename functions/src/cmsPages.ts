@@ -83,22 +83,71 @@ async function getCallerProfile(uid: string): Promise<CallerProfile> {
   return { uid, ...(snap.data() ?? {}) } as CallerProfile;
 }
 
+const PAGE_DRAFT_KEYS = new Set([
+  "name",
+  "specialty",
+  "vertical",
+  "navMode",
+  "navIconUrl",
+  "navLogoUrl",
+  "navCtaTarget",
+  "navCtaLink",
+  "heroSectionEnabled",
+  "heroSlides",
+  "heroTitle",
+  "heroSubtitle",
+  "aboutSectionEnabled",
+  "aboutTagline",
+  "aboutBio",
+  "servicesSectionEnabled",
+  "servicesSectionTitle",
+  "servicesSectionText",
+  "services",
+  "gallerySectionEnabled",
+  "galleryItems",
+  "contactSectionEnabled",
+  "location",
+  "locationMapsUrl",
+  "showLocationMap",
+  "email",
+  "phone",
+  "phoneIsWhatsapp",
+  "socialSectionEnabled",
+  "instagram",
+  "whatsapp",
+  "facebook",
+  "seo",
+]);
+
+function sanitizePageDraft(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object") return {};
+  const source = raw as Record<string, unknown>;
+  const next: Record<string, unknown> = {};
+  PAGE_DRAFT_KEYS.forEach((key) => {
+    if (source[key] !== undefined) next[key] = source[key];
+  });
+  return next;
+}
+
 function buildInitialPageDoc(input: {
   name: string;
   specialty: string;
   vertical: string;
+  draft?: Record<string, unknown>;
 }) {
   const now = new Date().toISOString();
+  const draft = sanitizePageDraft(input.draft);
   return {
+    ...draft,
     name: input.name,
-    specialty: input.specialty,
+    specialty: input.specialty || String(draft.specialty ?? ""),
     vertical: input.vertical,
     useExternalFirebase: false,
-    heroSectionEnabled: true,
-    aboutSectionEnabled: true,
-    servicesSectionEnabled: false,
+    heroSectionEnabled: draft.heroSectionEnabled !== false,
+    aboutSectionEnabled: draft.aboutSectionEnabled !== false,
+    servicesSectionEnabled: Boolean(draft.servicesSectionEnabled),
     catalogSectionEnabled: false,
-    gallerySectionEnabled: false,
+    gallerySectionEnabled: Boolean(draft.gallerySectionEnabled),
     videoSectionEnabled: false,
     testimonialsEnabled: false,
     blogSectionEnabled: false,
@@ -133,6 +182,7 @@ export const createCmsPage = onCall(
     const name = String(request.data?.name ?? "").trim();
     const specialty = String(request.data?.specialty ?? "").trim();
     const vertical = normalizeVertical(request.data?.vertical);
+    const draft = sanitizePageDraft(request.data?.draft);
 
     if (!isValidPageId(pageId)) {
       throw new HttpsError(
@@ -210,7 +260,7 @@ export const createCmsPage = onCall(
         }
       }
 
-      const initial = buildInitialPageDoc({ name, specialty, vertical });
+      const initial = buildInitialPageDoc({ name, specialty, vertical, draft });
       tx.set(pageRef, initial);
 
       if (accountSnap.exists) {

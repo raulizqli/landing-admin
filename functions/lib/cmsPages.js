@@ -69,28 +69,57 @@ async function getCallerProfile(uid) {
     }
     return Object.assign({ uid }, ((_a = snap.data()) !== null && _a !== void 0 ? _a : {}));
 }
+const PAGE_DRAFT_KEYS = new Set([
+    "name",
+    "specialty",
+    "vertical",
+    "navMode",
+    "navIconUrl",
+    "navLogoUrl",
+    "navCtaTarget",
+    "navCtaLink",
+    "heroSectionEnabled",
+    "heroSlides",
+    "heroTitle",
+    "heroSubtitle",
+    "aboutSectionEnabled",
+    "aboutTagline",
+    "aboutBio",
+    "servicesSectionEnabled",
+    "servicesSectionTitle",
+    "servicesSectionText",
+    "services",
+    "gallerySectionEnabled",
+    "galleryItems",
+    "contactSectionEnabled",
+    "location",
+    "locationMapsUrl",
+    "showLocationMap",
+    "email",
+    "phone",
+    "phoneIsWhatsapp",
+    "socialSectionEnabled",
+    "instagram",
+    "whatsapp",
+    "facebook",
+    "seo",
+]);
+function sanitizePageDraft(raw) {
+    if (!raw || typeof raw !== "object")
+        return {};
+    const source = raw;
+    const next = {};
+    PAGE_DRAFT_KEYS.forEach((key) => {
+        if (source[key] !== undefined)
+            next[key] = source[key];
+    });
+    return next;
+}
 function buildInitialPageDoc(input) {
+    var _a;
     const now = new Date().toISOString();
-    return {
-        name: input.name,
-        specialty: input.specialty,
-        vertical: input.vertical,
-        useExternalFirebase: false,
-        heroSectionEnabled: true,
-        aboutSectionEnabled: true,
-        servicesSectionEnabled: false,
-        catalogSectionEnabled: false,
-        gallerySectionEnabled: false,
-        videoSectionEnabled: false,
-        testimonialsEnabled: false,
-        blogSectionEnabled: false,
-        contactSectionEnabled: true,
-        socialSectionEnabled: true,
-        footerSectionEnabled: true,
-        preHeroEnabled: false,
-        createdAt: now,
-        updatedAt: now,
-    };
+    const draft = sanitizePageDraft(input.draft);
+    return Object.assign(Object.assign({}, draft), { name: input.name, specialty: input.specialty || String((_a = draft.specialty) !== null && _a !== void 0 ? _a : ""), vertical: input.vertical, useExternalFirebase: false, heroSectionEnabled: draft.heroSectionEnabled !== false, aboutSectionEnabled: draft.aboutSectionEnabled !== false, servicesSectionEnabled: Boolean(draft.servicesSectionEnabled), catalogSectionEnabled: false, gallerySectionEnabled: Boolean(draft.gallerySectionEnabled), videoSectionEnabled: false, testimonialsEnabled: false, blogSectionEnabled: false, contactSectionEnabled: true, socialSectionEnabled: true, footerSectionEnabled: true, preHeroEnabled: false, createdAt: now, updatedAt: now });
 }
 const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
 /**
@@ -98,7 +127,7 @@ const callableOptions = (0, callableOptions_js_1.sensitiveCallableOptions)();
  * Root: unrestricted. Pro/Agency account owners: up to pageLimit.
  */
 exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -110,13 +139,14 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
     const name = String((_e = (_d = request.data) === null || _d === void 0 ? void 0 : _d.name) !== null && _e !== void 0 ? _e : "").trim();
     const specialty = String((_g = (_f = request.data) === null || _f === void 0 ? void 0 : _f.specialty) !== null && _g !== void 0 ? _g : "").trim();
     const vertical = normalizeVertical((_h = request.data) === null || _h === void 0 ? void 0 : _h.vertical);
+    const draft = sanitizePageDraft((_j = request.data) === null || _j === void 0 ? void 0 : _j.draft);
     if (!isValidPageId(pageId)) {
         throw new https_1.HttpsError("invalid-argument", "Usa un ID con minúsculas, números y guiones (ej. maria-garcia).");
     }
     if (!name) {
         throw new https_1.HttpsError("invalid-argument", "El nombre es obligatorio.");
     }
-    const accountId = String((_j = profile.accountId) !== null && _j !== void 0 ? _j : uid).trim();
+    const accountId = String((_k = profile.accountId) !== null && _k !== void 0 ? _k : uid).trim();
     const db = (0, firestore_1.getFirestore)();
     const pageRef = db.collection(PAGES_COLLECTION).doc(pageId);
     const accountRef = db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId);
@@ -162,7 +192,7 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
                 return;
             }
         }
-        const initial = buildInitialPageDoc({ name, specialty, vertical });
+        const initial = buildInitialPageDoc({ name, specialty, vertical, draft });
         tx.set(pageRef, initial);
         if (accountSnap.exists) {
             tx.set(accountRef, {
@@ -191,15 +221,15 @@ exports.createCmsPage = (0, https_1.onCall)(callableOptions, async (request) => 
         throw denial;
     }
     const createdSnap = await pageRef.get();
-    const pageData = ((_k = createdSnap.data()) !== null && _k !== void 0 ? _k : {});
+    const pageData = ((_l = createdSnap.data()) !== null && _l !== void 0 ? _l : {});
     try {
         await (0, cmsInbox_js_1.writePageAuditAndNotify)({
             pageId,
             actor: {
                 uid,
-                role: String((_l = profile.role) !== null && _l !== void 0 ? _l : ""),
-                email: String((_m = profile.email) !== null && _m !== void 0 ? _m : ""),
-                displayName: String((_o = profile.displayName) !== null && _o !== void 0 ? _o : ""),
+                role: String((_m = profile.role) !== null && _m !== void 0 ? _m : ""),
+                email: String((_o = profile.email) !== null && _o !== void 0 ? _o : ""),
+                displayName: String((_p = profile.displayName) !== null && _p !== void 0 ? _p : ""),
             },
             before: {},
             after: pageData,
