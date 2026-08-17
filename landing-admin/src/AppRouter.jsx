@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App.jsx';
 import InboxPage from './components/InboxPage.jsx';
+import LegalPublicPage from './components/LegalPublicPage.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import MirrorPreviewFrame from './components/MirrorPreviewFrame.jsx';
 import PagesOverviewPage from './components/PagesOverviewPage.jsx';
@@ -88,6 +89,10 @@ export default function AppRouter() {
       <Routes>
         <Route path="/" element={<RootRoute />} />
         <Route path="/login" element={<LoginRoute />} />
+        {/* Public legal docs: never wrap with RequireAuth. Direct visits also skip Auth in main.jsx. */}
+        <Route path="/privacy" element={<LegalPublicPage kind="privacy" />} />
+        <Route path="/terms" element={<LegalPublicPage kind="terms" />} />
+        <Route path="/data-deletion" element={<LegalPublicPage kind="dataDeletion" />} />
         <Route
           path="/app"
           element={(

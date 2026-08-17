@@ -81,6 +81,15 @@ export default {
     errorRejected: 'Tu solicitud de acceso fue rechazada. Contacta al administrador si crees que es un error.',
     errorDemo: 'Las cuentas demo solo pueden usarse en desarrollo o stage, no en producción.',
   },
+  legal: {
+    navAria: 'Documentos legales de TapSite',
+    privacy: 'Política de privacidad',
+    terms: 'Condiciones de servicio',
+    dataDeletion: 'Eliminación de la app',
+    backToLogin: 'Volver al inicio de sesión',
+    updated: 'Última actualización: {date}',
+    contactLabel: 'Contacto:',
+  },
   shell: {
     title: 'TapSite',
     subtitle: 'Vista previa integrada',

@@ -81,6 +81,15 @@ export default {
     errorRejected: 'Your access request was rejected. Contact an administrator if you think this is a mistake.',
     errorDemo: 'Demo accounts can only sign in on development or stage, not production.',
   },
+  legal: {
+    navAria: 'TapSite legal documents',
+    privacy: 'Privacy policy',
+    terms: 'Terms of service',
+    dataDeletion: 'App deletion',
+    backToLogin: 'Back to sign in',
+    updated: 'Last updated: {date}',
+    contactLabel: 'Contact:',
+  },
   shell: {
     title: 'TapSite',
     subtitle: 'Integrated live preview',

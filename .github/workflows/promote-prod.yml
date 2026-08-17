@@ -59,6 +59,7 @@ jobs:
           VITE_APP_ENV: prod
           VITE_GOOGLE_ADS_CLIENT: ${{ secrets.VITE_GOOGLE_ADS_CLIENT }}
           VITE_GOOGLE_ADS_SLOT: ${{ secrets.VITE_GOOGLE_ADS_SLOT_ADMIN }}
+          VITE_FACEBOOK_APP_ID: ${{ secrets.VITE_FACEBOOK_APP_ID || '1613320007179076' }}
 
       - name: Build template
         run: npm run build:template

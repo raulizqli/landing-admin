@@ -59,6 +59,7 @@ jobs:
           VITE_MARKETING_URL: https://us.leftsidedev.site/?pageId=leftsidedev
           VITE_CORPORATE_SITE_URL: ${{ vars.VITE_CORPORATE_SITE_URL }}
           VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
+          VITE_FACEBOOK_APP_ID: ${{ secrets.VITE_FACEBOOK_APP_ID || '1613320007179076' }}
 
       - name: Build template
         run: npm run build:template

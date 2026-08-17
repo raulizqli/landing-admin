@@ -40,6 +40,7 @@ Archivo: `landing-admin/.env.local`
 | `VITE_APP_CHECK_DEBUG_TOKEN` | Dev | Token debug registrado en App Check |
 | `VITE_FUNCTIONS_EMULATOR_HOST` | No | Functions Emulator, por ejemplo `127.0.0.1:5001` |
 | `VITE_BILLING_SALES_EMAIL` | No | Contacto comercial para Enterprise |
+| `VITE_FACEBOOK_APP_ID` | Import Meta | App ID público (mismo valor que `META_APP_ID` en Functions) |
 
 Ejemplo mínimo:
 

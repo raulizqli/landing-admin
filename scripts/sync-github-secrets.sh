@@ -64,6 +64,10 @@ ADS_SLOT="$(get_env_from "$TEMPLATE_PROD_ENV" VITE_GOOGLE_ADS_SLOT)"
 # Admin CMS AdSense slot (free-tier bar + save/publish gate) — distinct from landings
 ADMIN_ADS_CLIENT="$(get_env_from "$ADMIN_PROD_ENV" VITE_GOOGLE_ADS_CLIENT)"
 ADMIN_ADS_SLOT="$(get_env_from "$ADMIN_PROD_ENV" VITE_GOOGLE_ADS_SLOT)"
+FACEBOOK_APP_ID="$(get_env_from "$ADMIN_PROD_ENV" VITE_FACEBOOK_APP_ID)"
+if [[ -z "$FACEBOOK_APP_ID" ]]; then
+  FACEBOOK_APP_ID="$(get_env VITE_FACEBOOK_APP_ID)"
+fi
 if [[ -z "$ADS_CLIENT" && -n "$ADMIN_ADS_CLIENT" ]]; then
   ADS_CLIENT="$ADMIN_ADS_CLIENT"
 fi
@@ -86,6 +90,7 @@ set_secret VITE_PAGINA_ID "$PAGINA_ID"
 set_secret VITE_GOOGLE_ADS_CLIENT "$ADS_CLIENT"
 set_secret VITE_GOOGLE_ADS_SLOT "$ADS_SLOT"
 set_secret VITE_GOOGLE_ADS_SLOT_ADMIN "$ADMIN_ADS_SLOT"
+set_secret VITE_FACEBOOK_APP_ID "$FACEBOOK_APP_ID"
 set_secret VITE_ADMIN_PUBLIC_URL "$ADMIN_PUBLIC_URL"
 set_secret VITE_ADMIN_ORIGIN "$ADMIN_ORIGIN"
 

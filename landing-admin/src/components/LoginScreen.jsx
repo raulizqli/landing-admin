@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LanguageSwitcher, useLocale } from '../i18n/LocaleContext';
+import { PlatformLegalLinks } from './LegalPublicPage';
 import { getRootPublicUrl, isExternalPublicUrl } from '../utils/marketingUrl';
 import { isValidEmail, isValidMxUsPhone } from '../utils/contactValidation';
 import { requestCmsAccess } from '../utils/userFunctions';
@@ -310,6 +311,10 @@ export default function LoginScreen() {
             </button>
           )}
         </form>
+        <PlatformLegalLinks
+          className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-[#101820]/55"
+          linkClassName="hover:text-[#40B850] hover:underline underline-offset-2"
+        />
         </div>
       </div>
     </div>

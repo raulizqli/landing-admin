@@ -8,6 +8,7 @@ import {
 } from '@raulizqli/landing-core/verticals';
 import { importMetaBusinessProfileRemote } from '../utils/aiAssistFunctions';
 import { isFacebookLoginConfigured, loginWithFacebookPages } from '../utils/facebookLogin';
+import { PLATFORM_LEGAL_PATHS } from '../utils/platformLegal';
 
 export default function CreatePageModal({
   open,
@@ -181,6 +182,21 @@ export default function CreatePageModal({
               <p className="mt-1 text-[11px] leading-relaxed text-gray-600">
                 El dueño de la Página autoriza el acceso. No pedimos contraseña.
                 Instagram debe ser cuenta profesional vinculada a esa Página.
+              </p>
+              <p className="mt-2 text-[10px] leading-relaxed text-gray-500">
+                Al conectar aceptas la{' '}
+                <a href={PLATFORM_LEGAL_PATHS.privacy} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-[#1877F2]">
+                  política de privacidad
+                </a>
+                {', '}
+                <a href={PLATFORM_LEGAL_PATHS.terms} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-[#1877F2]">
+                  condiciones de servicio
+                </a>
+                {' '}y la{' '}
+                <a href={PLATFORM_LEGAL_PATHS.dataDeletion} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-[#1877F2]">
+                  eliminación de datos
+                </a>
+                .
               </p>
             </div>
             <button

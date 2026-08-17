@@ -95,6 +95,7 @@ jobs:
           VITE_ADMIN_ORIGIN: ${{ vars.VITE_ADMIN_ORIGIN }}
           VITE_BOOTSTRAP_ROOT_EMAIL: ${{ secrets.VITE_BOOTSTRAP_ROOT_EMAIL }}
           VITE_APP_ENV: stage
+          VITE_FACEBOOK_APP_ID: ${{ secrets.VITE_FACEBOOK_APP_ID || '1613320007179076' }}
 
       - name: Build template (staging mode)
         run: npm run build:template:staging

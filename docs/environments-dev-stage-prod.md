@@ -150,6 +150,7 @@ functions/.env                      → loaded for the project you deploy (gitig
 | `VITE_APP_CHECK_DEBUG_TOKEN` | Yes | No | No |
 | `VITE_FUNCTIONS_EMULATOR_HOST` | `127.0.0.1:5001` when emulating | empty | empty |
 | `VITE_BILLING_SALES_EMAIL` | noop | QA inbox | Real sales |
+| `VITE_FACEBOOK_APP_ID` | Same public App ID | Same public App ID | Same public App ID |
 
 ### Template
 
@@ -169,6 +170,8 @@ functions/.env                      → loaded for the project you deploy (gitig
 | `MERCADOPAGO_ACCESS_TOKEN` | TEST- | TEST- | APP_USR- live |
 | `AI_LITE_PROVIDER` / `OLLAMA_BASE_URL` | local Ollama / mock | Stage Ollama or Gemini free | Hub Ollama + fallbacks |
 | `OPENAI_API_KEY` / `GEMINI_API_KEY` | optional | low-quota | production quotas |
+| `META_APP_ID` | Same public App ID | Same public App ID | Same public App ID |
+| `META_APP_SECRET` | Never in client | Never in client | Never in client |
 | Deploy hooks / GitHub token | optional | Stage hooks | Prod hooks |
 
 Stripe webhooks: **one endpoint per env**  
