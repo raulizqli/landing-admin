@@ -37,6 +37,16 @@ describe('getAccountLocationLimit', () => {
   });
 });
 
+describe('metaImport entitlement', () => {
+  it('unlocks Facebook/Instagram import from Pro onward', () => {
+    expect(accountHasFeature({ plan: 'starter', status: 'active' }, 'metaImport')).toBe(false);
+    expect(accountHasFeature({ plan: 'pro', status: 'active' }, 'metaImport')).toBe(true);
+    expect(accountHasFeature({ plan: 'agency', status: 'active' }, 'metaImport')).toBe(true);
+    expect(accountHasFeature({ plan: 'enterprise', status: 'active' }, 'metaImport')).toBe(true);
+    expect(accountHasFeature({ plan: 'pro', status: 'past_due' }, 'metaImport')).toBe(false);
+  });
+});
+
 describe('hostingDeploy entitlement', () => {
   it('unlocks hosting from Pro onward', () => {
     expect(accountHasFeature({ plan: 'starter', status: 'active' }, 'hostingDeploy')).toBe(false);

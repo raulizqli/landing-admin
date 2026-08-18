@@ -226,7 +226,7 @@ function PreHeroEmbedSection({ embed }) {
         className="border-y border-[#2A342D]/10 custom-embed-section"
         data-embed-id={embed.id}
         data-section-type="pre_hero"
-        aria-label={embed.label || title || 'Pre-hero'}
+        aria-label={embed.label || title || 'Sección principal'}
       >
         <img
           src={imageUrl}
@@ -277,7 +277,7 @@ function PreHeroEmbedSection({ embed }) {
       className="border-y border-[#2A342D]/10 custom-embed-section"
       data-embed-id={embed.id}
       data-section-type="pre_hero"
-      aria-label={embed.label || title || 'Pre-hero'}
+      aria-label={embed.label || title || 'Sección principal'}
     >
       <div className="max-w-5xl mx-auto px-5 py-10 sm:py-14">
         <div

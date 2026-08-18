@@ -43,6 +43,23 @@ import { normalizeSiteAccess } from './siteAccess.js';
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
 
+export const EMPTY_META_SOURCE = {
+  facebookPageId: '',
+  facebookName: '',
+  instagram: '',
+  importedAt: '',
+};
+
+export function normalizeMetaSource(raw) {
+  if (!raw || typeof raw !== 'object') return { ...EMPTY_META_SOURCE };
+  return {
+    facebookPageId: String(raw.facebookPageId ?? '').trim(),
+    facebookName: String(raw.facebookName ?? '').trim(),
+    instagram: String(raw.instagram ?? '').trim(),
+    importedAt: String(raw.importedAt ?? '').trim(),
+  };
+}
+
 export const EMPTY_PAGE = {
   name: '',
   specialty: '',
@@ -135,6 +152,7 @@ export const EMPTY_PAGE = {
   instagram: '',
   whatsapp: '',
   facebook: '',
+  metaSource: { ...EMPTY_META_SOURCE },
   linkedin: '',
   doctoralia: '',
   tiktok: '',
@@ -336,6 +354,7 @@ export function normalizePageData(data = {}) {
   next.contactSectionEnabled = next.contactSectionEnabled !== false;
   next.contactShowTitle = next.contactShowTitle !== false;
   next.contactShowSubtitle = next.contactShowSubtitle !== false;
+  next.metaSource = normalizeMetaSource(next.metaSource);
   next.socialSectionEnabled = next.socialSectionEnabled !== false;
   next.footerSectionEnabled = next.footerSectionEnabled !== false;
   Object.assign(next, syncLegacyLocationFields(next));

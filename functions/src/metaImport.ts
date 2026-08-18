@@ -5,7 +5,17 @@
  * Mapper shape matches packages/landing-core/src/metaImport.js — keep in sync.
  */
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { getFirestore } from "firebase-admin/firestore";
+import { initializeApp, getApps } from "firebase-admin/app";
 import { sensitiveCallableOptions } from "./callableOptions.js";
+
+if (getApps().length === 0) {
+  initializeApp();
+}
+
+const USERS_COLLECTION = "users";
+const BILLING_ACCOUNTS_COLLECTION = "billingAccounts";
+const META_IMPORT_PLANS = new Set(["pro", "agency", "enterprise"]);
 
 const GRAPH_VERSION = String(process.env.META_GRAPH_VERSION ?? "v21.0").trim() || "v21.0";
 const PAGE_FIELDS = [
@@ -30,6 +40,37 @@ const ACCOUNT_FIELDS = "id,name,category,picture,instagram_business_account,acce
 const IG_FIELDS = "id,username,name,biography,website,profile_picture_url,media.limit(8){caption,media_url,media_type,permalink}";
 
 const callableOptions = sensitiveCallableOptions({ timeoutSeconds: 60 });
+
+function normalizePlanId(value: unknown): string {
+  const id = String(value ?? "").trim().toLowerCase();
+  return META_IMPORT_PLANS.has(id) || id === "starter" ? id : "starter";
+}
+
+function isActiveStatus(status: unknown): boolean {
+  const value = String(status ?? "").trim().toLowerCase();
+  return value === "active" || value === "trialing";
+}
+
+async function assertMetaImportEntitlement(uid: string) {
+  const profileSnap = await getFirestore().collection(USERS_COLLECTION).doc(uid).get();
+  if (!profileSnap.exists) {
+    throw new HttpsError("permission-denied", "Perfil de usuario no encontrado.");
+  }
+  const profile = profileSnap.data() ?? {};
+  const role = String(profile.role ?? "").trim().toLowerCase();
+  if (role === "root") return;
+
+  const accountId = String(profile.accountId ?? uid).trim();
+  const accountSnap = await getFirestore().collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId).get();
+  const account = accountSnap.exists ? (accountSnap.data() ?? {}) : {};
+  const planId = normalizePlanId(account.plan);
+  if (!isActiveStatus(account.status) || !META_IMPORT_PLANS.has(planId)) {
+    throw new HttpsError(
+      "permission-denied",
+      "Conectar Facebook e Instagram requiere plan Pro o superior.",
+    );
+  }
+}
 
 function requireMetaAppConfig() {
   const appId = String(process.env.META_APP_ID ?? "").trim();
@@ -289,6 +330,8 @@ export const importMetaBusinessProfile = onCall(
     if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
+
+    await assertMetaImportEntitlement(request.auth.uid);
 
     const { appId, appSecret } = requireMetaAppConfig();
     const userToken = String(request.data?.userAccessToken ?? "").trim();

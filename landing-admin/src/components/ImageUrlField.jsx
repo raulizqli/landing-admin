@@ -14,6 +14,7 @@ export default function ImageUrlField({
   previewClassName = 'h-16 w-16 object-cover border bg-white rounded',
   previewAlt = 'Vista previa',
   helperText,
+  maxBytes,
   onUpgradePlan,
   upgradeLabel,
 }) {
@@ -39,7 +40,7 @@ export default function ImageUrlField({
     setUploading(true);
 
     try {
-      const url = await uploadPageImage(file, { pageId, folder: uploadFolder, pageData });
+      const url = await uploadPageImage(file, { pageId, folder: uploadFolder, pageData, maxBytes });
       onChange(url);
     } catch (uploadError) {
       console.error(uploadError);

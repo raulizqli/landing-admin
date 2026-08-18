@@ -9,7 +9,7 @@ export default function PreHeroFieldsEditor({ formData, onChange, pageId, canTog
     <div className="space-y-3 pt-2 border-t">
       <div className="flex items-center justify-between gap-3">
         <label className="block text-[11px] font-bold text-gray-400 uppercase">
-          Sección antes del hero
+          Sección principal
         </label>
         {canToggleSection && (
           <label className="flex items-center gap-2 text-xs text-gray-600">
@@ -59,7 +59,7 @@ export default function PreHeroFieldsEditor({ formData, onChange, pageId, canTog
             uploadFolder="pre-hero"
             placeholder="https://ejemplo.com/imagen.jpg"
             previewClassName={splitMode ? 'h-20 w-16 object-cover border bg-white rounded' : 'h-16 max-w-full object-contain border bg-white rounded'}
-            previewAlt="Vista previa pre-hero"
+            previewAlt="Vista previa de la sección principal"
             helperText="Pega una URL o sube la imagen."
           />
 
@@ -117,7 +117,7 @@ export default function PreHeroFieldsEditor({ formData, onChange, pageId, canTog
 
       <SectionBackgroundEditor
         sectionKey="preHero"
-        label="Fondo de la sección pre-hero"
+        label="Fondo de la sección principal"
         formData={formData}
         onChange={onChange}
       />

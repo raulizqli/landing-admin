@@ -4,7 +4,8 @@ import { getContentStorageForPage } from './firebaseClients';
 import { STORAGE_PAGES_ROOT, UNKNOWN_PAGE_ID } from './firestorePaths';
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const MAX_BYTES = 5 * 1024 * 1024;
+export const DEFAULT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const HERO_SLIDE_IMAGE_MAX_BYTES = 15 * 1024 * 1024;
 
 function safePageId(pageId) {
   return String(pageId || UNKNOWN_PAGE_ID).replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -28,7 +29,7 @@ function extensionFor(file) {
   }
 }
 
-export async function uploadPageImage(file, { pageId, folder, pageData } = {}) {
+export async function uploadPageImage(file, { pageId, folder, pageData, maxBytes = DEFAULT_IMAGE_MAX_BYTES } = {}) {
   if (!file) {
     throw new Error('No se seleccionó ningún archivo.');
   }
@@ -37,8 +38,9 @@ export async function uploadPageImage(file, { pageId, folder, pageData } = {}) {
     throw new Error('Formato no permitido. Usa JPG, PNG, WEBP o GIF.');
   }
 
-  if (file.size > MAX_BYTES) {
-    throw new Error('La imagen supera el límite de 5 MB.');
+  if (file.size > maxBytes) {
+    const limitMb = Math.round(maxBytes / (1024 * 1024));
+    throw new Error(`La imagen supera el límite de ${limitMb} MB.`);
   }
 
   const ext = extensionFor(file);

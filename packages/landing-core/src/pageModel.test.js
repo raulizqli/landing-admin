@@ -43,6 +43,22 @@ describe('normalizePageData', () => {
     expect(normalized).not.toHaveProperty('nombre');
   });
 
+  it('keeps hero viewport images and fit on existing slides', () => {
+    const normalized = normalizePageData({
+      heroSlides: [{
+        imageUrl: 'https://cdn.example/desktop.jpg',
+        tabletImageUrl: 'https://cdn.example/tablet.jpg',
+        mobileImageUrl: 'https://cdn.example/mobile.jpg',
+        imageFit: 'centred',
+        title: 'Hola',
+      }],
+    });
+    expect(normalized.heroSlides[0].imageUrl).toBe('https://cdn.example/desktop.jpg');
+    expect(normalized.heroSlides[0].tabletImageUrl).toBe('https://cdn.example/tablet.jpg');
+    expect(normalized.heroSlides[0].mobileImageUrl).toBe('https://cdn.example/mobile.jpg');
+    expect(normalized.heroSlides[0].imageFit).toBe('centred');
+  });
+
   it('builds heroSlides from legacy heroTitle/heroSubtitle', () => {
     const normalized = normalizePageData({
       heroTitle: 'Hola',
@@ -74,6 +90,12 @@ describe('hydratePageForm', () => {
     expect(form.heroSlides).toHaveLength(1);
     expect(form.enabledLanguages).toEqual(['es']);
     expect(form.defaultLanguage).toBe('es');
+    expect(form.metaSource).toEqual({
+      facebookPageId: '',
+      facebookName: '',
+      instagram: '',
+      importedAt: '',
+    });
   });
 });
 

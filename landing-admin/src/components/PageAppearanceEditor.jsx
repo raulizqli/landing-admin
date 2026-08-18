@@ -25,7 +25,7 @@ export default function PageAppearanceEditor({ formData, onChange, sections = ['
       <SectionBackgroundEditor
         key="hero"
         sectionKey="hero"
-        label="Fondo del hero (sin imagen/video)"
+        label="Fondo del carrusel (sin imagen/video)"
         formData={formData}
         onChange={onChange}
       />

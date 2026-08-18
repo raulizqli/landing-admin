@@ -13,9 +13,9 @@ import { normalizePreHeroImageSide } from './preHero.js';
 import { createContentId, normalizeContentId } from './contentIds.js';
 
 export const EMBED_PLACEMENTS = [
-  { value: 'before_pre_hero', label: 'Antes del pre-hero' },
-  { value: 'after_pre_hero', label: 'Después del pre-hero' },
-  { value: 'after_hero', label: 'Después del hero / carrusel' },
+  { value: 'before_pre_hero', label: 'Antes de la sección principal' },
+  { value: 'after_pre_hero', label: 'Después de la sección principal' },
+  { value: 'after_hero', label: 'Después del carrusel' },
   { value: 'after_about', label: 'Después de sobre mí' },
   { value: 'after_services', label: 'Después de servicios' },
   { value: 'after_catalog', label: 'Después del catálogo' },
@@ -35,7 +35,7 @@ export const EMBED_PLACEMENTS = [
 export const CUSTOM_SECTION_TYPES = [
   {
     value: 'pre_hero',
-    label: 'Pre-hero',
+    label: 'Sección principal',
     description: 'Bloque imagen + texto (banner o editorial).',
     defaultTitle: '',
     defaultPlacement: 'before_pre_hero',

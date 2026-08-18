@@ -178,6 +178,8 @@ function hasHeroContent(data) {
   if (Array.isArray(data?.heroSlides) && data.heroSlides.length > 0) {
     return data.heroSlides.some((slide) => (
       String(slide.imageUrl ?? slide.imagenUrl ?? '').trim()
+      || String(slide.tabletImageUrl ?? '').trim()
+      || String(slide.mobileImageUrl ?? '').trim()
       || String(slide.videoUrl ?? '').trim()
       || (slide.showTitle && String(slide.title ?? '').trim())
       || (slide.showText && String(slide.text ?? slide.texto ?? '').trim())

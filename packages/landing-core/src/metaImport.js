@@ -3,6 +3,7 @@
  * Keep in sync with functions/src/metaImport.ts (callable uses the same shape).
  */
 
+import { normalizeMetaSource } from './pageModel.js';
 import { normalizeVertical } from './verticals.js';
 
 const CATEGORY_VERTICAL = [
@@ -184,6 +185,41 @@ export function mapMetaGraphToDraft(input = {}) {
       canonicalBaseUrl: '',
     },
   };
+}
+
+/**
+ * Merge a Graph draft into an existing page without wiping unrelated sections
+ * (services, blog, catalog, etc.). Reload keeps the current vertical.
+ */
+export function applyMetaDraftToPage(page = {}, { draft, source, importedAt } = {}) {
+  if (!draft || typeof draft !== 'object') return page;
+  const current = page && typeof page === 'object' ? page : {};
+  const connected = Boolean(String(current.metaSource?.facebookPageId ?? '').trim());
+  const next = { ...current };
+
+  Object.entries(draft).forEach(([key, value]) => {
+    if (value === undefined || key === 'metaSource') return;
+    if (connected && key === 'vertical') return;
+    if (key === 'seo') {
+      next.seo = {
+        ...(current.seo && typeof current.seo === 'object' ? current.seo : {}),
+        ...(value && typeof value === 'object' ? value : {}),
+      };
+      return;
+    }
+    next[key] = value;
+  });
+
+  if (source && typeof source === 'object') {
+    next.metaSource = normalizeMetaSource({
+      facebookPageId: source.facebookPageId,
+      facebookName: source.facebookName,
+      instagram: source.instagram,
+      importedAt: importedAt || new Date().toISOString(),
+    });
+  }
+
+  return next;
 }
 
 export function summarizeMetaPages(accounts = []) {

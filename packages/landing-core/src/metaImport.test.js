@@ -3,6 +3,7 @@ import {
   formatSingleLineAddress,
   inferVerticalFromCategory,
   mapMetaGraphToDraft,
+  applyMetaDraftToPage,
   summarizeMetaPages,
 } from './metaImport.js';
 
@@ -55,6 +56,41 @@ describe('metaImport', () => {
     expect(draft.gallerySectionEnabled).toBe(true);
     expect(draft.heroSlides[0].imageUrl).toBe('https://cdn.example/cover.jpg');
     expect(JSON.stringify(draft)).not.toMatch(/access_token/i);
+  });
+
+  it('merges a Graph draft into an existing page and stores metaSource', () => {
+    const page = applyMetaDraftToPage(
+      {
+        name: 'Old',
+        vertical: 'legal',
+        services: [{ title: 'Keep me' }],
+        seo: { canonicalBaseUrl: 'https://stilette.example' },
+        metaSource: { facebookPageId: '99', facebookName: 'Old', instagram: '', importedAt: '' },
+      },
+      {
+        draft: {
+          name: 'Stilette',
+          vertical: 'beauty',
+          aboutBio: 'Nueva bio',
+          seo: { defaultTitle: 'Stilette | Nail Salon' },
+        },
+        source: { facebookPageId: '123', facebookName: 'Stilette', instagram: 'stilette.beauty' },
+        importedAt: '2026-08-18T12:00:00.000Z',
+      },
+    );
+
+    expect(page.name).toBe('Stilette');
+    expect(page.vertical).toBe('legal');
+    expect(page.aboutBio).toBe('Nueva bio');
+    expect(page.services).toEqual([{ title: 'Keep me' }]);
+    expect(page.seo.canonicalBaseUrl).toBe('https://stilette.example');
+    expect(page.seo.defaultTitle).toBe('Stilette | Nail Salon');
+    expect(page.metaSource).toEqual({
+      facebookPageId: '123',
+      facebookName: 'Stilette',
+      instagram: 'stilette.beauty',
+      importedAt: '2026-08-18T12:00:00.000Z',
+    });
   });
 
   it('summarizes pages without tokens', () => {

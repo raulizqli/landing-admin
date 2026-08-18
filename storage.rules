@@ -36,9 +36,9 @@ service firebase.storage {
           && userData().pageId == pageId);
     }
 
-    // Match landing-admin uploadImage.js allowlist — reject SVG (F10).
+    // Match landing-admin uploadImage.js allowlist (hero slides up to 15 MB) — reject SVG (F10).
     function isAllowedImageUpload() {
-      return request.resource.size < 5 * 1024 * 1024
+      return request.resource.size < 15 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
     }
 

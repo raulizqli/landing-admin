@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   getHeroButtonsOverlayClass,
+  getHeroImageFitClass,
+  hasHeroSlideImage,
+  HERO_IMAGE_MOBILE_MAX_WIDTH,
+  HERO_IMAGE_TABLET_MAX_WIDTH,
+  normalizeHeroButtonSection,
+  normalizeHeroButtonsMode,
   normalizeHeroSlides,
 } from '@raulizqli/landing-core/heroSlides';
 import { resolveHeroVideo } from '@raulizqli/landing-core/heroVideo';
@@ -9,11 +15,38 @@ import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 
+function HeroSlidePicture({ slide }) {
+  const desktop = String(slide.imageUrl ?? '').trim();
+  const tablet = String(slide.tabletImageUrl ?? '').trim();
+  const mobile = String(slide.mobileImageUrl ?? '').trim();
+  const src = desktop || tablet || mobile;
+  if (!src) return null;
+
+  const fitClass = getHeroImageFitClass(slide.imageFit);
+
+  return (
+    <picture>
+      {mobile ? (
+        <source media={`(max-width: ${HERO_IMAGE_MOBILE_MAX_WIDTH}px)`} srcSet={mobile} />
+      ) : null}
+      {tablet ? (
+        <source media={`(max-width: ${HERO_IMAGE_TABLET_MAX_WIDTH}px)`} srcSet={tablet} />
+      ) : null}
+      <img
+        src={src}
+        alt=""
+        decoding="async"
+        className={`absolute inset-0 w-full h-full ${fitClass}`}
+      />
+    </picture>
+  );
+}
+
 function HeroSlideBackground({ slide, isActive, fallbackStyle }) {
-  const imageUrl = String(slide.imageUrl ?? '').trim();
+  const posterUrl = String(slide.imageUrl ?? '').trim();
   const video = resolveHeroVideo(slide.videoUrl);
   const showVideo = isActive && video;
-  const showImage = !showVideo && Boolean(imageUrl);
+  const showImage = !showVideo && hasHeroSlideImage(slide);
 
   if (showVideo) {
     if (video.type === 'file') {
@@ -21,7 +54,7 @@ function HeroSlideBackground({ slide, isActive, fallbackStyle }) {
         <video
           key={slide.videoUrl}
           src={video.videoSrc}
-          poster={imageUrl || undefined}
+          poster={posterUrl || undefined}
           autoPlay
           muted
           loop
@@ -45,10 +78,10 @@ function HeroSlideBackground({ slide, isActive, fallbackStyle }) {
 
   if (showImage) {
     return (
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${imageUrl})` }}
-      />
+      <>
+        <div className="absolute inset-0" style={fallbackStyle} />
+        <HeroSlidePicture slide={slide} />
+      </>
     );
   }
 
@@ -63,38 +96,62 @@ function HeroSlideBackground({ slide, isActive, fallbackStyle }) {
   );
 }
 
-function HeroButtons({ labels, interactive, className = '' }) {
-  const groupClass = `flex flex-col sm:flex-row items-center justify-center gap-3 ${className}`.trim();
+function heroButtonClass(variant = 'solid') {
+  if (variant === 'outline') {
+    return 'text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent';
+  }
+  return 'bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent';
+}
 
+function HeroButton({ href, interactive, onClick, variant = 'solid', children }) {
+  const className = heroButtonClass(variant);
   if (interactive) {
     return (
+      <a href={href} onClick={onClick} className={className}>
+        {children}
+      </a>
+    );
+  }
+  return <span className={className}>{children}</span>;
+}
+
+function HeroButtons({ slide, labels, interactive, className = '' }) {
+  const groupClass = `flex flex-col sm:flex-row items-center justify-center gap-3 ${className}`.trim();
+  const customMode = normalizeHeroButtonsMode(slide?.buttonsMode) === 'custom';
+
+  if (customMode) {
+    const sectionId = normalizeHeroButtonSection(slide?.customButtonSection);
+    const label = String(slide?.customButtonLabel ?? '').trim() || getLabel(labels, 'hero.contact');
+    return (
       <div className={groupClass}>
-        <a
-          href={`#${SECTION_IDS.contact}`}
-          onClick={() => trackCtaClick('contact')}
-          className="bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
+        <HeroButton
+          href={`#${sectionId}`}
+          interactive={interactive}
+          onClick={() => trackCtaClick(`hero_${sectionId}`)}
         >
-          {getLabel(labels, 'hero.contact')}
-        </a>
-        <a
-          href={`#${SECTION_IDS.about}`}
-          onClick={() => trackCtaClick('learn_more')}
-          className="text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
-        >
-          {getLabel(labels, 'hero.learnMore')}
-        </a>
+          {label}
+        </HeroButton>
       </div>
     );
   }
 
   return (
     <div className={groupClass}>
-      <span className="bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
+      <HeroButton
+        href={`#${SECTION_IDS.contact}`}
+        interactive={interactive}
+        onClick={() => trackCtaClick('contact')}
+      >
         {getLabel(labels, 'hero.contact')}
-      </span>
-      <span className="text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40">
+      </HeroButton>
+      <HeroButton
+        href={`#${SECTION_IDS.about}`}
+        interactive={interactive}
+        onClick={() => trackCtaClick('learn_more')}
+        variant="outline"
+      >
         {getLabel(labels, 'hero.learnMore')}
-      </span>
+      </HeroButton>
     </div>
   );
 }
@@ -171,12 +228,12 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
                 )}
 
                 {showButtons && !overlayClass && (
-                  <HeroButtons labels={labels} interactive={interactive} className="mt-8" />
+                  <HeroButtons slide={slide} labels={labels} interactive={interactive} className="mt-8" />
                 )}
               </div>
 
               {showButtons && overlayClass && (
-                <HeroButtons labels={labels} interactive={interactive} className={overlayClass} />
+                <HeroButtons slide={slide} labels={labels} interactive={interactive} className={overlayClass} />
               )}
             </div>
           );

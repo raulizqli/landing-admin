@@ -31,6 +31,7 @@ import { resolvePreviewSectionId } from './utils/sectionAnchors';
 import SiteHostingFieldsEditor from './components/SiteHostingFieldsEditor';
 import UserManagement from './components/UserManagement';
 import CreatePageModal from './components/CreatePageModal';
+import MetaImportPanel from './components/MetaImportPanel';
 import PageStructureAssistSection from './components/PageStructureAssistSection';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
 import BillingPlansPanel from './components/BillingPlansPanel';
@@ -74,21 +75,35 @@ import {
   updatePageTranslation,
 } from '@raulizqli/landing-core/pageTranslations';
 import { isMarketingSite, normalizeMarketingRoutes } from '@raulizqli/landing-core/marketingSite';
+import { applyMetaDraftToPage } from '@raulizqli/landing-core/metaImport';
 import { buildPageAuditSnapshot } from '@raulizqli/landing-core/pageAudit';
 import { syncDomainIndexesRemote } from './utils/domainFunctions';
 const DEMO_PREVIEW_ID = 'preview-demo';
 const SIDEBAR_COLLAPSED_KEY = 'landing-admin:pages-sidebar-collapsed';
+const PREVIEW_HIDDEN_KEY = 'landing-admin:preview-panel-hidden';
 
-function readSidebarCollapsedDefault() {
+function readStoredFlag(key, fallback) {
   try {
-    const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    const stored = window.localStorage.getItem(key);
     if (stored === '0' || stored === 'false') return false;
     if (stored === '1' || stored === 'true') return true;
   } catch {
     // ignore
   }
+  return fallback;
+}
+
+function persistStoredFlag(key, value) {
+  try {
+    window.localStorage.setItem(key, value ? '1' : '0');
+  } catch {
+    // ignore
+  }
+}
+
+function readSidebarCollapsedDefault() {
   // Start minimized so editor/preview get more room (especially single-page users).
-  return true;
+  return readStoredFlag(SIDEBAR_COLLAPSED_KEY, true);
 }
 
 function hydrateForm(landing) {
@@ -126,6 +141,9 @@ export default function App() {
   const [creatingPage, setCreatingPage] = useState(false);
   const [accessError, setAccessError] = useState('');
   const [pagesSidebarCollapsed, setPagesSidebarCollapsed] = useState(readSidebarCollapsedDefault);
+  const [previewPanelHidden, setPreviewPanelHiddenState] = useState(() => (
+    readStoredFlag(PREVIEW_HIDDEN_KEY, false)
+  ));
   const [activeMarketingRouteId, setActiveMarketingRouteId] = useState('');
 
   const accessibleLandings = profile ? filterAccessiblePages(landings, profile) : [];
@@ -134,11 +152,12 @@ export default function App() {
 
   const setSidebarCollapsed = (collapsed) => {
     setPagesSidebarCollapsed(collapsed);
-    try {
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
-    } catch {
-      // ignore
-    }
+    persistStoredFlag(SIDEBAR_COLLAPSED_KEY, collapsed);
+  };
+
+  const setPreviewPanelHidden = (hidden) => {
+    setPreviewPanelHiddenState(hidden);
+    persistStoredFlag(PREVIEW_HIDDEN_KEY, hidden);
   };
 
   useEffect(() => {
@@ -731,7 +750,7 @@ export default function App() {
 
       {/* 2. FORMULARIO */}
       <div className={`min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-6 bg-white border-r border-gray-200 shadow-inner max-lg:!grow max-lg:!shrink max-lg:!basis-0 max-sm:p-3 transition-[flex-grow,flex-basis] duration-500 ease-in-out ${
-        previewDeviceView === 'mobile'
+        previewPanelHidden || previewDeviceView === 'mobile'
           ? 'grow shrink basis-0'
           : 'grow-0 shrink-0 basis-[41.666667%]'
       }`}>
@@ -768,6 +787,16 @@ export default function App() {
                     {t('common.reloadFromCloud')}
                   </button>
                 )}
+                {previewPanelHidden ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewPanelHidden(false)}
+                    title={t('shell.showLivePreview')}
+                    className="hidden lg:inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                  >
+                    {t('shell.showLivePreview')}
+                  </button>
+                ) : null}
                 <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0">
                   {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}
                 </button>
@@ -778,7 +807,6 @@ export default function App() {
               sectionKey="structure-ai"
               title={t('ai.structure.sectionTitle')}
               description={t('ai.structure.sectionDescription')}
-              defaultOpen
               onActivate={activatePreviewSection}
             >
               <PageStructureAssistSection
@@ -789,10 +817,39 @@ export default function App() {
             </EditorSection>
 
             <EditorSection
+              sectionKey="metaImport"
+              fillStatus={getEditorSectionFill('metaImport', editorData)}
+              title="Facebook / Instagram"
+              description="Importa o recarga nombre, fotos y datos públicos de tu Página de Facebook o Instagram profesional."
+              onActivate={activatePreviewSection}
+            >
+              <PlanGate
+                allowed={entitlements.canUseMetaImport}
+                label={upgradeLabel}
+                onUpgrade={openBilling}
+                lockedTitle={t('billing.features.metaImport')}
+                lockedDescription={t('billing.features.metaImportLocked')}
+                lockedBenefits={[
+                  'Importa nombre, fotos y datos públicos de tu Página',
+                  'Recarga cuando cambies algo en Facebook o Instagram',
+                  'Disponible desde el plan Pro',
+                ]}
+              >
+                <MetaImportPanel
+                  connectedSource={editorData.metaSource}
+                  disabled={saving || isDemoPreview || !canEditSelectedPage}
+                  onImported={({ draft, source }) => {
+                    handleEditorChange(applyMetaDraftToPage(editorData, { draft, source }));
+                  }}
+                />
+              </PlanGate>
+            </EditorSection>
+
+            <EditorSection
               sectionKey="identity"
               fillStatus={getEditorSectionFill('identity', editorData)}
               title="Identidad y apariencia"
-              description="Nombre, tipo de negocio, idioma, fondo y textos de respaldo"
+              description="Quién eres en la página: nombre, tipo de negocio, idioma y el estilo visual general."
               onActivate={activatePreviewSection}
             >
               <div className="space-y-2">
@@ -822,8 +879,7 @@ export default function App() {
               sectionKey="marketing-site"
               fillStatus={isMarketingSite(editorData) ? 'complete' : 'empty'}
               title="Marketing Site (Enterprise)"
-              description="Multi-page mode: home, services, contact — configured here, previewed in the mirror"
-              defaultOpen={isMarketingSite(editorData)}
+              description="Sitio de varias páginas (inicio, servicios, contacto). La vista previa muestra cada ruta en el monitor."
               onActivate={activatePreviewSection}
             >
               <MarketingSiteFieldsEditor
@@ -849,7 +905,7 @@ export default function App() {
               sectionKey="nav"
               fillStatus={getEditorSectionFill('nav', editorData)}
               title="Navegación"
-              description="Layout, menú, CTA y colores"
+              description="Barra superior de la landing: logo o foto, menú y el botón de contacto."
               onActivate={activatePreviewSection}
             >
               <NavFieldsEditor
@@ -867,7 +923,7 @@ export default function App() {
                 sectionKey="visibility"
                 fillStatus={getEditorSectionFill('visibility', editorData)}
                 title="Visibilidad de secciones"
-                description="Activa o desactiva bloques (el navbar siempre queda)"
+                description="Activa o desactiva qué bloques se ven en la landing. La barra de navegación siempre queda."
                 onActivate={activatePreviewSection}
               >
                 <SectionVisibilityFieldsEditor formData={editorData} onChange={handleEditorChange} />
@@ -878,8 +934,8 @@ export default function App() {
               <EditorSection
                 sectionKey="preHero"
                 fillStatus={getEditorSectionFill('preHero', editorData)}
-                title="Pre-hero"
-                description="Bloque editorial antes del carrusel"
+                title="Sección principal"
+                description="Primera impresión al entrar: una imagen o foto con título y texto, encima del carrusel."
                 onActivate={activatePreviewSection}
               >
                 <PreHeroFieldsEditor
@@ -896,9 +952,8 @@ export default function App() {
               <EditorSection
                 sectionKey="hero"
                 fillStatus={getEditorSectionFill('hero', editorData)}
-                title="Hero"
-                description="Especialidad, diapositivas, colores, botones — y ✨ LeftSide AI"
-                defaultOpen={false}
+                title="Diapositivas carrusel"
+                description="Carrusel de fotos o videos con texto y botones. Puedes añadir varias diapositivas."
                 onActivate={activatePreviewSection}
               >
                 <HeroSlidesEditor
@@ -917,8 +972,7 @@ export default function App() {
                 sectionKey="about"
                 fillStatus={getEditorSectionFill('about', editorData)}
                 title="Acerca de"
-                description="Título, frase, texto descriptivo, colores — y ✨ LeftSide AI"
-                defaultOpen
+                description="Preséntate: una frase corta y un texto más largo sobre ti o el negocio."
                 onActivate={activatePreviewSection}
               >
                 <AboutFieldsEditor
@@ -935,7 +989,7 @@ export default function App() {
                 sectionKey="services"
                 fillStatus={getEditorSectionFill('services', editorData)}
                 title="Servicios"
-                description="Áreas de atención, colores y etiquetas"
+                description="Lo que ofreces: consultas, tratamientos, paquetes u otros servicios."
                 onActivate={activatePreviewSection}
               >
                 <ServicesFieldsEditor
@@ -957,7 +1011,7 @@ export default function App() {
                 sectionKey="catalog"
                 fillStatus={getEditorSectionFill('catalog', editorData)}
                 title="Catálogo"
-                description="Productos o recursos, colores y etiquetas"
+                description="Productos o recursos con precio o detalle, si vendes o promocionas ítems."
                 onActivate={activatePreviewSection}
               >
                 <CatalogFieldsEditor
@@ -978,7 +1032,7 @@ export default function App() {
                 sectionKey="gallery"
                 fillStatus={getEditorSectionFill('gallery', editorData)}
                 title="Galería"
-                description="Imágenes del espacio, colores y etiquetas"
+                description="Fotos del espacio, trabajos o resultados para mostrar en la landing."
                 onActivate={activatePreviewSection}
               >
                 <GalleryFieldsEditor
@@ -999,7 +1053,7 @@ export default function App() {
                 sectionKey="video"
                 fillStatus={getEditorSectionFill('video', editorData)}
                 title="Video"
-                description="Sección de video y colores"
+                description="Un video de presentación (YouTube, Vimeo o un archivo)."
                 onActivate={activatePreviewSection}
               >
                 <VideoSectionFieldsEditor
@@ -1015,7 +1069,7 @@ export default function App() {
                 sectionKey="testimonials"
                 fillStatus={getEditorSectionFill('testimonials', editorData)}
                 title="Testimonios"
-                description="Citas, colores y etiquetas"
+                description="Opiniones de clientes o pacientes para generar confianza."
                 onActivate={activatePreviewSection}
               >
                 <TestimonialsFieldsEditor
@@ -1029,17 +1083,17 @@ export default function App() {
             )}
 
             {showEditorSection('blogSectionEnabled', false) && (
-              <PlanGate
-                allowed={entitlements.canUseBlog}
-                label={upgradeLabel}
-                onUpgrade={openBilling}
+              <EditorSection
+                sectionKey="blog"
+                fillStatus={getEditorSectionFill('blog', editorData)}
+                title="Blog / noticias"
+                description="Noticias, artículos o novedades que quieras publicar en la página."
+                onActivate={activatePreviewSection}
               >
-                <EditorSection
-                  sectionKey="blog"
-                  fillStatus={getEditorSectionFill('blog', editorData)}
-                  title="Blog / noticias"
-                  description="Entradas con layouts, colores y etiquetas"
-                  onActivate={activatePreviewSection}
+                <PlanGate
+                  allowed={entitlements.canUseBlog}
+                  label={upgradeLabel}
+                  onUpgrade={openBilling}
                 >
                   <BlogFieldsEditor
                     formData={editorData}
@@ -1048,8 +1102,8 @@ export default function App() {
                     canToggleSection={canManageLayout}
                   />
                   <LabelsFieldsEditor key={`labels-blog-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['blog']} showLanguagePicker={false} compact language={editingLanguage} />
-                </EditorSection>
-              </PlanGate>
+                </PlanGate>
+              </EditorSection>
             )}
 
             {showEditorSection('contactSectionEnabled', true) && (
@@ -1057,7 +1111,7 @@ export default function App() {
                 sectionKey="contact"
                 fillStatus={getEditorSectionFill('contact', editorData)}
                 title="Contacto"
-                description="Ubicación, email, teléfono y etiquetas"
+                description="Cómo encontrarte: dirección, mapa, email y teléfono."
                 onActivate={activatePreviewSection}
               >
                 <div className="space-y-3 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
@@ -1100,7 +1154,7 @@ export default function App() {
                 sectionKey="social"
                 fillStatus={getEditorSectionFill('social', editorData)}
                 title="Redes sociales"
-                description="Enlaces, colores y etiquetas"
+                description="Enlaces a Instagram, Facebook, WhatsApp y otras redes."
                 onActivate={activatePreviewSection}
               >
                 <SocialFieldsEditor formData={editorData} onChange={handleEditorChange} />
@@ -1108,18 +1162,18 @@ export default function App() {
               </EditorSection>
             )}
 
-            <PlanGate
-              allowed={entitlements.canUseQrCodes}
-              label={upgradeLabel}
-              onUpgrade={openBilling}
-              lockedTitle={t('billing.features.qrCodes')}
-              lockedDescription="Genera y descarga códigos QR del sitio y redes (Pro: máx. 2 · Agency: ilimitados)."
+            <EditorSection
+              sectionKey="qrCodes"
+              title="Códigos QR"
+              description="Códigos QR del sitio y redes para imprimir o compartir. Solo se ven en el admin."
+              onActivate={activatePreviewSection}
             >
-              <EditorSection
-                sectionKey="qrCodes"
-                title="Códigos QR"
-                description="Sitio público y redes — solo admin"
-                onActivate={activatePreviewSection}
+              <PlanGate
+                allowed={entitlements.canUseQrCodes}
+                label={upgradeLabel}
+                onUpgrade={openBilling}
+                lockedTitle={t('billing.features.qrCodes')}
+                lockedDescription="Genera y descarga códigos QR del sitio y redes (Pro: máx. 2 · Agency: ilimitados)."
               >
                 <QrCodesSection
                   formData={editorData}
@@ -1128,21 +1182,21 @@ export default function App() {
                   qrCodeLimit={entitlements.bypass ? null : entitlements.qrCodeLimit}
                   onUpgrade={openBilling}
                 />
-              </EditorSection>
-            </PlanGate>
+              </PlanGate>
+            </EditorSection>
 
             {(canManageLayout || hasActiveCustomEmbeds) && (
-              <PlanGate
-                allowed={entitlements.canUseCustomEmbeds}
-                label={upgradeLabel}
-                onUpgrade={openBilling}
+              <EditorSection
+                sectionKey="embeds"
+                fillStatus={getEditorSectionFill('embeds', editorData)}
+                title="Secciones personalizadas"
+                description="Bloques extra: preguntas frecuentes, formulario, llamada a la acción o HTML."
+                onActivate={activatePreviewSection}
               >
-                <EditorSection
-                  sectionKey="embeds"
-                  fillStatus={getEditorSectionFill('embeds', editorData)}
-                  title="Secciones personalizadas"
-                  description="FAQ, formulario, CTA, texto, cita o código HTML"
-                  onActivate={activatePreviewSection}
+                <PlanGate
+                  allowed={entitlements.canUseCustomEmbeds}
+                  label={upgradeLabel}
+                  onUpgrade={openBilling}
                 >
                   <CustomEmbedsFieldsEditor
                     formData={editorData}
@@ -1153,15 +1207,15 @@ export default function App() {
                     onUpgradePlan={openBilling}
                     upgradeLabel={upgradeLabel}
                   />
-                </EditorSection>
-              </PlanGate>
+                </PlanGate>
+              </EditorSection>
             )}
 
             <EditorSection
               sectionKey="footer"
               fillStatus={getEditorSectionFill('footer', editorData)}
               title="Hosting, analytics y pie"
-              description="Dominio, deploy, GA4, documentos legales y colores del footer"
+              description="Dominio, publicación del sitio, analítica, textos legales y el pie de página."
               onActivate={activatePreviewSection}
             >
               <PlanGate
@@ -1196,7 +1250,7 @@ export default function App() {
               sectionKey="audit"
               fillStatus={{ filled: true, label: 'Historial' }}
               title="Historial de cambios"
-              description="Auditoría de quién guardó y qué campos cambiaron"
+              description="Quién guardó y qué campos se modificaron. Útil para revisar el trabajo en equipo."
               onActivate={activatePreviewSection}
             >
               <PageAuditSection pageId={selectedId} />
@@ -1227,6 +1281,10 @@ export default function App() {
         activeMarketingRouteId={activeMarketingRouteId}
         deviceView={previewDeviceView}
         onDeviceViewChange={setPreviewDeviceView}
+        hiddenOnDesktop={previewPanelHidden}
+        onHiddenOnDesktopChange={setPreviewPanelHidden}
+        hideLabel={t('shell.hideLivePreview')}
+        showLabel={t('shell.showLivePreview')}
       />
 
       {showUserManagement && (
@@ -1243,6 +1301,7 @@ export default function App() {
         pageLimit={entitlements.bypass ? null : entitlements.pageLimit}
         onClose={() => setShowCreatePage(false)}
         onCreate={handleCreatePage}
+        onUpgradePlan={openBilling}
       />
 
       <BillingPlansPanel open={showBilling} onClose={() => setShowBilling(false)} />

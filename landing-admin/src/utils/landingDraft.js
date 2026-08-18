@@ -51,6 +51,9 @@ export function normalizeLandingDraft(result, fallback = {}) {
     vertical: normalizeVertical(source.vertical || fallback.vertical),
     heroSlides: [{
       imageUrl: '',
+      tabletImageUrl: '',
+      mobileImageUrl: '',
+      imageFit: 'full',
       title: sanitizeAiText(hero.title),
       text: sanitizeAiText(hero.text),
       showTitle: true,

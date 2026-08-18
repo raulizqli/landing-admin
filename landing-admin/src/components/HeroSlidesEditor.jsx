@@ -1,9 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createEmptySlide, HERO_BUTTON_POSITIONS } from '../utils/heroSlides';
+import {
+  createEmptySlide,
+  DEFAULT_HERO_IMAGE_FIT,
+  getHeroImageFitClass,
+  hasHeroSlideImage,
+  HERO_BUTTON_POSITIONS,
+  HERO_BUTTON_SECTIONS,
+  HERO_BUTTONS_MODES,
+  HERO_IMAGE_FITS,
+  HERO_IMAGE_VIEWS,
+  normalizeHeroButtonsMode,
+  normalizeHeroImageFit,
+} from '../utils/heroSlides';
 import ImageUrlField from './ImageUrlField';
 import SectionBackgroundEditor from './SectionBackgroundEditor';
 import AiAssistButton from './AiAssistButton';
 import { useLocale } from '../i18n/LocaleContext';
+import { HERO_SLIDE_IMAGE_MAX_BYTES } from '../utils/uploadImage';
 
 function formatSlideCurrentValue(slide) {
   const title = String(slide?.title ?? '').trim();
@@ -25,8 +38,12 @@ function SlideEditor({
   formData,
   canRemove,
 }) {
+  const [imageView, setImageView] = useState('desktop');
+  const activeView = HERO_IMAGE_VIEWS.find((view) => view.value === imageView) || HERO_IMAGE_VIEWS[0];
+  const imageFit = normalizeHeroImageFit(slide.imageFit, DEFAULT_HERO_IMAGE_FIT);
+  const activeFit = HERO_IMAGE_FITS.find((item) => item.value === imageFit) || HERO_IMAGE_FITS[0];
   const summary = slide.title?.trim()
-    || (slide.imageUrl ? 'Con imagen' : '')
+    || (hasHeroSlideImage(slide) ? 'Con imagen' : '')
     || (slide.videoUrl ? 'Con video' : '')
     || 'Sin contenido';
 
@@ -73,18 +90,73 @@ function SlideEditor({
 
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
-          <ImageUrlField
-            label="Imagen de fondo"
-            value={slide.imageUrl || ''}
-            onChange={(imageUrl) => onChange('imageUrl', imageUrl)}
-            pageId={pageId}
-            pageData={formData}
-            uploadFolder={`hero-slide-${index + 1}`}
-            placeholder="https://ejemplo.com/imagen.jpg"
-            previewClassName="h-14 w-24 object-cover border bg-white rounded"
-            previewAlt={`Vista previa diapositiva ${index + 1}`}
-            helperText="Pega una URL o sube una imagen. Se usa como fondo o como respaldo si hay video."
-          />
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">
+              Visualización de la imagen
+            </label>
+            <div className="grid grid-cols-3 gap-1">
+              {HERO_IMAGE_FITS.map((option) => {
+                const selectedFit = imageFit === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onChange('imageFit', option.value)}
+                    className={`px-2 py-2 rounded-lg border text-[11px] font-semibold ${
+                      selectedFit
+                        ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-gray-400">{activeFit.hint}</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">
+              Imagen por dispositivo
+            </label>
+            <div className="flex gap-1">
+              {HERO_IMAGE_VIEWS.map((view) => {
+                const selectedView = imageView === view.value;
+                const hasImage = Boolean(String(slide[view.field] ?? '').trim());
+                return (
+                  <button
+                    key={view.value}
+                    type="button"
+                    onClick={() => setImageView(view.value)}
+                    className={`flex-1 px-2 py-1.5 rounded-lg border text-[11px] font-semibold ${
+                      selectedView
+                        ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200'
+                    }`}
+                  >
+                    {view.label}
+                    {hasImage ? (
+                      <span className="ml-1 text-[9px] text-emerald-600">●</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <ImageUrlField
+              label={activeView.label}
+              value={slide[activeView.field] || ''}
+              onChange={(url) => onChange(activeView.field, url)}
+              pageId={pageId}
+              pageData={formData}
+              uploadFolder={`hero-slide-${index + 1}-${activeView.value}`}
+              placeholder="https://ejemplo.com/imagen.jpg"
+              previewClassName={`h-20 w-full max-w-[240px] border bg-[#F4F1EA] rounded ${getHeroImageFitClass(imageFit)}`}
+              previewAlt={`Vista previa ${activeView.label.toLowerCase()} diapositiva ${index + 1}`}
+              helperText={`${activeView.hint} Se guarda a resolución original (máx. 15 MB).`}
+              maxBytes={HERO_SLIDE_IMAGE_MAX_BYTES}
+            />
+          </div>
 
           <div className="space-y-2">
             <label className="block text-[10px] font-bold text-gray-400 uppercase">Video (opcional)</label>
@@ -151,23 +223,84 @@ function SlideEditor({
               onChange={(e) => onChange('showButtons', e.target.checked)}
               className="rounded border-gray-300"
             />
-            Mostrar botones (Contactar / Conocer más)
+            Mostrar botones
           </label>
 
           {slide.showButtons !== false && (
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase">Posición de los botones</label>
-              <select
-                value={slide.buttonsPosition || 'center'}
-                onChange={(e) => onChange('buttonsPosition', e.target.value)}
-                className="w-full border p-2.5 text-xs rounded-lg bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
-              >
-                {HERO_BUTTON_POSITIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Tipo de botones</label>
+                <div className="grid grid-cols-2 gap-1">
+                  {HERO_BUTTONS_MODES.map((option) => {
+                    const selectedMode = normalizeHeroButtonsMode(slide.buttonsMode) === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => onChange('buttonsMode', option.value)}
+                        className={`px-2 py-2 rounded-lg border text-[11px] font-semibold ${
+                          selectedMode
+                            ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-gray-400">
+                  {(HERO_BUTTONS_MODES.find((item) => item.value === normalizeHeroButtonsMode(slide.buttonsMode))
+                    || HERO_BUTTONS_MODES[0]).hint}
+                </p>
+              </div>
+
+              {normalizeHeroButtonsMode(slide.buttonsMode) === 'custom' && (
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase">Texto del botón</label>
+                    <input
+                      type="text"
+                      value={slide.customButtonLabel || ''}
+                      onChange={(e) => onChange('customButtonLabel', e.target.value)}
+                      placeholder="Agendar cita"
+                      className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase">Ir a la sección</label>
+                    <select
+                      value={slide.customButtonSection || 'contact'}
+                      onChange={(e) => onChange('customButtonSection', e.target.value)}
+                      className="w-full border p-2.5 text-xs rounded-lg bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                    >
+                      {HERO_BUTTON_SECTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-gray-400">
+                      El botón lleva a esa sección de la misma página.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Posición de los botones</label>
+                <select
+                  value={slide.buttonsPosition || 'center'}
+                  onChange={(e) => onChange('buttonsPosition', e.target.value)}
+                  className="w-full border p-2.5 text-xs rounded-lg bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                >
+                  {HERO_BUTTON_POSITIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -272,7 +405,7 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="block text-[10px] font-bold text-gray-400 uppercase">Especialidad (eyebrow del hero)</label>
+        <label className="block text-[10px] font-bold text-gray-400 uppercase">Especialidad (texto corto sobre el carrusel)</label>
         <input
           type="text"
           value={formData?.specialty || ''}
@@ -296,14 +429,14 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
 
       <SectionBackgroundEditor
         sectionKey="hero"
-        label="Fondo del hero (sin imagen/video)"
+        label="Fondo del carrusel (sin imagen/video)"
         formData={formData}
         onChange={onFormChange}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <label className="block text-[11px] font-bold text-gray-400 uppercase">Carrusel Hero</label>
+          <label className="block text-[11px] font-bold text-gray-400 uppercase">Diapositivas</label>
           <p className="text-[10px] text-gray-400 mt-0.5">
             {t('ai.hero.selectedSlide', { n: selectedSlideIndex + 1 })}
           </p>

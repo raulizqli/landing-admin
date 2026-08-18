@@ -208,7 +208,7 @@ function TypeFields({
           uploadFolder={`custom-pre-hero-${item.id || 'new'}`}
           placeholder="https://ejemplo.com/imagen.jpg"
           previewClassName={splitMode ? 'h-20 w-16 object-cover border bg-white rounded' : 'h-16 max-w-full object-contain border bg-white rounded'}
-          previewAlt="Vista previa pre-hero"
+          previewAlt="Vista previa de la sección principal"
           helperText="Pega una URL o sube la imagen."
         />
 

@@ -28,13 +28,13 @@ export const TOGGLEABLE_PAGE_SECTIONS = [
   {
     flag: 'preHeroEnabled',
     sectionId: SECTION_IDS.preHero,
-    label: 'Pre-hero',
+    label: 'Sección principal',
     defaultEnabled: false,
   },
   {
     flag: 'heroSectionEnabled',
     sectionId: SECTION_IDS.hero,
-    label: 'Hero',
+    label: 'Diapositivas carrusel',
     defaultEnabled: true,
   },
   {

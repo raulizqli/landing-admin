@@ -32,6 +32,8 @@ function countFilledHeroSlides(data) {
   const slides = Array.isArray(data?.heroSlides) ? data.heroSlides : [];
   return slides.filter((slide) => (
     hasText(slide?.imageUrl)
+    || hasText(slide?.tabletImageUrl)
+    || hasText(slide?.mobileImageUrl)
     || hasText(slide?.videoUrl)
     || (slide?.showTitle && hasText(slide?.title))
     || (slide?.showText && hasText(slide?.text))
@@ -160,6 +162,14 @@ export function getEditorSectionFill(sectionKey, data) {
       const count = getSocialLinks(data).length;
       if (count === 0) return empty();
       return filled(count === 1 ? '1 red' : `${count} redes`);
+    }
+
+    case 'metaImport': {
+      const name = String(data?.metaSource?.facebookName ?? '').trim();
+      if (!name && !String(data?.metaSource?.facebookPageId ?? '').trim()) {
+        return empty('Sin conectar');
+      }
+      return filled(truncateLabel(name || 'Página conectada', 32));
     }
 
     case 'embeds': {

@@ -70,6 +70,7 @@ export function useEntitlements() {
       canUseContactMapBeside: has('contactMapBeside'),
       canUseMarketingSite: has('marketingSite'),
       canUseQrCodes: has('qrCodes'),
+      canUseMetaImport: has('metaImport'),
       hasSupport247: has('support247'),
       aiLane,
       canUseAiAssistLite: aiLane === 'lite' || aiLane === 'full',

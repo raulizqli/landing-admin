@@ -33,7 +33,7 @@ const ROOT_TEXT_FIELDS = [
 
 const COLLECTION_SPECS = {
   heroSlides: {
-    fields: ['title', 'text'],
+    fields: ['title', 'text', 'customButtonLabel'],
   },
   services: {
     fields: ['title', 'description', 'listItems'],

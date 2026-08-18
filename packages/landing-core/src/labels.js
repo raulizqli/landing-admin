@@ -125,7 +125,7 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'hero',
-    title: { es: 'Etiquetas del hero', en: 'Hero labels' },
+    title: { es: 'Etiquetas del carrusel', en: 'Carousel labels' },
     keys: [
       'hero.carouselAria',
       'hero.contact',
@@ -142,7 +142,7 @@ export const LABEL_GROUPS = [
   },
   {
     id: 'preHero',
-    title: { es: 'Etiquetas pre-hero', en: 'Pre-hero labels' },
+    title: { es: 'Etiquetas de la sección principal', en: 'Main section labels' },
     keys: ['preHero.ariaLabel'],
   },
   {
@@ -274,7 +274,7 @@ export const LABEL_ADMIN_NAMES = {
     'blog.defaultTitle': 'Título blog (por defecto)',
     'blog.defaultIntro': 'Intro blog (por defecto)',
     'blog.imageAlt': 'Alt imagen blog',
-    'preHero.ariaLabel': 'Aria pre-hero',
+    'preHero.ariaLabel': 'Aria sección principal',
     'footer.rightsReserved': 'Derechos reservados',
     'footer.legalClose': 'Cerrar diálogo legal',
     'footer.poweredBy': 'Powered by',
@@ -329,7 +329,7 @@ export const LABEL_ADMIN_NAMES = {
     'blog.defaultTitle': 'Blog title (default)',
     'blog.defaultIntro': 'Blog intro (default)',
     'blog.imageAlt': 'Blog image alt',
-    'preHero.ariaLabel': 'Pre-hero aria',
+    'preHero.ariaLabel': 'Main section aria',
     'footer.rightsReserved': 'Rights reserved',
     'footer.legalClose': 'Close legal dialog',
     'footer.poweredBy': 'Powered by',

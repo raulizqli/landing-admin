@@ -311,6 +311,7 @@ export default function PagesOverviewPage() {
         creating={creatingPage}
         pageCount={entitlements.pageCount}
         pageLimit={entitlements.bypass ? null : entitlements.pageLimit}
+        onUpgradePlan={() => setShowBilling(true)}
       />
       <BillingPlansPanel open={showBilling} onClose={() => setShowBilling(false)} />
     </div>

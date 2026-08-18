@@ -116,15 +116,35 @@ const PAGE_DRAFT_KEYS = new Set([
   "instagram",
   "whatsapp",
   "facebook",
+  "metaSource",
   "seo",
 ]);
+
+function sanitizeMetaSource(raw: unknown): Record<string, string> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const source = raw as Record<string, unknown>;
+  const facebookPageId = String(source.facebookPageId ?? "").trim();
+  if (!facebookPageId) return undefined;
+  return {
+    facebookPageId,
+    facebookName: String(source.facebookName ?? "").trim(),
+    instagram: String(source.instagram ?? "").trim(),
+    importedAt: String(source.importedAt ?? "").trim(),
+  };
+}
 
 function sanitizePageDraft(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object") return {};
   const source = raw as Record<string, unknown>;
   const next: Record<string, unknown> = {};
   PAGE_DRAFT_KEYS.forEach((key) => {
-    if (source[key] !== undefined) next[key] = source[key];
+    if (source[key] === undefined) return;
+    if (key === "metaSource") {
+      const cleaned = sanitizeMetaSource(source[key]);
+      if (cleaned) next[key] = cleaned;
+      return;
+    }
+    next[key] = source[key];
   });
   return next;
 }

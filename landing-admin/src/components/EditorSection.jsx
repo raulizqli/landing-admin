@@ -55,7 +55,7 @@ export default function EditorSection({
             )}
           </div>
           {description && (
-            <p className={`text-[10px] text-gray-400 mt-0.5 truncate ${!open && showFillBadge ? 'sr-only' : ''}`}>
+            <p className="text-[10px] text-gray-500 mt-0.5 leading-snug line-clamp-2 font-normal normal-case tracking-normal">
               {description}
             </p>
           )}

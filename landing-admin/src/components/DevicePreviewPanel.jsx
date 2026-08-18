@@ -74,6 +74,10 @@ export default function DevicePreviewPanel({
   activeMarketingRouteId,
   deviceView = 'desktop',
   onDeviceViewChange,
+  hiddenOnDesktop = false,
+  onHiddenOnDesktopChange,
+  hideLabel = 'Ocultar vista previa',
+  showLabel = 'Mostrar vista previa',
 }) {
   const [previewSource, setPreviewSource] = useState('mirror');
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
@@ -82,6 +86,7 @@ export default function DevicePreviewPanel({
   const layoutTimerRef = useRef(null);
   const isMobile = deviceView === 'mobile';
   const compactViewport = useCompactViewport();
+  const collapsedOnDesktop = hiddenOnDesktop && !compactViewport;
   const { hostRef: phoneHostRef, scale: phoneScale } = useScaledPhoneFrame(
     isMobile,
     compactViewport,
@@ -203,6 +208,21 @@ export default function DevicePreviewPanel({
     );
   })();
 
+  if (collapsedOnDesktop) {
+    return (
+      <button
+        type="button"
+        onClick={() => onHiddenOnDesktopChange?.(false)}
+        className="hidden lg:flex h-full w-6 shrink-0 items-center justify-center border-l border-indigo-500/40 bg-[#E8E6E1] text-indigo-700 hover:bg-indigo-100 hover:text-indigo-900 transition"
+        title={showLabel}
+        aria-label={showLabel}
+        aria-expanded={false}
+      >
+        <span className="text-xs font-bold" aria-hidden>«</span>
+      </button>
+    );
+  }
+
   return (
     <div
       style={!compactViewport
@@ -257,15 +277,26 @@ export default function DevicePreviewPanel({
           >
             Monitor de Aspecto en Vivo
           </span>
-          <button
-            type="button"
-            onClick={() => window.alert(PREVIEW_SOURCE_HELP)}
-            className="h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white text-[10px] font-bold text-gray-500 hover:bg-gray-50"
-            title="¿Por qué existen Espejo y Local?"
-            aria-label="Explicar las vistas Espejo y Local"
-          >
-            ?
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => window.alert(PREVIEW_SOURCE_HELP)}
+              className="h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white text-[10px] font-bold text-gray-500 hover:bg-gray-50"
+              title="¿Por qué existen Espejo y Local?"
+              aria-label="Explicar las vistas Espejo y Local"
+            >
+              ?
+            </button>
+            <button
+              type="button"
+              onClick={() => onHiddenOnDesktopChange?.(true)}
+              className="hidden lg:inline-flex h-5 items-center rounded-md border border-gray-300 bg-white px-1.5 text-[10px] font-semibold text-gray-500 hover:bg-gray-50"
+              title={hideLabel}
+              aria-label={hideLabel}
+            >
+              {hideLabel}
+            </button>
+          </div>
         </div>
         <div className={`flex ${isMobile ? 'flex-wrap gap-1.5' : 'items-center gap-2'}`}>
           <div className={`bg-white p-1 rounded-lg shadow-sm border font-medium space-x-1 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}>
