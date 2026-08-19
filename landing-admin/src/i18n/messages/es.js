@@ -237,7 +237,7 @@ export default {
         tagline: 'Contenido avanzado y embeds para marcas en crecimiento.',
         f1: '1 página · ubicaciones ilimitadas',
         f2: 'Blog, galería, embeds, hosting, imágenes y Facebook/Instagram',
-        f3: 'Carrusel, estilos CSS personalizados y mapa lateral',
+        f3: 'Carrusel (servicios y videos), estilos CSS personalizados y mapa lateral',
         f4: 'Soporte estándar · 3 logos IA/mes · 2 códigos QR',
       },
       agency: {
@@ -266,6 +266,7 @@ export default {
       imageUpload: 'Subida de imágenes',
       imageUploadLocked: 'Subir imágenes requiere plan Pro o superior. Puedes pegar una URL.',
       servicesCarouselAutoplay: 'Autoplay del carrusel',
+      videoCarousel: 'Carrusel de videos',
       customSectionVisualStyle: 'Estilo CSS personalizado (servicios/catálogo)',
       contactMapBeside: 'Mapa al lado del contacto',
       support247: 'Soporte 24/7',

@@ -99,7 +99,7 @@ export default function LandingMainContent({
       <GallerySection data={data} interactive={interactive} />
       <CustomEmbedSlot data={data} placement="after_gallery" interactive={interactive} />
 
-      <VideoSection data={data} />
+      <VideoSection data={data} interactive={interactive} />
       <CustomEmbedSlot data={data} placement="after_video" interactive={interactive} />
 
       <TestimonialsSection data={data} />

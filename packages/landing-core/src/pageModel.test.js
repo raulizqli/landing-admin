@@ -34,6 +34,18 @@ describe('normalizePageData', () => {
     expect(normalized).not.toHaveProperty('sobreMiFrase');
   });
 
+  it('migrates a legacy videoSectionUrl into videoSectionItems', () => {
+    const url = 'https://www.youtube.com/watch?v=dQw4w9wgGcQ';
+    const normalized = normalizePageData({
+      videoSectionEnabled: true,
+      videoSectionUrl: url,
+    });
+    expect(normalized.videoSectionItems).toHaveLength(1);
+    expect(normalized.videoSectionItems[0].url).toBe(url);
+    expect(normalized.videoSectionUrl).toBe(url);
+    expect(normalized.videoSectionCarouselAutoplay).toBe(false);
+  });
+
   it('prefers existing English keys over legacy Spanish duplicates', () => {
     const normalized = normalizePageData({
       name: 'English Name',
@@ -91,6 +103,8 @@ describe('hydratePageForm', () => {
     expect(form.specialty).toBe(EMPTY_PAGE.specialty);
     expect(form.heroSlides).toHaveLength(1);
     expect(form.heroHeightMode).toBe('fixed');
+    expect(form.videoSectionItems).toEqual([]);
+    expect(form.videoSectionCarouselAutoplay).toBe(false);
     expect(form.enabledLanguages).toEqual(['es']);
     expect(form.defaultLanguage).toBe('es');
     expect(form.metaSource).toEqual({

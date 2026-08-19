@@ -47,6 +47,16 @@ describe('metaImport entitlement', () => {
   });
 });
 
+describe('videoCarousel entitlement', () => {
+  it('unlocks the videos-section carousel from Pro onward', () => {
+    expect(accountHasFeature({ plan: 'starter', status: 'active' }, 'videoCarousel')).toBe(false);
+    expect(accountHasFeature({ plan: 'pro', status: 'active' }, 'videoCarousel')).toBe(true);
+    expect(accountHasFeature({ plan: 'agency', status: 'active' }, 'videoCarousel')).toBe(true);
+    expect(accountHasFeature({ plan: 'enterprise', status: 'active' }, 'videoCarousel')).toBe(true);
+    expect(accountHasFeature({ plan: 'pro', status: 'past_due' }, 'videoCarousel')).toBe(false);
+  });
+});
+
 describe('hostingDeploy entitlement', () => {
   it('unlocks hosting from Pro onward', () => {
     expect(accountHasFeature({ plan: 'starter', status: 'active' }, 'hostingDeploy')).toBe(false);

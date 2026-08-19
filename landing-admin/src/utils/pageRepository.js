@@ -190,6 +190,9 @@ export async function savePageFromEditor(pageId, formData) {
     dataToUpdate.heroTitle = firstSlide.showTitle ? firstSlide.title || '' : '';
     dataToUpdate.heroSubtitle = firstSlide.showText ? firstSlide.text || '' : '';
   }
+  dataToUpdate.videoSectionUrl = String(
+    dataToUpdate.videoSectionItems?.[0]?.url || dataToUpdate.videoSectionUrl || '',
+  ).trim();
 
   let seoArtifacts = dataToUpdate.seoArtifacts || null;
   if (dataToUpdate.siteMode === 'marketing') {
