@@ -7,7 +7,7 @@ import {
   normalizeVertical,
 } from '@raulizqli/landing-core/verticals';
 import { applyMetaDraftToPage } from '@raulizqli/landing-core/metaImport';
-import MetaImportPanel from './MetaImportPanel';
+import MetaImportPanel, { META_IMPORT_UI_ENABLED } from './MetaImportPanel';
 import PlanGate from './PlanGate';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useLocale } from '../i18n/LocaleContext';
@@ -128,9 +128,9 @@ export default function CreatePageModal({
           <div>
             <h2 className="text-sm font-bold text-gray-900">Nueva landing</h2>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              {entitlements.canUseMetaImport
+              {META_IMPORT_UI_ENABLED && entitlements.canUseMetaImport
                 ? 'Importa una Página de Facebook o completa los datos a mano.'
-                : 'Completa los datos a mano. Conectar Facebook/Instagram está en Pro o superior.'}
+                : 'Completa los datos a mano.'}
             </p>
             {quotaLabel && (
               <p className="mt-1 text-[10px] font-semibold text-indigo-600">
@@ -150,6 +150,7 @@ export default function CreatePageModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {META_IMPORT_UI_ENABLED ? (
           <PlanGate
             allowed={entitlements.canUseMetaImport}
             label={t('common.upgrade')}
@@ -163,6 +164,7 @@ export default function CreatePageModal({
               onImported={handleMetaImported}
             />
           </PlanGate>
+          ) : null}
 
           <fieldset className="space-y-2">
             <legend className="block text-[10px] font-bold text-gray-400 uppercase">Tipo de negocio</legend>

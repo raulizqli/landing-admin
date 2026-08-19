@@ -7,9 +7,11 @@ import {
   HERO_BUTTON_POSITIONS,
   HERO_BUTTON_SECTIONS,
   HERO_BUTTONS_MODES,
+  HERO_HEIGHT_MODES,
   HERO_IMAGE_FITS,
   HERO_IMAGE_VIEWS,
   normalizeHeroButtonsMode,
+  normalizeHeroHeightMode,
   normalizeHeroImageFit,
 } from '../utils/heroSlides';
 import ImageUrlField from './ImageUrlField';
@@ -322,7 +324,14 @@ function SlideEditor({
   );
 }
 
-export default function HeroSlidesEditor({ slides = [], onChange, pageId, formData, onFormChange }) {
+export default function HeroSlidesEditor({
+  slides = [],
+  onChange,
+  pageId,
+  formData,
+  onFormChange,
+  onActiveSlideChange,
+}) {
   const { t } = useLocale();
   const items = slides.length > 0 ? slides : [createEmptySlide()];
   const [openSlides, setOpenSlides] = useState({});
@@ -346,6 +355,10 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
     }
   }, [items.length, selectedSlideIndex]);
 
+  useEffect(() => {
+    onActiveSlideChange?.(selectedSlideIndex);
+  }, [selectedSlideIndex, onActiveSlideChange]);
+
   const selectedSlide = items[selectedSlideIndex] || items[0];
 
   const heroAiMenu = useMemo(() => [
@@ -364,6 +377,7 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
   ], [selectedSlide, selectedSlideIndex]);
 
   const toggleSlide = (index) => {
+    setSelectedSlideIndex(index);
     setOpenSlides((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
@@ -424,6 +438,35 @@ export default function HeroSlidesEditor({ slides = [], onChange, pageId, formDa
         </label>
         <p className="text-[10px] text-gray-400">
           Desactívalo si las diapositivas son solo imagen y no quieres la franja tipo «Psicología clínica».
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-[10px] font-bold text-gray-400 uppercase">
+          Altura del carrusel
+        </label>
+        <div className="grid grid-cols-2 gap-1">
+          {HERO_HEIGHT_MODES.map((option) => {
+            const selectedHeight = normalizeHeroHeightMode(formData?.heroHeightMode) === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onFormChange?.({ ...formData, heroHeightMode: option.value })}
+                className={`px-2 py-2 rounded-lg border text-[11px] font-semibold ${
+                  selectedHeight
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-gray-400">
+          {(HERO_HEIGHT_MODES.find((item) => item.value === normalizeHeroHeightMode(formData?.heroHeightMode))
+            || HERO_HEIGHT_MODES[0]).hint}
         </p>
       </div>
 

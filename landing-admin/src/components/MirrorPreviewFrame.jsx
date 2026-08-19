@@ -19,6 +19,7 @@ export default function MirrorPreviewFrame() {
   const [language, setLanguage] = useState(searchParams.get('lang') || 'es');
   const [scrollSectionId, setScrollSectionId] = useState(null);
   const [activeMarketingRouteId, setActiveMarketingRouteId] = useState('');
+  const [lockedHeroSlideIndex, setLockedHeroSlideIndex] = useState(null);
 
   // Admin shell locks html/body overflow; unlock so the live preview can scroll.
   useEffect(() => {
@@ -42,6 +43,11 @@ export default function MirrorPreviewFrame() {
       if (event.data.language != null) setLanguage(event.data.language);
       if (event.data.activeMarketingRouteId != null) {
         setActiveMarketingRouteId(event.data.activeMarketingRouteId || '');
+      }
+      if (Object.prototype.hasOwnProperty.call(event.data, 'lockedHeroSlideIndex')) {
+        setLockedHeroSlideIndex(
+          Number.isInteger(event.data.lockedHeroSlideIndex) ? event.data.lockedHeroSlideIndex : null,
+        );
       }
       if (event.data.scrollSectionId) {
         setScrollSectionId(event.data.scrollSectionId);
@@ -71,6 +77,7 @@ export default function MirrorPreviewFrame() {
         language={language}
         scrollSectionId={scrollSectionId}
         activeMarketingRouteId={activeMarketingRouteId}
+        lockedHeroSlideIndex={lockedHeroSlideIndex}
       />
     </div>
   );

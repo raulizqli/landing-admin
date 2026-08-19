@@ -1,5 +1,5 @@
 
-import { createEmptySlide, normalizeHeroSlide } from './heroSlides';
+import { createEmptySlide, normalizeHeroHeightMode, normalizeHeroSlide } from './heroSlides';
 import { normalizeTestimonials } from './testimonials';
 import {
   normalizeServices,
@@ -85,6 +85,7 @@ export const EMPTY_PAGE = {
   preHeroTitle: '',
   preHeroText: '',
   heroSlides: [createEmptySlide()],
+  heroHeightMode: 'fixed',
   heroSectionEnabled: true,
   aboutTagline: '',
   aboutBio: '',
@@ -362,6 +363,7 @@ export function normalizePageData(data = {}) {
   next.phoneIsWhatsapp = next.phoneIsWhatsapp === true;
   next.socialIconOnly = next.socialIconOnly === true;
   next.showHeroSpecialty = next.showHeroSpecialty === true;
+  next.heroHeightMode = normalizeHeroHeightMode(next.heroHeightMode);
 
   next.sectionThemes = normalizeSectionThemes(next.sectionThemes);
 

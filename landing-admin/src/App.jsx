@@ -31,7 +31,7 @@ import { resolvePreviewSectionId } from './utils/sectionAnchors';
 import SiteHostingFieldsEditor from './components/SiteHostingFieldsEditor';
 import UserManagement from './components/UserManagement';
 import CreatePageModal from './components/CreatePageModal';
-import MetaImportPanel from './components/MetaImportPanel';
+import MetaImportPanel, { META_IMPORT_UI_ENABLED } from './components/MetaImportPanel';
 import PageStructureAssistSection from './components/PageStructureAssistSection';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
 import BillingPlansPanel from './components/BillingPlansPanel';
@@ -133,6 +133,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewSectionKey, setPreviewSectionKey] = useState('identity');
+  const [heroEditorOpen, setHeroEditorOpen] = useState(false);
+  const [heroPreviewSlideIndex, setHeroPreviewSlideIndex] = useState(0);
   const [previewDeviceView, setPreviewDeviceView] = useState('desktop');
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showCreatePage, setShowCreatePage] = useState(false);
@@ -174,6 +176,9 @@ export default function App() {
     entitlements,
   });
   const previewScrollSectionId = resolvePreviewSectionId(previewSectionKey);
+  const lockedHeroSlideIndex = heroEditorOpen && previewSectionKey === 'hero'
+    ? heroPreviewSlideIndex
+    : null;
   const upgradeLabel = t('common.upgrade');
   const openBilling = () => setShowBilling(true);
 
@@ -204,8 +209,13 @@ export default function App() {
     canManageLayout || isFlagEnabled(editorData, flag, defaultEnabled)
   );
 
-  const activatePreviewSection = useCallback((sectionKey) => {
+  const activatePreviewSection = useCallback((sectionKey, meta = {}) => {
+    if (meta.open === false) {
+      if (sectionKey === 'hero') setHeroEditorOpen(false);
+      return;
+    }
     setPreviewSectionKey(sectionKey);
+    setHeroEditorOpen(sectionKey === 'hero');
   }, []);
 
   const selectLanding = async (landing, { syncUrl = true } = {}) => {
@@ -215,6 +225,8 @@ export default function App() {
     }
 
     setSelectedId(landing.id);
+    setHeroPreviewSlideIndex(0);
+    setHeroEditorOpen(false);
     if (syncUrl && landing.id !== DEMO_PREVIEW_ID) {
       setSearchParams({ pageId: landing.id }, { replace: true });
     } else if (syncUrl && landing.id === DEMO_PREVIEW_ID) {
@@ -749,14 +761,15 @@ export default function App() {
       ) : null}
 
       {/* 2. FORMULARIO */}
-      <div className={`min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-6 bg-white border-r border-gray-200 shadow-inner max-lg:!grow max-lg:!shrink max-lg:!basis-0 max-sm:p-3 transition-[flex-grow,flex-basis] duration-500 ease-in-out ${
+      <div className={`min-w-0 min-h-0 flex flex-col overflow-hidden bg-white border-r border-gray-200 shadow-inner max-lg:!grow max-lg:!shrink max-lg:!basis-0 transition-[flex-grow,flex-basis] duration-500 ease-in-out ${
         previewPanelHidden || previewDeviceView === 'mobile'
           ? 'grow shrink basis-0'
           : 'grow-0 shrink-0 basis-[41.666667%]'
       }`}>
         {editorData ? (
-          <form onSubmit={handleSaveChanges} className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b pb-4">
+          <form onSubmit={handleSaveChanges} className="flex flex-col h-full min-h-0">
+            <div className="shrink-0 z-20 px-6 pt-4 pb-3 max-sm:px-3 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
               <div className="min-w-0">
                 <h2 className="text-lg font-bold text-gray-900">Editor Editorial</h2>
                 <p className="text-xs text-gray-500 truncate">
@@ -801,8 +814,10 @@ export default function App() {
                   {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}
                 </button>
               </div>
+              </div>
             </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-6 py-4 max-sm:px-3 space-y-4">
             <EditorSection
               sectionKey="structure-ai"
               title={t('ai.structure.sectionTitle')}
@@ -816,6 +831,7 @@ export default function App() {
               />
             </EditorSection>
 
+            {META_IMPORT_UI_ENABLED ? (
             <EditorSection
               sectionKey="metaImport"
               fillStatus={getEditorSectionFill('metaImport', editorData)}
@@ -844,6 +860,7 @@ export default function App() {
                 />
               </PlanGate>
             </EditorSection>
+            ) : null}
 
             <EditorSection
               sectionKey="identity"
@@ -962,6 +979,7 @@ export default function App() {
                   pageId={selectedId}
                   formData={editorData}
                   onFormChange={handleEditorChange}
+                  onActiveSlideChange={setHeroPreviewSlideIndex}
                 />
                 <LabelsFieldsEditor key={`labels-hero-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['hero']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
@@ -1255,6 +1273,7 @@ export default function App() {
             >
               <PageAuditSection pageId={selectedId} />
             </EditorSection>
+            </div>
           </form>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-3 px-6 text-center">
@@ -1278,6 +1297,7 @@ export default function App() {
         selectedId={selectedId}
         editingLanguage={editingLanguage}
         previewScrollSectionId={previewScrollSectionId}
+        lockedHeroSlideIndex={lockedHeroSlideIndex}
         activeMarketingRouteId={activeMarketingRouteId}
         deviceView={previewDeviceView}
         onDeviceViewChange={setPreviewDeviceView}

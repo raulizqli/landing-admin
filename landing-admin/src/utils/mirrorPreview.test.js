@@ -41,9 +41,10 @@ describe('mirrorPreview helpers', () => {
       data: { name: 'Ada' },
       pageId: 'ada',
       language: 'es',
-      scrollSectionId: 'about',
-      activeMarketingRouteId: 'home',
-    });
+        scrollSectionId: 'about',
+        activeMarketingRouteId: 'home',
+        lockedHeroSlideIndex: 2,
+      });
     expect(target.postMessage).toHaveBeenCalledWith(
       {
         type: LANDING_PREVIEW_UPDATE,
@@ -52,6 +53,7 @@ describe('mirrorPreview helpers', () => {
         language: 'es',
         scrollSectionId: 'about',
         activeMarketingRouteId: 'home',
+        lockedHeroSlideIndex: 2,
       },
       'https://admin.example.com',
     );

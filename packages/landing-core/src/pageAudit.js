@@ -41,6 +41,7 @@ export const PAGE_AUDIT_KEYS = [
   'preHeroText',
   'heroSectionEnabled',
   'heroSlides',
+  'heroHeightMode',
   'heroTitle',
   'heroSubtitle',
   'servicesSectionEnabled',

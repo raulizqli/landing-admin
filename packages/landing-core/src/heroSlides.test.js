@@ -4,9 +4,12 @@ import {
   DEFAULT_HERO_IMAGE_FIT,
   getHeroImageFitClass,
   hasHeroSlideImage,
+  getHeroButtonsOverlayClass,
+  normalizeHeroHeightMode,
   normalizeHeroImageFit,
   normalizeHeroSlide,
   resolveHeroSlideImageUrl,
+  shouldUseFluidHeroHeight,
 } from './heroSlides.js';
 
 describe('hero slide images', () => {
@@ -67,6 +70,25 @@ describe('hero slide images', () => {
   it('detects a slide image on any viewport field', () => {
     expect(hasHeroSlideImage({ mobileImageUrl: 'm.jpg' })).toBe(true);
     expect(hasHeroSlideImage({})).toBe(false);
+  });
+
+  it('uses fluid hero height only when the page asks for auto height', () => {
+    expect(normalizeHeroHeightMode()).toBe('fixed');
+    expect(normalizeHeroHeightMode('auto')).toBe('auto');
+    expect(shouldUseFluidHeroHeight({ heroHeightMode: 'auto' }, [{ imageUrl: 'one.jpg' }])).toBe(true);
+    expect(shouldUseFluidHeroHeight({ heroHeightMode: 'auto' }, [{ imageUrl: 'one.jpg' }, { imageUrl: 'two.jpg' }])).toBe(true);
+    expect(shouldUseFluidHeroHeight({ heroHeightMode: 'fixed' }, [{ imageUrl: 'one.jpg' }])).toBe(false);
+    expect(shouldUseFluidHeroHeight({ heroHeightMode: 'auto' }, [{}])).toBe(false);
+  });
+
+  it('keeps top overlays at the top and bottom overlays at the bottom', () => {
+    expect(getHeroButtonsOverlayClass('top')).toContain('top-8');
+    expect(getHeroButtonsOverlayClass('top')).not.toContain('bottom-');
+    expect(getHeroButtonsOverlayClass('bottom')).toContain('bottom-8');
+    expect(getHeroButtonsOverlayClass('bottom')).not.toContain('top-');
+    expect(getHeroButtonsOverlayClass('bottom-left')).toContain('bottom-8');
+    expect(getHeroButtonsOverlayClass('bottom-left', { clearCarouselDots: true })).toContain('bottom-20');
+    expect(getHeroButtonsOverlayClass('center')).toBeNull();
   });
 });
 

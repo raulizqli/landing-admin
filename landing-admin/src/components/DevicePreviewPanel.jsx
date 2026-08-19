@@ -71,6 +71,7 @@ export default function DevicePreviewPanel({
   selectedId,
   editingLanguage,
   previewScrollSectionId,
+  lockedHeroSlideIndex = null,
   activeMarketingRouteId,
   deviceView = 'desktop',
   onDeviceViewChange,
@@ -113,6 +114,7 @@ export default function DevicePreviewPanel({
         language: editingLanguage,
         scrollSectionId: previewScrollSectionId,
         activeMarketingRouteId,
+        lockedHeroSlideIndex,
       },
     );
   }, [
@@ -122,6 +124,7 @@ export default function DevicePreviewPanel({
     editingLanguage,
     previewScrollSectionId,
     activeMarketingRouteId,
+    lockedHeroSlideIndex,
   ]);
 
   useEffect(() => {
@@ -178,6 +181,7 @@ export default function DevicePreviewPanel({
           language={editingLanguage}
           scrollSectionId={previewScrollSectionId}
           activeMarketingRouteId={activeMarketingRouteId}
+          lockedHeroSlideIndex={lockedHeroSlideIndex}
           title={`Vista previa espejo de ${selectedId}`}
         />
       );

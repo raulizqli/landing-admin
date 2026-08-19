@@ -4,6 +4,7 @@ import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import StickyCta from '../conversion/StickyCta';
 import FloatingContact from '../conversion/FloatingContact';
+import { SITE } from '../../content/site';
 
 export default function SiteLayout() {
   const location = useLocation();
@@ -14,6 +15,8 @@ export default function SiteLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <meta name="google-adsense-account" content={SITE.googleAdsenseAccount} />
+      <meta name="facebook-domain-verification" content={SITE.facebookDomainVerification} />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-[var(--color-accent)] focus:px-3 focus:py-2 focus:text-[var(--color-ink)]"

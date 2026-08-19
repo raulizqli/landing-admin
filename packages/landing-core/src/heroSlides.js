@@ -23,6 +23,19 @@ export const DEFAULT_HERO_IMAGE_FIT = 'full';
 
 const HERO_IMAGE_FIT_SET = new Set(HERO_IMAGE_FITS.map((item) => item.value));
 
+export const HERO_HEIGHT_MODES = [
+  { value: 'fixed', label: 'Fija', hint: 'Misma altura en todas las pantallas. La foto se recorta o se contiene dentro del recuadro.' },
+  { value: 'auto', label: 'Según la imagen', hint: 'El bloque crece o se encoge para mostrar la foto completa.' },
+];
+
+export const DEFAULT_HERO_HEIGHT_MODE = 'fixed';
+
+const HERO_HEIGHT_MODE_SET = new Set(HERO_HEIGHT_MODES.map((item) => item.value));
+
+export function normalizeHeroHeightMode(value, fallback = DEFAULT_HERO_HEIGHT_MODE) {
+  return HERO_HEIGHT_MODE_SET.has(value) ? value : fallback;
+}
+
 export const HERO_IMAGE_VIEWS = [
   { value: 'desktop', field: 'imageUrl', label: 'Escritorio', hint: 'Pantallas grandes. Es la imagen principal.' },
   { value: 'tablet', field: 'tabletImageUrl', label: 'Tablet', hint: 'Opcional. Si está vacía, se usa la de escritorio.' },
@@ -52,6 +65,12 @@ export function hasHeroSlideImage(slide = {}) {
     || String(slide.tabletImageUrl ?? '').trim()
     || String(slide.mobileImageUrl ?? '').trim(),
   );
+}
+
+export function shouldUseFluidHeroHeight(data, slides = []) {
+  if (normalizeHeroHeightMode(data?.heroHeightMode) !== 'auto') return false;
+  const list = Array.isArray(slides) ? slides : [];
+  return list.some(hasHeroSlideImage);
 }
 
 export function getHeroImageFitClass(fit, fallback = DEFAULT_HERO_IMAGE_FIT) {
@@ -103,21 +122,25 @@ export function normalizeButtonsPosition(value) {
 
 /** Absolute slot for overlays; null means buttons flow under title/text. */
 export function getHeroButtonsOverlayClass(position, { clearCarouselDots = false } = {}) {
-  const bottomPad = clearCarouselDots ? 'bottom-14 sm:bottom-12' : 'bottom-6';
-
   switch (normalizeButtonsPosition(position)) {
     case 'top':
-      return 'absolute top-6 inset-x-0 z-10 flex justify-center px-5';
+      return 'absolute top-8 sm:top-12 inset-x-0 z-20 flex justify-center px-5';
     case 'bottom':
-      return `absolute ${bottomPad} inset-x-0 z-10 flex justify-center px-5`;
+      return clearCarouselDots
+        ? 'absolute bottom-20 sm:bottom-24 inset-x-0 z-20 flex justify-center px-5'
+        : 'absolute bottom-8 sm:bottom-12 inset-x-0 z-20 flex justify-center px-5';
     case 'top-left':
-      return 'absolute top-6 left-5 z-10';
+      return 'absolute top-8 sm:top-12 left-5 sm:left-8 z-20';
     case 'top-right':
-      return 'absolute top-6 right-5 z-10';
+      return 'absolute top-8 sm:top-12 right-5 sm:right-8 z-20';
     case 'bottom-left':
-      return `absolute ${bottomPad} left-5 z-10`;
+      return clearCarouselDots
+        ? 'absolute bottom-20 sm:bottom-24 left-5 sm:left-8 z-20'
+        : 'absolute bottom-8 sm:bottom-12 left-5 sm:left-8 z-20';
     case 'bottom-right':
-      return `absolute ${bottomPad} right-5 z-10`;
+      return clearCarouselDots
+        ? 'absolute bottom-20 sm:bottom-24 right-5 sm:right-8 z-20'
+        : 'absolute bottom-8 sm:bottom-12 right-5 sm:right-8 z-20';
     default:
       return null;
   }

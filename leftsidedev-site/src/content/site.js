@@ -17,6 +17,8 @@ export const SITE = {
   youtube: 'https://www.youtube.com/',
   ogImage: 'https://leftsidedev.site/og-default.svg',
   foundingYear: 2019,
+  googleAdsenseAccount: 'ca-pub-8125831908133216',
+  facebookDomainVerification: 'duaj2fc3ofev1y6etqswekkpvak2fk',
 };
 
 export const HERO = {

@@ -13,6 +13,9 @@ function formatImportedAt(value) {
   return date.toLocaleString();
 }
 
+/** Hidden until Facebook Login / Graph import works in production. */
+export const META_IMPORT_UI_ENABLED = false;
+
 export default function MetaImportPanel({
   connectedSource = null,
   onImported,

@@ -57,6 +57,8 @@ describe('normalizePageData', () => {
     expect(normalized.heroSlides[0].tabletImageUrl).toBe('https://cdn.example/tablet.jpg');
     expect(normalized.heroSlides[0].mobileImageUrl).toBe('https://cdn.example/mobile.jpg');
     expect(normalized.heroSlides[0].imageFit).toBe('centred');
+    expect(normalizePageData({ heroHeightMode: 'auto' }).heroHeightMode).toBe('auto');
+    expect(normalizePageData({}).heroHeightMode).toBe('fixed');
   });
 
   it('builds heroSlides from legacy heroTitle/heroSubtitle', () => {
@@ -88,6 +90,7 @@ describe('hydratePageForm', () => {
     expect(form.name).toBe('María');
     expect(form.specialty).toBe(EMPTY_PAGE.specialty);
     expect(form.heroSlides).toHaveLength(1);
+    expect(form.heroHeightMode).toBe('fixed');
     expect(form.enabledLanguages).toEqual(['es']);
     expect(form.defaultLanguage).toBe('es');
     expect(form.metaSource).toEqual({

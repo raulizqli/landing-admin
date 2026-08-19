@@ -19,6 +19,7 @@ export default function EditorSection({
     const next = !open;
     setOpen(next);
     if (next) activate();
+    else onActivate?.(sectionKey, { open: false });
   };
 
   const showFillBadge = Boolean(fillStatus?.label) && !open;

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { LanguageSwitcher, useLocale } from '../i18n/LocaleContext';
+import FacebookDomainVerification from './FacebookDomainVerification';
 import {
   PLATFORM_LEGAL_KINDS,
   PLATFORM_LEGAL_PATHS,
@@ -44,6 +45,7 @@ export default function LegalPublicPage({ kind }) {
 
   return (
     <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden bg-[#081810] font-sans">
+      <FacebookDomainVerification />
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="mb-4 flex items-center justify-between gap-3">
           <a

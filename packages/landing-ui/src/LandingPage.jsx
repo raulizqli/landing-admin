@@ -12,6 +12,7 @@ export default function LandingPage({
   interactive = true,
   className = '',
   onLanguageChange,
+  lockedHeroSlideIndex = null,
 }) {
   const labels = resolvePageLabels(data);
   const name = data.name || getLabel(labels, 'placeholders.psychologistName');
@@ -41,7 +42,12 @@ export default function LandingPage({
         onLanguageChange={onLanguageChange}
       />
 
-      <LandingMainContent data={data} specialty={specialty} interactive={interactive} />
+      <LandingMainContent
+        data={data}
+        specialty={specialty}
+        interactive={interactive}
+        lockedHeroSlideIndex={lockedHeroSlideIndex}
+      />
 
       {isFooterSectionEnabled(data) && (
         <footer

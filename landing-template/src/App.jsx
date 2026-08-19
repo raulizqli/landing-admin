@@ -184,6 +184,7 @@ export default function App() {
   const [livePreviewData, setLivePreviewData] = useState(null);
   const [livePreviewPageId, setLivePreviewPageId] = useState(null);
   const [livePreviewLanguage, setLivePreviewLanguage] = useState(null);
+  const [lockedHeroSlideIndex, setLockedHeroSlideIndex] = useState(null);
   const [activeLanguage, setActiveLanguage] = useState(() => getSearchParams().get('lang'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -225,6 +226,11 @@ export default function App() {
       setUsingDemoFallback(false);
       if (event.data.scrollSectionId) {
         window.setTimeout(() => scrollToPreviewSection(event.data.scrollSectionId), 100);
+      }
+      if (Object.prototype.hasOwnProperty.call(event.data, 'lockedHeroSlideIndex')) {
+        setLockedHeroSlideIndex(
+          Number.isInteger(event.data.lockedHeroSlideIndex) ? event.data.lockedHeroSlideIndex : null,
+        );
       }
     };
 
@@ -410,6 +416,7 @@ export default function App() {
         key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
         data={displayData}
         onLanguageChange={handleLanguageChange}
+        lockedHeroSlideIndex={previewMode ? lockedHeroSlideIndex : null}
       />
     </SiteAccessGate>
   );

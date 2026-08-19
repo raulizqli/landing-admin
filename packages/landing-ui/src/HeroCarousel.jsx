@@ -8,6 +8,7 @@ import {
   normalizeHeroButtonSection,
   normalizeHeroButtonsMode,
   normalizeHeroSlides,
+  shouldUseFluidHeroHeight,
 } from '@raulizqli/landing-core/heroSlides';
 import { resolveHeroVideo } from '@raulizqli/landing-core/heroVideo';
 import { trackCtaClick } from './trackInteraction.js';
@@ -15,7 +16,7 @@ import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 
-function HeroSlidePicture({ slide }) {
+function HeroSlidePicture({ slide, fluid = false }) {
   const desktop = String(slide.imageUrl ?? '').trim();
   const tablet = String(slide.tabletImageUrl ?? '').trim();
   const mobile = String(slide.mobileImageUrl ?? '').trim();
@@ -23,9 +24,12 @@ function HeroSlidePicture({ slide }) {
   if (!src) return null;
 
   const fitClass = getHeroImageFitClass(slide.imageFit);
+  const imgClass = fluid
+    ? `relative z-[1] block w-full h-auto ${fitClass}`
+    : `absolute inset-0 w-full h-full ${fitClass}`;
 
   return (
-    <picture>
+    <picture className={fluid ? 'relative z-[1] block w-full' : undefined}>
       {mobile ? (
         <source media={`(max-width: ${HERO_IMAGE_MOBILE_MAX_WIDTH}px)`} srcSet={mobile} />
       ) : null}
@@ -36,13 +40,13 @@ function HeroSlidePicture({ slide }) {
         src={src}
         alt=""
         decoding="async"
-        className={`absolute inset-0 w-full h-full ${fitClass}`}
+        className={imgClass}
       />
     </picture>
   );
 }
 
-function HeroSlideBackground({ slide, isActive, fallbackStyle }) {
+function HeroSlideBackground({ slide, isActive, fallbackStyle, fluid = false }) {
   const posterUrl = String(slide.imageUrl ?? '').trim();
   const video = resolveHeroVideo(slide.videoUrl);
   const showVideo = isActive && video;
@@ -79,8 +83,8 @@ function HeroSlideBackground({ slide, isActive, fallbackStyle }) {
   if (showImage) {
     return (
       <>
-        <div className="absolute inset-0" style={fallbackStyle} />
-        <HeroSlidePicture slide={slide} />
+        <div className="absolute inset-0 z-0" style={fallbackStyle} />
+        <HeroSlidePicture slide={slide} fluid={fluid} />
       </>
     );
   }
@@ -156,12 +160,20 @@ function HeroButtons({ slide, labels, interactive, className = '' }) {
   );
 }
 
-export default function HeroCarousel({ data, specialty, interactive = true }) {
+export default function HeroCarousel({
+  data,
+  specialty,
+  interactive = true,
+  lockedSlideIndex = null,
+}) {
   const labels = resolvePageLabels(data);
   const slides = normalizeHeroSlides(data);
   const fallbackStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'hero'), { sectionKey: 'hero' });
   const [activeIndex, setActiveIndex] = useState(0);
   const clearCarouselDots = slides.length > 1;
+  const fluidHeight =
+    shouldUseFluidHeroHeight(data, slides)
+    && slides.every((slide) => !resolveHeroVideo(slide?.videoUrl));
 
   const goTo = useCallback((index) => {
     setActiveIndex((index + slides.length) % slides.length);
@@ -175,14 +187,22 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
     goTo(activeIndex - 1);
   }, [activeIndex, goTo]);
 
-  const safeIndex = slides.length ? activeIndex % slides.length : 0;
+  const lockedIndex = Number.isInteger(lockedSlideIndex) && slides.length
+    ? ((lockedSlideIndex % slides.length) + slides.length) % slides.length
+    : null;
+  const safeIndex = lockedIndex ?? (slides.length ? activeIndex % slides.length : 0);
 
   useEffect(() => {
-    if (slides.length <= 1) return undefined;
+    if (lockedIndex == null) return;
+    setActiveIndex(lockedIndex);
+  }, [lockedIndex]);
+
+  useEffect(() => {
+    if (slides.length <= 1 || lockedIndex != null) return undefined;
 
     const timer = window.setInterval(goNext, 6000);
     return () => window.clearInterval(timer);
-  }, [slides.length, goNext]);
+  }, [slides.length, goNext, lockedIndex]);
 
   return (
     <section
@@ -191,7 +211,7 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
       className="relative overflow-hidden"
       aria-label={getLabel(labels, 'hero.carouselAria')}
     >
-      <div className="relative h-[420px] sm:h-[520px]">
+      <div className={fluidHeight ? 'relative' : 'relative h-[420px] sm:h-[520px]'}>
         {slides.map((slide, index) => {
           const isActive = index === safeIndex;
           const overlayClass = getHeroButtonsOverlayClass(slide.buttonsPosition, { clearCarouselDots });
@@ -200,15 +220,19 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
           return (
             <div
               key={`hero-slide-${index}`}
-              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+              className={
+                fluidHeight
+                  ? `transition-opacity duration-700 ease-in-out ${isActive ? 'relative z-10 opacity-100' : 'absolute inset-0 z-0 opacity-0 pointer-events-none'}`
+                  : `absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'}`
+              }
               aria-hidden={!isActive}
             >
-              <HeroSlideBackground slide={slide} isActive={isActive} fallbackStyle={fallbackStyle} />
+              <HeroSlideBackground slide={slide} isActive={isActive} fallbackStyle={fallbackStyle} fluid={fluidHeight} />
               {slide.showGradient !== false && (
-                <div className="absolute inset-0 bg-gradient-to-b from-[#2A342D]/50 via-[#2A342D]/35 to-[#2A342D]/55" />
+                <div className="absolute inset-0 z-[2] bg-gradient-to-b from-[#2A342D]/50 via-[#2A342D]/35 to-[#2A342D]/55" />
               )}
 
-              <div className="relative z-10 h-full flex flex-col items-center justify-center px-5 text-center">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center">
                 {specialty && data?.showHeroSpecialty === true && (
                   <span className="inline-block text-[11px] sm:text-xs uppercase font-semibold tracking-[0.2em] text-white/90 mb-4">
                     {specialty}
@@ -240,7 +264,7 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
         })}
       </div>
 
-      {slides.length > 1 && interactive && (
+      {slides.length > 1 && interactive && lockedIndex == null && (
         <>
           <button
             type="button"
@@ -273,7 +297,7 @@ export default function HeroCarousel({ data, specialty, interactive = true }) {
         </>
       )}
 
-      {slides.length > 1 && !interactive && (
+      {slides.length > 1 && (!interactive || lockedIndex != null) && (
         <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
           {slides.map((_, index) => (
             <span

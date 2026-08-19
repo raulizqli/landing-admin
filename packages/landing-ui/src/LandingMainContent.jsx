@@ -20,7 +20,12 @@ import {
   isSocialSectionEnabled,
 } from '@raulizqli/landing-core/sectionVisibility';
 
-export default function LandingMainContent({ data, specialty, interactive = true }) {
+export default function LandingMainContent({
+  data,
+  specialty,
+  interactive = true,
+  lockedHeroSlideIndex = null,
+}) {
   const labels = resolvePageLabels(data);
   const showAboutTitle = data.aboutShowTitle !== false;
   const showAboutTagline = data.aboutShowTagline !== false;
@@ -40,7 +45,12 @@ export default function LandingMainContent({ data, specialty, interactive = true
       <CustomEmbedSlot data={data} placement="after_pre_hero" interactive={interactive} />
       {showHero && (
         <>
-          <HeroCarousel data={data} specialty={specialty} interactive={interactive} />
+          <HeroCarousel
+            data={data}
+            specialty={specialty}
+            interactive={interactive}
+            lockedSlideIndex={lockedHeroSlideIndex}
+          />
           <CustomEmbedSlot data={data} placement="after_hero" interactive={interactive} />
         </>
       )}

@@ -41,6 +41,14 @@ export default function Seo({ meta, schemas = [] }) {
     document.title = meta.title;
     document.documentElement.lang = SITE.language;
 
+    upsertMeta('meta[name="google-adsense-account"]', {
+      name: 'google-adsense-account',
+      content: SITE.googleAdsenseAccount,
+    });
+    upsertMeta('meta[name="facebook-domain-verification"]', {
+      name: 'facebook-domain-verification',
+      content: SITE.facebookDomainVerification,
+    });
     upsertMeta('meta[name="description"]', { name: 'description', content: meta.description });
     upsertMeta('meta[name="robots"]', { name: 'robots', content: meta.robots });
     upsertLink('canonical', meta.canonical);

@@ -4,7 +4,9 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     "../packages/landing-ui/src/**/*.{js,jsx}",
+    "../packages/landing-core/src/**/*.{js,jsx}",
     "./packages/landing-ui/src/**/*.{js,jsx}",
+    "./packages/landing-core/src/**/*.{js,jsx}",
   ],
   theme: {
     extend: {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LanguageSwitcher, useLocale } from '../i18n/LocaleContext';
+import FacebookDomainVerification from './FacebookDomainVerification';
 import { PlatformLegalLinks } from './LegalPublicPage';
 import { getRootPublicUrl, isExternalPublicUrl } from '../utils/marketingUrl';
 import { isValidEmail, isValidMxUsPhone } from '../utils/contactValidation';
@@ -131,6 +132,7 @@ export default function LoginScreen() {
 
   return (
     <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden bg-[#081810] font-sans">
+      <FacebookDomainVerification />
       <div className="flex min-h-full items-center justify-center p-6 py-10">
         <div className="w-full max-w-md bg-white border border-[#2A342D]/10 rounded-2xl shadow-xl p-8">
         <div className={`flex items-center mb-2 gap-2 ${showBackToSite ? 'justify-between' : 'justify-end'}`}>

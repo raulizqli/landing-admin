@@ -28,6 +28,7 @@ export function postLandingPreviewUpdate(targetWindow, targetOrigin, payload) {
       language: payload.language ?? null,
       scrollSectionId: payload.scrollSectionId ?? null,
       activeMarketingRouteId: payload.activeMarketingRouteId ?? null,
+      lockedHeroSlideIndex: payload.lockedHeroSlideIndex ?? null,
     },
     targetOrigin,
   );

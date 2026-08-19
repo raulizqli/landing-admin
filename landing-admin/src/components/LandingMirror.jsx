@@ -51,6 +51,7 @@ export default function LandingMirror({
   language,
   scrollSectionId,
   activeMarketingRouteId,
+  lockedHeroSlideIndex = null,
 }) {
   const rootRef = useRef(null);
   const data = resolvePageLanguage(
@@ -96,6 +97,7 @@ export default function LandingMirror({
           data={data}
           interactive={false}
           className="pointer-events-none select-none"
+          lockedHeroSlideIndex={lockedHeroSlideIndex}
         />
       )}
     </div>

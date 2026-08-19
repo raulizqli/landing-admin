@@ -24,6 +24,7 @@ export default function MirrorPreviewPortal({
   language,
   scrollSectionId,
   activeMarketingRouteId,
+  lockedHeroSlideIndex = null,
   title = 'Vista previa espejo',
   className = 'w-full h-full border-0 bg-white',
 }) {
@@ -66,6 +67,7 @@ export default function MirrorPreviewPortal({
             language={language}
             scrollSectionId={scrollSectionId}
             activeMarketingRouteId={activeMarketingRouteId}
+            lockedHeroSlideIndex={lockedHeroSlideIndex}
           />,
           mountNode,
         )
