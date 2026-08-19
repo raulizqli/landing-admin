@@ -12,6 +12,11 @@ import {
 import { normalizeCatalogItems, normalizeCatalogVisualStyle } from './catalog';
 import { createEmptySectionCustomStyle, normalizeSectionCustomStyle } from './sectionCustomStyle.js';
 import { normalizeGalleryItems } from './gallery';
+import {
+  normalizeVideoSectionCarouselAutoplay,
+  normalizeVideoSectionItems,
+  syncVideoSectionUrlFromItems,
+} from './videoSection.js';
 import { normalizeBlogPosts } from './blog';
 import { normalizeSectionThemes, parseColorToHex } from './sectionBackground';
 import { normalizeExternalFirebase } from './externalFirebase';
@@ -125,6 +130,8 @@ export const EMPTY_PAGE = {
   videoSectionTitle: '',
   videoSectionText: '',
   videoSectionUrl: '',
+  videoSectionItems: [],
+  videoSectionCarouselAutoplay: false,
   testimonialsEnabled: false,
   testimonialsSectionTitle: '',
   testimonialsShowTitle: true,
@@ -320,6 +327,9 @@ export function normalizePageData(data = {}) {
   next.services = normalizeServices(next.services);
   next.catalogItems = normalizeCatalogItems(next.catalogItems);
   next.galleryItems = normalizeGalleryItems(next.galleryItems);
+  next.videoSectionItems = normalizeVideoSectionItems(next.videoSectionItems, next.videoSectionUrl);
+  next.videoSectionUrl = syncVideoSectionUrlFromItems(next.videoSectionItems, next.videoSectionUrl);
+  next.videoSectionCarouselAutoplay = normalizeVideoSectionCarouselAutoplay(next.videoSectionCarouselAutoplay);
   next.blogPosts = normalizeBlogPosts(next.blogPosts);
 
   next.navIconOnly = next.navIconOnly === true;

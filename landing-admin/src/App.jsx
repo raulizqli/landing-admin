@@ -1071,14 +1071,18 @@ export default function App() {
                 sectionKey="video"
                 fillStatus={getEditorSectionFill('video', editorData)}
                 title="Video"
-                description="Un video de presentación (YouTube, Vimeo o un archivo)."
+                description="Un video de presentación, o un carrusel de varios videos en el plan Pro (YouTube, Vimeo o archivo)."
                 onActivate={activatePreviewSection}
               >
                 <VideoSectionFieldsEditor
                   formData={editorData}
                   onChange={handleEditorChange}
                   canToggleSection={canManageLayout}
+                  canUseVideoCarousel={entitlements.canUseVideoCarousel}
+                  onUpgradePlan={openBilling}
+                  upgradeLabel={upgradeLabel}
                 />
+                <LabelsFieldsEditor key={`labels-video-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['video']} showLanguagePicker={false} compact language={editingLanguage} />
               </EditorSection>
             )}
 

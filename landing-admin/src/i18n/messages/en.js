@@ -237,7 +237,7 @@ export default {
         tagline: 'Advanced content and embeds for growing brands.',
         f1: '1 page · unlimited locations',
         f2: 'Blog, gallery, embeds, hosting, image uploads & Facebook/Instagram',
-        f3: 'Carousel, custom CSS styles & side map',
+        f3: 'Carousel (services & videos), custom CSS styles & side map',
         f4: 'Standard support · 3 AI logos/month · 2 QR codes',
       },
       agency: {
@@ -266,6 +266,7 @@ export default {
       imageUpload: 'Image uploads',
       imageUploadLocked: 'Image uploads require Pro or higher. You can still paste a URL.',
       servicesCarouselAutoplay: 'Carousel autoplay',
+      videoCarousel: 'Video carousel',
       customSectionVisualStyle: 'Custom CSS style (services/catalog)',
       contactMapBeside: 'Side-by-side contact map',
       support247: '24/7 support',

@@ -6,7 +6,7 @@ import { shouldShowPreHero } from './preHero';
 import { getVisibleServices } from './services';
 import { getSocialLinks } from './socialLinks';
 import { getVisibleTestimonials } from './testimonials';
-import { shouldShowVideoSection } from './videoSection';
+import { getVisibleVideoItems } from './videoSection';
 import { TOGGLEABLE_PAGE_SECTIONS, isFlagEnabled } from './sectionVisibility';
 import { getVerticalMeta } from '@raulizqli/landing-core/verticals';
 
@@ -141,7 +141,10 @@ export function getEditorSectionFill(sectionKey, data) {
     }
 
     case 'video': {
-      if (shouldShowVideoSection(data)) return filled('Con video');
+      const count = getVisibleVideoItems(data).length;
+      if (count > 0) {
+        return filled(count === 1 ? '1 video' : `${count} videos`);
+      }
       if (data.videoSectionEnabled) return empty('Activo, falta URL');
       return empty();
     }

@@ -15,6 +15,17 @@ describe('pageAudit', () => {
     expect(snap.siteAccess).toBeUndefined();
   });
 
+  it('includes video section carousel fields', () => {
+    const snap = buildPageAuditSnapshot({
+      videoSectionEnabled: true,
+      videoSectionUrl: 'https://youtu.be/dQw4w9wgGcQ',
+      videoSectionItems: [{ id: 'video-1', url: 'https://youtu.be/dQw4w9wgGcQ' }],
+    });
+    expect(snap.videoSectionEnabled).toBe(true);
+    expect(snap.videoSectionUrl).toBe('https://youtu.be/dQw4w9wgGcQ');
+    expect(snap.videoSectionItems).toHaveLength(1);
+  });
+
   it('lists changed keys and trims unchanged fields from before/after', () => {
     const { before, after, changedKeys } = diffPageAuditSnapshots(
       { name: 'Ana', specialty: 'A', email: 'a@x.com' },

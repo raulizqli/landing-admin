@@ -53,6 +53,8 @@ export const PAGE_AUDIT_KEYS = [
   "galleryPortfolioUrl",
   "galleryPortfolioLabel",
   "videoSectionEnabled",
+  "videoSectionUrl",
+  "videoSectionItems",
   "videoUrl",
   "testimonialsEnabled",
   "testimonials",
