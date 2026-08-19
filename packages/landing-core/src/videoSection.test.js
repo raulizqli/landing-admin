@@ -41,7 +41,7 @@ describe('video section visibility', () => {
   it('hides the section without a resolvable video', () => {
     expect(shouldShowVideoSection({
       videoSectionEnabled: true,
-      videoSectionUrl: 'not-a-video',
+      videoSectionUrl: 'https://example.com/not-a-video',
     })).toBe(false);
     expect(getVisibleVideoItems({
       videoSectionEnabled: true,
