@@ -137,16 +137,22 @@ describe('normalizePageTranslations', () => {
     expect(healed.es.heroSlides['slide-1'].title).toBe('Hero');
   });
 
-  it('keeps per-video captions in the translation bucket', () => {
+  it('keeps per-video titles and captions in the translation bucket', () => {
     const healed = normalizePageTranslations(
       { es: {}, en: {} },
       {
         videoSectionItems: [
-          { id: 'video-1', url: 'https://youtu.be/dQw4w9wgGcQ', caption: 'Introducción' },
+          {
+            id: 'video-1',
+            url: 'https://youtu.be/dQw4w9wgGcQ',
+            title: 'Bienvenida',
+            caption: 'Introducción',
+          },
         ],
       },
       'es',
     );
+    expect(healed.es.videoSectionItems['video-1'].title).toBe('Bienvenida');
     expect(healed.es.videoSectionItems['video-1'].caption).toBe('Introducción');
   });
 });

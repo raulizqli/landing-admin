@@ -45,7 +45,7 @@ const COLLECTION_SPECS = {
     fields: ['caption', 'alt'],
   },
   videoSectionItems: {
-    fields: ['caption'],
+    fields: ['title', 'caption'],
   },
   testimonials: {
     fields: ['title', 'quote'],

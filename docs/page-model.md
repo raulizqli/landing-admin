@@ -163,7 +163,7 @@ Aliases legacy se normalizan en `landing-core`; no deben guardarse otra vez.
 
 La sección usa `videoSectionEnabled`, `videoSectionTitle` y `videoSectionText`.
 
-`videoSectionItems[]` admite `url` (YouTube, Vimeo o MP4) y `caption`. Al leer, un `videoSectionUrl` legado se migra al primer ítem. Al guardar, `videoSectionUrl` se sincroniza desde el primer video.
+`videoSectionItems[]` admite `url` (YouTube, Vimeo o MP4), `title` opcional y `caption` opcional. Al leer, un `videoSectionUrl` legado se migra al primer ítem. Al guardar, `videoSectionUrl` se sincroniza desde el primer video.
 
 Con **2 o más** videos válidos la landing muestra un carrusel (`videoSectionCarouselAutoplay` opcional). Añadir varios videos requiere el plan Pro (`features.videoCarousel`). Starter sigue pudiendo publicar un solo video.
 

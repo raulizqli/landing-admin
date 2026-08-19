@@ -104,6 +104,7 @@ export default function VideoSectionFieldsEditor({
               lockedDescription="En Starter publicas un video. Con Pro puedes añadir varios (YouTube, Vimeo o MP4) y mostrarlos en un carrusel."
               lockedBenefits={[
                 'Varios videos en la misma sección',
+                'Título opcional en cada video',
                 'Controles anterior / siguiente y puntos de navegación',
                 'Avance automático opcional',
               ]}
@@ -178,6 +179,17 @@ export default function VideoSectionFieldsEditor({
                     value={item.url || ''}
                     onChange={(e) => updateItem(index, 'url', e.target.value)}
                     placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..."
+                    className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase">Título (opcional)</label>
+                  <input
+                    type="text"
+                    value={item.title || ''}
+                    onChange={(e) => updateItem(index, 'title', e.target.value)}
+                    placeholder="Una sesión de acompañamiento"
                     className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>

@@ -26,6 +26,14 @@ describe('normalizeVideoSectionItems', () => {
     expect(items[0].caption).toBe('Intro');
   });
 
+  it('keeps a per-item title separate from caption', () => {
+    const items = normalizeVideoSectionItems([
+      { url: YOUTUBE_A, title: 'Bienvenida', caption: 'Primera sesión' },
+    ]);
+    expect(items[0].title).toBe('Bienvenida');
+    expect(items[0].caption).toBe('Primera sesión');
+  });
+
   it('keeps existing items when present', () => {
     const items = normalizeVideoSectionItems(
       [{ url: YOUTUBE_A }, { url: YOUTUBE_B, caption: 'Second' }],

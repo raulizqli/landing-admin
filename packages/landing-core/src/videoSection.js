@@ -8,6 +8,7 @@ export function createEmptyVideoItem(overrides = {}) {
   return {
     id: createContentId('video'),
     url: '',
+    title: '',
     caption: '',
     ...overrides,
   };
@@ -17,7 +18,8 @@ export function normalizeVideoItem(item = {}, index = 0) {
   return {
     id: normalizeContentId(item.id, `video-${index + 1}`),
     url: String(item.url || item.videoUrl || item.videoSectionUrl || '').trim(),
-    caption: String(item.caption || item.title || item.leyenda || '').trim(),
+    title: String(item.title || item.titulo || '').trim(),
+    caption: String(item.caption || item.leyenda || '').trim(),
   };
 }
 

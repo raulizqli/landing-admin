@@ -38,13 +38,19 @@ function VideoPlayer({ video, title = 'Video' }) {
 function VideoFrame({ item, index }) {
   const video = resolveSectionVideo(item.url);
   if (!video) return null;
+  const title = String(item.title ?? '').trim();
   const caption = String(item.caption ?? '').trim();
-  const title = caption || `Video ${index + 1}`;
+  const playerTitle = title || caption || `Video ${index + 1}`;
 
   return (
     <figure className="space-y-3">
+      {title ? (
+        <h3 className="font-serif text-xl sm:text-2xl text-current text-center">
+          {title}
+        </h3>
+      ) : null}
       <div className="relative w-full max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-[#2A342D]/10 shadow-sm bg-[#2A342D]">
-        <VideoPlayer video={video} title={title} />
+        <VideoPlayer video={video} title={playerTitle} />
       </div>
       {caption ? (
         <figcaption className="text-center text-sm text-current/65 max-w-2xl mx-auto">
