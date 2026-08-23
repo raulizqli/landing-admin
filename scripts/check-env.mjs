@@ -67,8 +67,11 @@ if (mode === 'staging') {
     'landing-admin/.env.production',
     'landing-template/.env.production',
     'functions/.env.production',
-    'functions/.env',
   );
+  // Local dev keys in functions/.env must not override prod deploy checks.
+  if (envName !== 'prod') {
+    fileCandidates.push('functions/.env');
+  }
 } else {
   fileCandidates.push(
     'landing-admin/.env',

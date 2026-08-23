@@ -38,8 +38,7 @@ else
 fi
 
 # Firebase Functions loads `.env`, `.env.<projectId>`, `.env.<alias>`.
-# For stage, sync from `.env.staging` and temporarily hide root `.env`
-# so prod/local keys do not leak into the Stage deploy.
+# Hide local dev `functions/.env` on promote deploys so test keys do not override prod/stage files.
 FUNCTIONS_ENV_BACKUP=""
 if [[ "$ENV_NAME" == "stage" ]]; then
   if [[ -f functions/.env.staging ]]; then
@@ -50,6 +49,17 @@ if [[ "$ENV_NAME" == "stage" ]]; then
     FUNCTIONS_ENV_BACKUP="$(mktemp)"
     mv functions/.env "$FUNCTIONS_ENV_BACKUP"
     echo "==> staged functions env (hid functions/.env for Stage deploy)"
+  fi
+elif [[ "$ENV_NAME" == "prod" ]]; then
+  if [[ -f functions/.env.production ]]; then
+    cp functions/.env.production functions/.env.landing-admin-9452e
+    rm -f functions/.env.prod
+    echo "==> synced functions/.env.production → .env.landing-admin-9452e"
+  fi
+  if [[ -f functions/.env ]]; then
+    FUNCTIONS_ENV_BACKUP="$(mktemp)"
+    mv functions/.env "$FUNCTIONS_ENV_BACKUP"
+    echo "==> prod functions env (hid functions/.env for Prod deploy)"
   fi
 fi
 restore_functions_env() {
