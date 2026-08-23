@@ -7,6 +7,7 @@ import {
   EMBED_PLACEMENTS,
   getPlacementLabel,
   getSectionTypeMeta,
+  migrateCustomEmbedType,
   normalizeSectionType,
   PORTFOLIO_PROVIDERS,
 } from '../utils/customEmbeds';
@@ -31,6 +32,16 @@ import VisualOptionPicker, {
   VISUAL_STYLE_PREVIEW_MAP,
 } from './VisualOptionPicker';
 import SectionCustomStyleEditor from './SectionCustomStyleEditor';
+import { ColorField } from './SectionBackgroundEditor';
+import { BRAND_COLOR_PRESETS, TEXT_COLOR_PRESETS } from '../utils/sectionBackground';
+import {
+  DEFAULT_FAQ_CARD_BG_COLOR,
+  DEFAULT_FAQ_TEXT_COLOR,
+  DEFAULT_CTA_BUTTON_BG_COLOR,
+  DEFAULT_CTA_BUTTON_TEXT_COLOR,
+  DEFAULT_STEPS_CARD_BG_COLOR,
+  DEFAULT_STEPS_TITLE_COLOR,
+} from '../utils/customEmbeds';
 
 function FaqItemsEditor({ items, onChange }) {
   const list = items.length > 0 ? items : [createEmptyFaqItem()];
@@ -67,9 +78,22 @@ function FaqItemsEditor({ items, onChange }) {
             type="text"
             value={item.question || ''}
             onChange={(e) => updateItem(index, 'question', e.target.value)}
-            placeholder="¿Cómo es la primera sesión?"
+            placeholder="Starter · ¿Cómo es la primera sesión?"
             className="w-full border rounded-lg px-3 py-2 text-xs"
           />
+          <div className="space-y-1">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase">Precio (opcional)</label>
+            <input
+              type="text"
+              value={item.price || ''}
+              onChange={(e) => updateItem(index, 'price', e.target.value)}
+              placeholder="MX$189 / US$10 al mes"
+              className="w-full border rounded-lg px-3 py-2 text-xs"
+            />
+            <p className="text-[10px] text-gray-400">
+              Déjalo vacío si no quieres mostrar precio (p. ej. “A medida” o servicios sin tarifa fija).
+            </p>
+          </div>
           <textarea
             rows={3}
             value={item.answer || ''}
@@ -402,6 +426,17 @@ function TypeFields({
                 className="w-full border rounded-lg px-3 py-2 text-xs"
               />
 
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Precio (opcional)</label>
+                <input
+                  type="text"
+                  value={service.price || ''}
+                  onChange={(e) => updateServiceItem(index, 'price', e.target.value)}
+                  placeholder="MX$189 / mes · Desde $50"
+                  className="w-full border rounded-lg px-3 py-2 text-xs"
+                />
+              </div>
+
               {meta.fields.description && (
                 <textarea
                   rows={2}
@@ -446,19 +481,97 @@ function TypeFields({
 
   if (type === 'faq') {
     return (
-      <FaqItemsEditor
-        items={Array.isArray(item.faqItems) ? item.faqItems : []}
-        onChange={(faqItems) => onChange('faqItems', faqItems)}
-      />
+      <div className="space-y-3">
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Colores de las tarjetas</p>
+          <div className="space-y-1">
+            <ColorField
+              label="Fondo de la tarjeta"
+              value={item.faqCardBgColor || DEFAULT_FAQ_CARD_BG_COLOR}
+              onChange={(value) => onChange('faqCardBgColor', value)}
+              presets={BRAND_COLOR_PRESETS}
+            />
+            {item.faqCardBgColor ? (
+              <button
+                type="button"
+                onClick={() => onChange('faqCardBgColor', '')}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Restablecer ({DEFAULT_FAQ_CARD_BG_COLOR})
+              </button>
+            ) : null}
+          </div>
+          <div className="space-y-1">
+            <ColorField
+              label="Color del texto"
+              value={item.faqTextColor || DEFAULT_FAQ_TEXT_COLOR}
+              onChange={(value) => onChange('faqTextColor', value)}
+              presets={TEXT_COLOR_PRESETS}
+            />
+            {item.faqTextColor ? (
+              <button
+                type="button"
+                onClick={() => onChange('faqTextColor', '')}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Restablecer ({DEFAULT_FAQ_TEXT_COLOR})
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <FaqItemsEditor
+          items={Array.isArray(item.faqItems) ? item.faqItems : []}
+          onChange={(faqItems) => onChange('faqItems', faqItems)}
+        />
+      </div>
     );
   }
 
   if (type === 'steps') {
     return (
-      <StepsEditor
-        items={Array.isArray(item.steps) ? item.steps : []}
-        onChange={(steps) => onChange('steps', steps)}
-      />
+      <div className="space-y-3">
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Colores de las tarjetas</p>
+          <div className="space-y-1">
+            <ColorField
+              label="Fondo de la tarjeta"
+              value={item.stepsCardBgColor || DEFAULT_STEPS_CARD_BG_COLOR}
+              onChange={(value) => onChange('stepsCardBgColor', value)}
+              presets={BRAND_COLOR_PRESETS}
+            />
+            {item.stepsCardBgColor ? (
+              <button
+                type="button"
+                onClick={() => onChange('stepsCardBgColor', '')}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Restablecer ({DEFAULT_STEPS_CARD_BG_COLOR})
+              </button>
+            ) : null}
+          </div>
+          <div className="space-y-1">
+            <ColorField
+              label="Color del texto"
+              value={item.stepsTextColor || DEFAULT_STEPS_TITLE_COLOR}
+              onChange={(value) => onChange('stepsTextColor', value)}
+              presets={TEXT_COLOR_PRESETS}
+            />
+            {item.stepsTextColor ? (
+              <button
+                type="button"
+                onClick={() => onChange('stepsTextColor', '')}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Restablecer ({DEFAULT_STEPS_TITLE_COLOR})
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <StepsEditor
+          items={Array.isArray(item.steps) ? item.steps : []}
+          onChange={(steps) => onChange('steps', steps)}
+        />
+      </div>
     );
   }
 
@@ -537,6 +650,46 @@ function TypeFields({
               placeholder="#contact o https://..."
               className="w-full border rounded-lg px-3 py-2 text-xs"
             />
+          </div>
+        </div>
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Colores del botón</p>
+          <div className="space-y-1">
+            <ColorField
+              label="Fondo del botón"
+              value={item.ctaButtonBgColor || DEFAULT_CTA_BUTTON_BG_COLOR}
+              onChange={(value) => onChange('ctaButtonBgColor', value)}
+              presets={BRAND_COLOR_PRESETS}
+            />
+            {item.ctaButtonBgColor ? (
+              <button
+                type="button"
+                onClick={() => onChange('ctaButtonBgColor', '')}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Restablecer ({DEFAULT_CTA_BUTTON_BG_COLOR})
+              </button>
+            ) : null}
+          </div>
+          <div className="space-y-1">
+            <ColorField
+              label="Texto del botón"
+              value={item.ctaButtonTextColor || DEFAULT_CTA_BUTTON_TEXT_COLOR}
+              onChange={(value) => onChange('ctaButtonTextColor', value)}
+              presets={[
+                { value: DEFAULT_CTA_BUTTON_TEXT_COLOR, label: 'Blanco' },
+                ...TEXT_COLOR_PRESETS,
+              ]}
+            />
+            {item.ctaButtonTextColor ? (
+              <button
+                type="button"
+                onClick={() => onChange('ctaButtonTextColor', '')}
+                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Restablecer ({DEFAULT_CTA_BUTTON_TEXT_COLOR})
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -646,20 +799,7 @@ export default function CustomEmbedsFieldsEditor({
     updateItems(items.map((item) => {
       if (item.id !== id) return item;
       if (field === 'type') {
-        const meta = getSectionTypeMeta(value);
-        const next = {
-          ...item,
-          type: meta.value,
-          title: item.title || meta.defaultTitle,
-          placement: item.placement || meta.defaultPlacement,
-        };
-        if (meta.value === 'portfolio') {
-          next.ctaButtonLabel = item.ctaButtonLabel && item.ctaButtonLabel !== 'Reservar cita'
-            ? item.ctaButtonLabel
-            : 'Ver portafolio completo';
-          next.portfolioProvider = item.portfolioProvider || 'custom';
-        }
-        return next;
+        return migrateCustomEmbedType(item, value);
       }
       return { ...item, [field]: value };
     }));

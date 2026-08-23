@@ -78,7 +78,9 @@ export default function NavFieldsEditor({
   const showCta = formData.navShowCta !== false;
   const showMenu = formData.navShowMenu === true;
   const navAlign = formData.navAlign || 'spread';
-  const whatsappUrl = buildSocialUrl(formData.whatsapp, 'whatsapp');
+  const whatsappUrl = buildSocialUrl(formData.whatsapp, 'whatsapp', {
+    country: formData.phoneCountry,
+  });
 
   return (
     <div className="space-y-3 pt-2 border-t">

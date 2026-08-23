@@ -8,6 +8,8 @@ import {
   normalizeHeroButtonSection,
   normalizeHeroButtonsMode,
   normalizeHeroSlides,
+  resolveHeroSlideButtonColors,
+  resolveHeroSlideTextColor,
   shouldUseFluidHeroHeight,
 } from '@raulizqli/landing-core/heroSlides';
 import { resolveHeroVideo } from '@raulizqli/landing-core/heroVideo';
@@ -101,27 +103,48 @@ function HeroSlideBackground({ slide, isActive, fallbackStyle, fluid = false }) 
 }
 
 function heroButtonClass(variant = 'solid') {
+  const base = 'text-sm font-medium px-6 py-3 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent';
   if (variant === 'outline') {
-    return 'text-sm font-medium text-white px-6 py-3 rounded-full border border-white/40 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent';
+    return `${base} border hover:bg-white/10`;
   }
-  return 'bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent';
+  return `${base} hover:brightness-95`;
 }
 
-function HeroButton({ href, interactive, onClick, variant = 'solid', children }) {
+function HeroButton({
+  href,
+  interactive,
+  onClick,
+  variant = 'solid',
+  bgColor,
+  textColor,
+  outlineColor,
+  children,
+}) {
+  const style = variant === 'outline'
+    ? {
+        color: outlineColor,
+        borderColor: `${outlineColor}66`,
+      }
+    : {
+        backgroundColor: bgColor,
+        color: textColor,
+      };
+
   const className = heroButtonClass(variant);
   if (interactive) {
     return (
-      <a href={href} onClick={onClick} className={className}>
+      <a href={href} onClick={onClick} className={className} style={style}>
         {children}
       </a>
     );
   }
-  return <span className={className}>{children}</span>;
+  return <span className={className} style={style}>{children}</span>;
 }
 
 function HeroButtons({ slide, labels, interactive, className = '' }) {
   const groupClass = `flex flex-col sm:flex-row items-center justify-center gap-3 ${className}`.trim();
   const customMode = normalizeHeroButtonsMode(slide?.buttonsMode) === 'custom';
+  const buttonColors = resolveHeroSlideButtonColors(slide);
 
   if (customMode) {
     const sectionId = normalizeHeroButtonSection(slide?.customButtonSection);
@@ -132,6 +155,8 @@ function HeroButtons({ slide, labels, interactive, className = '' }) {
           href={`#${sectionId}`}
           interactive={interactive}
           onClick={() => trackCtaClick(`hero_${sectionId}`)}
+          bgColor={buttonColors.buttonBgColor}
+          textColor={buttonColors.buttonTextColor}
         >
           {label}
         </HeroButton>
@@ -145,6 +170,8 @@ function HeroButtons({ slide, labels, interactive, className = '' }) {
         href={`#${SECTION_IDS.contact}`}
         interactive={interactive}
         onClick={() => trackCtaClick('contact')}
+        bgColor={buttonColors.buttonBgColor}
+        textColor={buttonColors.buttonTextColor}
       >
         {getLabel(labels, 'hero.contact')}
       </HeroButton>
@@ -153,6 +180,7 @@ function HeroButtons({ slide, labels, interactive, className = '' }) {
         interactive={interactive}
         onClick={() => trackCtaClick('learn_more')}
         variant="outline"
+        outlineColor={buttonColors.buttonOutlineColor}
       >
         {getLabel(labels, 'hero.learnMore')}
       </HeroButton>
@@ -216,6 +244,9 @@ export default function HeroCarousel({
           const isActive = index === safeIndex;
           const overlayClass = getHeroButtonsOverlayClass(slide.buttonsPosition, { clearCarouselDots });
           const showButtons = isActive && slide.showButtons !== false;
+          const textColor = resolveHeroSlideTextColor(slide);
+          const specialtyColor = `${textColor}E6`;
+          const bodyColor = `${textColor}E6`;
 
           return (
             <div
@@ -234,19 +265,28 @@ export default function HeroCarousel({
 
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center">
                 {specialty && data?.showHeroSpecialty === true && (
-                  <span className="inline-block text-[11px] sm:text-xs uppercase font-semibold tracking-[0.2em] text-white/90 mb-4">
+                  <span
+                    className="inline-block text-[11px] sm:text-xs uppercase font-semibold tracking-[0.2em] mb-4"
+                    style={{ color: specialtyColor }}
+                  >
                     {specialty}
                   </span>
                 )}
 
                 {slide.showTitle && slide.title?.trim() && (
-                  <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-white leading-tight font-normal max-w-3xl drop-shadow-sm">
+                  <h1
+                    className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight font-normal max-w-3xl drop-shadow-sm"
+                    style={{ color: textColor }}
+                  >
                     {slide.title}
                   </h1>
                 )}
 
                 {slide.showText && slide.text?.trim() && (
-                  <p className={`text-sm sm:text-base text-white/90 max-w-xl leading-relaxed drop-shadow-sm ${slide.showTitle && slide.title?.trim() ? 'mt-5' : ''}`}>
+                  <p
+                    className={`text-sm sm:text-base max-w-xl leading-relaxed drop-shadow-sm ${slide.showTitle && slide.title?.trim() ? 'mt-5' : ''}`}
+                    style={{ color: bodyColor }}
+                  >
                     {slide.text}
                   </p>
                 )}

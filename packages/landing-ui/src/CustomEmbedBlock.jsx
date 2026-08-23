@@ -2,6 +2,9 @@ import {
   getVisibleServiceItems,
   normalizePreHeroMode,
   normalizeSectionType,
+  resolveCtaButtonColors,
+  resolveFaqCardColors,
+  resolveStepsCardColors,
   splitSectionParagraphs,
 } from '@raulizqli/landing-core/customEmbeds';
 import { normalizePreHeroImageSide, splitPreHeroParagraphs } from '@raulizqli/landing-core/preHero';
@@ -108,6 +111,9 @@ function QuoteSection({ embed }) {
 function CtaSection({ embed, interactive, copy }) {
   const href = String(embed.ctaButtonUrl || '').trim() || '#contact';
   const external = /^https?:\/\//i.test(href);
+  const buttonColors = resolveCtaButtonColors(embed);
+  const buttonClassName =
+    'inline-flex items-center justify-center text-sm font-medium px-6 py-3 rounded-full transition-colors hover:brightness-95';
 
   return (
     <SectionShell embed={embed} className="bg-[#4A5D4E]/5" copy={copy}>
@@ -121,12 +127,22 @@ function CtaSection({ embed, interactive, copy }) {
             href={href}
             {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             onClick={() => trackCtaClick('custom_section_cta')}
-            className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors"
+            className={buttonClassName}
+            style={{
+              backgroundColor: buttonColors.buttonBgColor,
+              color: buttonColors.buttonTextColor,
+            }}
           >
             {embed.ctaButtonLabel || copy.bookAppointment}
           </a>
         ) : (
-          <span className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
+          <span
+            className={buttonClassName}
+            style={{
+              backgroundColor: buttonColors.buttonBgColor,
+              color: buttonColors.buttonTextColor,
+            }}
+          >
             {embed.ctaButtonLabel || copy.bookAppointment}
           </span>
         )}
@@ -144,6 +160,7 @@ const CARD_MUTED = 'text-[#0A5C3A]/55';
 
 function FaqSection({ embed, copy }) {
   const items = (embed.faqItems || []).filter((item) => item.question && item.answer);
+  const colors = resolveFaqCardColors(embed);
 
   return (
     <SectionShell embed={embed} copy={copy}>
@@ -152,15 +169,29 @@ function FaqSection({ embed, copy }) {
         {items.map((item, index) => (
           <details
             key={`${embed.id}-faq-${index}`}
-            className={`group ${LIGHT_CARD} px-4 py-3`}
+            className="group rounded-2xl border border-[#070B0A]/10 shadow-sm px-4 py-3"
+            style={{ backgroundColor: colors.cardBgColor }}
           >
             <summary
-              className={`cursor-pointer list-none font-medium text-sm sm:text-base ${CARD_TITLE} flex items-center justify-between gap-3`}
+              className="cursor-pointer list-none font-medium text-sm sm:text-base flex items-center justify-between gap-3"
+              style={{ color: colors.titleColor }}
             >
-              <span>{item.question}</span>
-              <span className={`${CARD_MUTED} group-open:rotate-45 transition-transform text-lg leading-none`}>+</span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                <span>{item.question}</span>
+                {item.price ? (
+                  <span className="font-serif text-sm sm:text-base shrink-0" style={{ color: colors.mutedColor }}>
+                    {item.price}
+                  </span>
+                ) : null}
+              </span>
+              <span
+                className="group-open:rotate-45 transition-transform text-lg leading-none shrink-0"
+                style={{ color: colors.mutedColor }}
+              >
+                +
+              </span>
             </summary>
-            <p className={`mt-3 text-sm ${CARD_BODY} leading-relaxed whitespace-pre-line`}>
+            <p className="mt-3 text-sm leading-relaxed whitespace-pre-line" style={{ color: colors.bodyColor }}>
               {item.answer}
             </p>
           </details>
@@ -172,6 +203,7 @@ function FaqSection({ embed, copy }) {
 
 function StepsSection({ embed, copy }) {
   const items = (embed.steps || []).filter((item) => item.title || item.description);
+  const colors = resolveStepsCardColors(embed);
 
   return (
     <SectionShell embed={embed} copy={copy}>
@@ -180,16 +212,27 @@ function StepsSection({ embed, copy }) {
         {items.map((item, index) => (
           <li
             key={`${embed.id}-step-${index}`}
-            className={`${LIGHT_CARD} p-5`}
+            className="rounded-2xl border border-[#070B0A]/10 shadow-sm p-5"
+            style={{ backgroundColor: colors.cardBgColor }}
           >
-            <p className={`text-[11px] uppercase tracking-[0.2em] ${CARD_MUTED} mb-3`}>
+            <p
+              className="text-[11px] uppercase tracking-[0.2em] mb-3"
+              style={{ color: colors.mutedColor }}
+            >
               {String(index + 1).padStart(2, '0')}
             </p>
             {item.title && (
-              <h3 className={`font-serif text-lg sm:text-xl ${CARD_TITLE} mb-2 leading-snug`}>{item.title}</h3>
+              <h3
+                className="font-serif text-lg sm:text-xl mb-2 leading-snug"
+                style={{ color: colors.titleColor }}
+              >
+                {item.title}
+              </h3>
             )}
             {item.description && (
-              <p className={`text-sm ${CARD_BODY} leading-relaxed`}>{item.description}</p>
+              <p className="text-sm leading-relaxed" style={{ color: colors.bodyColor }}>
+                {item.description}
+              </p>
             )}
           </li>
         ))}

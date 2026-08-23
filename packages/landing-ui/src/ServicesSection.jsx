@@ -9,6 +9,8 @@ import {
   normalizeServicesCarouselTransition,
   normalizeServicesDisplayMode,
   normalizeServicesVisualStyle,
+  resolveServiceDescriptionColor,
+  resolveServiceTitleColor,
   SERVICES_CAROUSEL_AUTOPLAY_MS,
   shouldShowServicesSection,
   splitServicesSectionText,
@@ -25,6 +27,24 @@ import {
 } from './sectionVisualStyles.js';
 
 const CAROUSEL_TRANSITION_MS = 280;
+const MUTED_TEXT_ALPHA = 'B3';
+
+function mutedColor(hex) {
+  const base = String(hex ?? '').trim();
+  if (!base) return undefined;
+  if (base.length === 9) return base;
+  return `${base}${MUTED_TEXT_ALPHA}`;
+}
+
+function serviceTextColors(item, visualStyle) {
+  const titleColor = resolveServiceTitleColor(item, visualStyle);
+  const descriptionColor = resolveServiceDescriptionColor(item, visualStyle);
+  const descriptionIsCustom = Boolean(String(item?.descriptionColor ?? '').trim());
+  return {
+    titleColor,
+    descriptionColor: descriptionIsCustom ? descriptionColor : mutedColor(descriptionColor),
+  };
+}
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);
@@ -67,10 +87,13 @@ function ServiceMedia({ imageUrl, title, prominent, mediaClassName = '' }) {
   );
 }
 
-function ServiceListBody({ items }) {
+function ServiceListBody({ items, color }) {
   if (!items.length) return null;
   return (
-    <ul className="mt-1 space-y-2 text-sm text-[#2A342D]/70 leading-relaxed list-disc pl-5">
+    <ul
+      className="mt-1 space-y-2 text-sm leading-relaxed list-disc pl-5"
+      style={color ? { color } : undefined}
+    >
       {items.map((entry, index) => (
         <li key={`service-list-${index}`}>{entry}</li>
       ))}
@@ -82,9 +105,20 @@ function mergeStyles(...styles) {
   return Object.assign({}, ...styles.filter(Boolean));
 }
 
-function TitleServiceCard({ item, visualClasses, entranceStyle }) {
+function ServicePrice({ price, color }) {
+  const text = String(price ?? '').trim();
+  if (!text) return null;
+  return (
+    <p className="text-sm font-medium mb-2" style={{ color }}>
+      {text}
+    </p>
+  );
+}
+
+function TitleServiceCard({ item, visualClasses, entranceStyle, titleColor, descriptionColor }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
+  const price = String(item.price ?? '').trim();
 
   return (
     <article
@@ -92,11 +126,17 @@ function TitleServiceCard({ item, visualClasses, entranceStyle }) {
       style={mergeStyles(visualClasses.articleStyle, entranceStyle)}
     >
       <ServiceMedia imageUrl={imageUrl} title={title} prominent mediaClassName={visualClasses.media} />
-      {title && (
+      {(title || price) && (
         <div className={visualClasses.body}>
-          <h3 className={`${visualClasses.title} ${imageUrl ? 'text-center' : ''}`}>
-            {title}
-          </h3>
+          {title && (
+            <h3
+              className={`${visualClasses.title} ${imageUrl ? 'text-center' : ''} ${price ? 'mb-0' : ''}`}
+              style={{ color: titleColor }}
+            >
+              {title}
+            </h3>
+          )}
+          <ServicePrice price={price} color={descriptionColor} />
         </div>
       )}
     </article>
@@ -110,9 +150,12 @@ function DescriptionServiceCard({
   viewLessLabel,
   visualClasses,
   entranceStyle,
+  titleColor,
+  descriptionColor,
 }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
+  const price = String(item.price ?? '').trim();
   const { preview, full, truncated } = truncateServiceDescription(item.description);
   const [expanded, setExpanded] = useState(false);
 
@@ -130,13 +173,14 @@ function DescriptionServiceCard({
       <ServiceMedia imageUrl={imageUrl} title={title} mediaClassName={visualClasses.media} />
       <div className={visualClasses.body}>
         {title && (
-          <h3 className={`${visualClasses.title} mb-2`}>
+          <h3 className={`${visualClasses.title} ${price ? 'mb-1' : 'mb-2'}`} style={{ color: titleColor }}>
             {title}
           </h3>
         )}
+        <ServicePrice price={price} color={descriptionColor} />
 
         {shownText && (
-          <div className="text-sm text-[#2A342D]/70 leading-relaxed flex-1">
+          <div className="text-sm leading-relaxed flex-1" style={{ color: descriptionColor }}>
             <p>{shownText}</p>
             {truncated && (
               interactive ? (
@@ -160,9 +204,10 @@ function DescriptionServiceCard({
   );
 }
 
-function ListServiceCard({ item, visualClasses, entranceStyle }) {
+function ListServiceCard({ item, visualClasses, entranceStyle, titleColor, descriptionColor }) {
   const imageUrl = String(item.imageUrl ?? '').trim();
   const title = String(item.title ?? '').trim();
+  const price = String(item.price ?? '').trim();
   const listItems = normalizeServiceListItems(item.listItems);
 
   return (
@@ -173,11 +218,12 @@ function ListServiceCard({ item, visualClasses, entranceStyle }) {
       <ServiceMedia imageUrl={imageUrl} title={title} mediaClassName={visualClasses.media} />
       <div className={visualClasses.body}>
         {title && (
-          <h3 className={`${visualClasses.title} mb-3`}>
+          <h3 className={`${visualClasses.title} ${price ? 'mb-1' : 'mb-3'}`} style={{ color: titleColor }}>
             {title}
           </h3>
         )}
-        <ServiceListBody items={listItems} />
+        <ServicePrice price={price} color={descriptionColor} />
+        <ServiceListBody items={listItems} color={descriptionColor} />
       </div>
     </article>
   );
@@ -194,8 +240,10 @@ export function ServiceCard({
 }) {
   const layout = normalizeServiceLayout(item?.layout);
   const meta = getServiceLayoutMeta(layout);
-  const visualClasses = getItemVisualClasses(visualStyle, customStyle);
+  const style = normalizeServicesVisualStyle(visualStyle);
+  const visualClasses = getItemVisualClasses(style, customStyle);
   const entranceStyle = entranceDelayStyle(entranceIndex);
+  const { titleColor, descriptionColor } = serviceTextColors(item, style);
 
   if (layout === 'title') {
     return (
@@ -203,6 +251,8 @@ export function ServiceCard({
         item={item}
         visualClasses={visualClasses}
         entranceStyle={entranceStyle}
+        titleColor={titleColor}
+        descriptionColor={descriptionColor}
       />
     );
   }
@@ -213,6 +263,8 @@ export function ServiceCard({
         item={item}
         visualClasses={visualClasses}
         entranceStyle={entranceStyle}
+        titleColor={titleColor}
+        descriptionColor={descriptionColor}
       />
     );
   }
@@ -225,6 +277,8 @@ export function ServiceCard({
       viewLessLabel={viewLessLabel}
       visualClasses={visualClasses}
       entranceStyle={entranceStyle}
+      titleColor={titleColor}
+      descriptionColor={descriptionColor}
     />
   );
 }

@@ -15,8 +15,15 @@ import {
   normalizeHeroImageFit,
 } from '../utils/heroSlides';
 import ImageUrlField from './ImageUrlField';
-import SectionBackgroundEditor from './SectionBackgroundEditor';
+import SectionBackgroundEditor, { ColorField } from './SectionBackgroundEditor';
 import AiAssistButton from './AiAssistButton';
+import { BRAND_COLOR_PRESETS, TEXT_COLOR_PRESETS } from '../utils/sectionBackground';
+import {
+  DEFAULT_HERO_BUTTON_BG_COLOR,
+  DEFAULT_HERO_BUTTON_OUTLINE_COLOR,
+  DEFAULT_HERO_BUTTON_TEXT_COLOR,
+  DEFAULT_HERO_TEXT_COLOR,
+} from '../utils/heroSlides';
 import { useLocale } from '../i18n/LocaleContext';
 import { HERO_SLIDE_IMAGE_MAX_BYTES } from '../utils/uploadImage';
 
@@ -25,6 +32,18 @@ function formatSlideCurrentValue(slide) {
   const text = String(slide?.text ?? '').trim();
   if (title && text) return `Título: ${title}\nTexto: ${text}`;
   return title || text || '';
+}
+
+function SlideColorReset({ field, onChange, defaultLabel }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(field, '')}
+      className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+    >
+      Restablecer ({defaultLabel})
+    </button>
+  );
 }
 
 function SlideEditor({
@@ -303,6 +322,91 @@ function SlideEditor({
                   ))}
                 </select>
               </div>
+            </div>
+          )}
+
+          {(slide.showTitle || slide.showText || slide.showButtons !== false) && (
+            <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Colores de esta diapositiva</p>
+
+              {(slide.showTitle || slide.showText) && (
+                <div className="space-y-1">
+                  <ColorField
+                    label="Color del texto"
+                    value={slide.textColor || DEFAULT_HERO_TEXT_COLOR}
+                    onChange={(value) => onChange('textColor', value)}
+                    presets={[
+                      { value: DEFAULT_HERO_TEXT_COLOR, label: 'Blanco' },
+                      ...TEXT_COLOR_PRESETS,
+                    ]}
+                  />
+                  {slide.textColor ? (
+                    <SlideColorReset
+                      field="textColor"
+                      onChange={onChange}
+                      defaultLabel={DEFAULT_HERO_TEXT_COLOR}
+                    />
+                  ) : null}
+                </div>
+              )}
+
+              {slide.showButtons !== false && (
+                <>
+                  <div className="space-y-1">
+                    <ColorField
+                      label="Fondo del botón principal"
+                      value={slide.buttonBgColor || DEFAULT_HERO_BUTTON_BG_COLOR}
+                      onChange={(value) => onChange('buttonBgColor', value)}
+                      presets={BRAND_COLOR_PRESETS}
+                    />
+                    {slide.buttonBgColor ? (
+                      <SlideColorReset
+                        field="buttonBgColor"
+                        onChange={onChange}
+                        defaultLabel={DEFAULT_HERO_BUTTON_BG_COLOR}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="space-y-1">
+                    <ColorField
+                      label="Texto del botón principal"
+                      value={slide.buttonTextColor || DEFAULT_HERO_BUTTON_TEXT_COLOR}
+                      onChange={(value) => onChange('buttonTextColor', value)}
+                      presets={[
+                        { value: DEFAULT_HERO_BUTTON_TEXT_COLOR, label: 'Blanco' },
+                        ...TEXT_COLOR_PRESETS,
+                      ]}
+                    />
+                    {slide.buttonTextColor ? (
+                      <SlideColorReset
+                        field="buttonTextColor"
+                        onChange={onChange}
+                        defaultLabel={DEFAULT_HERO_BUTTON_TEXT_COLOR}
+                      />
+                    ) : null}
+                  </div>
+                  {normalizeHeroButtonsMode(slide.buttonsMode) === 'preset' && (
+                    <div className="space-y-1">
+                      <ColorField
+                        label="Color del botón secundario (borde y texto)"
+                        value={slide.buttonOutlineColor || DEFAULT_HERO_BUTTON_OUTLINE_COLOR}
+                        onChange={(value) => onChange('buttonOutlineColor', value)}
+                        presets={[
+                          { value: DEFAULT_HERO_BUTTON_OUTLINE_COLOR, label: 'Blanco' },
+                          ...TEXT_COLOR_PRESETS,
+                        ]}
+                      />
+                      {slide.buttonOutlineColor ? (
+                        <SlideColorReset
+                          field="buttonOutlineColor"
+                          onChange={onChange}
+                          defaultLabel={DEFAULT_HERO_BUTTON_OUTLINE_COLOR}
+                        />
+                      ) : null}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

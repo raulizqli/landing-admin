@@ -188,7 +188,7 @@ export default function LocationFieldsEditor({
                     type="text"
                     value={location.phone || ''}
                     onChange={(e) => updateLocation(index, { phone: e.target.value })}
-                    placeholder="+52 55 1234 5678"
+                    placeholder="55 1234 5678"
                     className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                   <label className="flex items-center gap-2 text-xs text-gray-600">
@@ -200,6 +200,11 @@ export default function LocationFieldsEditor({
                     />
                     Abrir WhatsApp en lugar de llamada
                   </label>
+                  {location.phoneIsWhatsapp && (
+                    <p className="text-[10px] text-gray-400">
+                      Usa el país configurado en Teléfono / WhatsApp de la página para armar el enlace.
+                    </p>
+                  )}
                 </div>
               </>
             )}

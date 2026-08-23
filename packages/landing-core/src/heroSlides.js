@@ -1,5 +1,6 @@
 import { createContentId, normalizeContentId } from './contentIds.js';
 import { SECTION_IDS } from './sectionAnchors.js';
+import { parseColorToHex } from './sectionBackground.js';
 
 export const HERO_BUTTON_POSITIONS = [
   { value: 'center', label: 'Centro (con el texto)' },
@@ -112,6 +113,38 @@ export function normalizeHeroButtonsMode(value) {
   return HERO_BUTTONS_MODE_SET.has(value) ? value : DEFAULT_HERO_BUTTONS_MODE;
 }
 
+export const DEFAULT_HERO_TEXT_COLOR = '#FFFFFF';
+export const DEFAULT_HERO_BUTTON_BG_COLOR = '#4A5D4E';
+export const DEFAULT_HERO_BUTTON_TEXT_COLOR = '#FFFFFF';
+export const DEFAULT_HERO_BUTTON_OUTLINE_COLOR = '#FFFFFF';
+
+function normalizeOptionalColor(value, fallback) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return parseColorToHex(raw, fallback);
+}
+
+export function resolveHeroSlideTextColor(slide = {}) {
+  const custom = normalizeOptionalColor(slide.textColor, DEFAULT_HERO_TEXT_COLOR);
+  return custom || DEFAULT_HERO_TEXT_COLOR;
+}
+
+export function resolveHeroSlideButtonColors(slide = {}) {
+  return {
+    buttonBgColor: normalizeOptionalColor(slide.buttonBgColor, DEFAULT_HERO_BUTTON_BG_COLOR)
+      || DEFAULT_HERO_BUTTON_BG_COLOR,
+    buttonTextColor: normalizeOptionalColor(slide.buttonTextColor, DEFAULT_HERO_BUTTON_TEXT_COLOR)
+      || DEFAULT_HERO_BUTTON_TEXT_COLOR,
+    buttonOutlineColor: normalizeOptionalColor(slide.buttonOutlineColor, DEFAULT_HERO_BUTTON_OUTLINE_COLOR)
+      || DEFAULT_HERO_BUTTON_OUTLINE_COLOR,
+  };
+}
+
+export function resolveHeroSlideSpecialtyColor(slide = {}) {
+  const custom = normalizeOptionalColor(slide.textColor, DEFAULT_HERO_TEXT_COLOR);
+  return custom || DEFAULT_HERO_TEXT_COLOR;
+}
+
 export function normalizeHeroButtonSection(value) {
   return HERO_BUTTON_SECTION_SET.has(value) ? value : DEFAULT_HERO_BUTTON_SECTION;
 }
@@ -164,6 +197,10 @@ export function createEmptySlide() {
     customButtonSection: DEFAULT_HERO_BUTTON_SECTION,
     showGradient: true,
     buttonsPosition: 'center',
+    textColor: '',
+    buttonBgColor: '',
+    buttonTextColor: '',
+    buttonOutlineColor: '',
   };
 }
 
@@ -187,6 +224,10 @@ export function normalizeHeroSlide(slide = {}, index = 0) {
     customButtonSection: normalizeHeroButtonSection(slide.customButtonSection),
     showGradient: (slide.showGradient ?? slide.mostrarDegradado) !== false,
     buttonsPosition: normalizeButtonsPosition(slide.buttonsPosition ?? slide.botonesPosicion),
+    textColor: normalizeOptionalColor(slide.textColor, DEFAULT_HERO_TEXT_COLOR),
+    buttonBgColor: normalizeOptionalColor(slide.buttonBgColor, DEFAULT_HERO_BUTTON_BG_COLOR),
+    buttonTextColor: normalizeOptionalColor(slide.buttonTextColor, DEFAULT_HERO_BUTTON_TEXT_COLOR),
+    buttonOutlineColor: normalizeOptionalColor(slide.buttonOutlineColor, DEFAULT_HERO_BUTTON_OUTLINE_COLOR),
   };
 }
 
@@ -233,6 +274,10 @@ export function hydrateFormHeroSlides(formData) {
     customButtonSection: normalizeHeroButtonSection(slide.customButtonSection),
     showGradient: slide.showGradient !== false,
     buttonsPosition: normalizeButtonsPosition(slide.buttonsPosition),
+    textColor: normalizeOptionalColor(slide.textColor, DEFAULT_HERO_TEXT_COLOR),
+    buttonBgColor: normalizeOptionalColor(slide.buttonBgColor, DEFAULT_HERO_BUTTON_BG_COLOR),
+    buttonTextColor: normalizeOptionalColor(slide.buttonTextColor, DEFAULT_HERO_BUTTON_TEXT_COLOR),
+    buttonOutlineColor: normalizeOptionalColor(slide.buttonOutlineColor, DEFAULT_HERO_BUTTON_OUTLINE_COLOR),
   }));
 
   return { ...formData, heroSlides };

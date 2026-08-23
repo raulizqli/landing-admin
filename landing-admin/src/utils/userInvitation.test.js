@@ -13,8 +13,9 @@ describe('userInvitation', () => {
     invitationLink: 'https://example.com/reset?mode=resetPassword&oobCode=abc',
   };
 
-  it('normalizes an international WhatsApp phone', () => {
-    expect(normalizeWhatsAppPhone('+52 (55) 1234-5678')).toBe('525512345678');
+  it('normalizes a Mexico WhatsApp phone for wa.me', () => {
+    expect(normalizeWhatsAppPhone('+52 (55) 1234-5678')).toBe('5215512345678');
+    expect(normalizeWhatsAppPhone('5512345678', 'mx')).toBe('5215512345678');
   });
 
   it('builds the invitation message without exposing a password', () => {
@@ -34,12 +35,13 @@ describe('userInvitation', () => {
     expect(decodeURIComponent(url)).toContain(invitation.invitationLink);
   });
 
-  it('builds a WhatsApp URL using digits only', () => {
+  it('builds a WhatsApp URL with Mexico mobile prefix', () => {
     const url = buildUserInvitationUrl({
       ...invitation,
       channel: INVITATION_CHANNELS.WHATSAPP,
-      phone: '+52 55 1234 5678',
+      phone: '55 1234 5678',
+      phoneCountry: 'mx',
     });
-    expect(url).toMatch(/^https:\/\/wa\.me\/525512345678\?text=/);
+    expect(url).toMatch(/^https:\/\/wa\.me\/5215512345678\?text=/);
   });
 });

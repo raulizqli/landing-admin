@@ -1,5 +1,6 @@
 import { ROLES } from '../utils/permissions';
 import { INVITATION_CHANNELS } from '../utils/userInvitation';
+import { PHONE_COUNTRIES } from '../utils/phone';
 
 export const EMPTY_CMS_USER_FORM = {
   email: '',
@@ -10,6 +11,7 @@ export const EMPTY_CMS_USER_FORM = {
   isDemo: false,
   invitationChannel: INVITATION_CHANNELS.EMAIL,
   whatsappPhone: '',
+  whatsappPhoneCountry: 'mx',
 };
 
 export function parsePageIdsInput(value) {
@@ -29,6 +31,7 @@ export function userToForm(user) {
     isDemo: user.isDemo === true,
     invitationChannel: INVITATION_CHANNELS.EMAIL,
     whatsappPhone: '',
+    whatsappPhoneCountry: 'mx',
   };
 }
 
@@ -72,14 +75,28 @@ function FormFields({ form, setForm, editingUid, pageOptions }) {
             <option value={INVITATION_CHANNELS.NONE}>No preparar ahora</option>
           </select>
           {form.invitationChannel === INVITATION_CHANNELS.WHATSAPP && (
-            <input
-              type="tel"
-              required
-              value={form.whatsappPhone}
-              onChange={(event) => setForm({ ...form, whatsappPhone: event.target.value })}
-              placeholder="5215512345678 (con código de país)"
-              className="w-full border rounded-lg px-3 py-2 text-xs bg-white"
-            />
+            <div className="flex gap-2">
+              <select
+                value={form.whatsappPhoneCountry || 'mx'}
+                onChange={(event) => setForm({ ...form, whatsappPhoneCountry: event.target.value })}
+                className="w-[9.5rem] shrink-0 border rounded-lg px-2 py-2 text-xs bg-white"
+                aria-label="Código de país"
+              >
+                {PHONE_COUNTRIES.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label} ({item.dialLabel})
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                required
+                value={form.whatsappPhone}
+                onChange={(event) => setForm({ ...form, whatsappPhone: event.target.value })}
+                placeholder="55 1234 5678"
+                className="flex-1 min-w-0 border rounded-lg px-3 py-2 text-xs bg-white"
+              />
+            </div>
           )}
           <p className="text-[10px] text-indigo-500">
             Se generará un enlace temporal para que el usuario establezca su contraseña.

@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   createEmptySlide,
+  DEFAULT_HERO_BUTTON_BG_COLOR,
+  DEFAULT_HERO_BUTTON_OUTLINE_COLOR,
+  DEFAULT_HERO_BUTTON_TEXT_COLOR,
   DEFAULT_HERO_IMAGE_FIT,
+  DEFAULT_HERO_TEXT_COLOR,
   getHeroImageFitClass,
   hasHeroSlideImage,
   getHeroButtonsOverlayClass,
   normalizeHeroHeightMode,
   normalizeHeroImageFit,
   normalizeHeroSlide,
+  resolveHeroSlideButtonColors,
   resolveHeroSlideImageUrl,
+  resolveHeroSlideTextColor,
   shouldUseFluidHeroHeight,
 } from './heroSlides.js';
 
@@ -122,5 +128,53 @@ describe('hero slide custom button', () => {
     });
     expect(slide.buttonsMode).toBe('preset');
     expect(slide.customButtonSection).toBe('contact');
+  });
+});
+
+describe('hero slide colors', () => {
+  it('creates slides with empty color overrides', () => {
+    const slide = createEmptySlide();
+    expect(slide.textColor).toBe('');
+    expect(slide.buttonBgColor).toBe('');
+    expect(slide.buttonTextColor).toBe('');
+    expect(slide.buttonOutlineColor).toBe('');
+  });
+
+  it('normalizes custom slide colors to hex', () => {
+    const slide = normalizeHeroSlide({
+      textColor: '#ff0000',
+      buttonBgColor: '4A5D4E',
+      buttonTextColor: '#000',
+      buttonOutlineColor: 'white',
+    });
+    expect(slide.textColor).toBe('#FF0000');
+    expect(slide.buttonBgColor).toBe('#4A5D4E');
+    expect(slide.buttonTextColor).toBe('#000000');
+    expect(slide.buttonOutlineColor).toBe('#FFFFFF');
+  });
+
+  it('resolves defaults when color fields are empty', () => {
+    const slide = normalizeHeroSlide({});
+    expect(resolveHeroSlideTextColor(slide)).toBe(DEFAULT_HERO_TEXT_COLOR);
+    expect(resolveHeroSlideButtonColors(slide)).toEqual({
+      buttonBgColor: DEFAULT_HERO_BUTTON_BG_COLOR,
+      buttonTextColor: DEFAULT_HERO_BUTTON_TEXT_COLOR,
+      buttonOutlineColor: DEFAULT_HERO_BUTTON_OUTLINE_COLOR,
+    });
+  });
+
+  it('uses slide-specific colors when set', () => {
+    const slide = normalizeHeroSlide({
+      textColor: '#2A342D',
+      buttonBgColor: '#E8B4B8',
+      buttonTextColor: '#2A342D',
+      buttonOutlineColor: '#2A342D',
+    });
+    expect(resolveHeroSlideTextColor(slide)).toBe('#2A342D');
+    expect(resolveHeroSlideButtonColors(slide)).toEqual({
+      buttonBgColor: '#E8B4B8',
+      buttonTextColor: '#2A342D',
+      buttonOutlineColor: '#2A342D',
+    });
   });
 });

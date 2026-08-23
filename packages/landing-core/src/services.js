@@ -1,4 +1,5 @@
 import { createContentId, normalizeContentId } from './contentIds.js';
+import { parseColorToHex } from './sectionBackground.js';
 
 export const SERVICE_ITEM_LAYOUTS = [
   {
@@ -28,6 +29,36 @@ const SERVICE_LAYOUT_ALIASES = {
   title_list_image: 'title_list',
 };
 
+export const DEFAULT_SERVICE_TITLE_COLOR = '#2A342D';
+export const DEFAULT_SERVICE_DESCRIPTION_COLOR = '#2A342D';
+export const DEFAULT_SERVICE_CUSTOM_TITLE_COLOR = '#0A5C3A';
+
+function normalizeOptionalColor(value, fallback) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return parseColorToHex(raw, fallback);
+}
+
+/** Resolved title color for a service card (empty field → visual-style default). */
+export function resolveServiceTitleColor(item = {}, visualStyle = 'cards') {
+  const custom = normalizeOptionalColor(item.titleColor, DEFAULT_SERVICE_TITLE_COLOR);
+  if (custom) return custom;
+  if (normalizeServicesVisualStyle(visualStyle) === 'custom') {
+    return DEFAULT_SERVICE_CUSTOM_TITLE_COLOR;
+  }
+  return DEFAULT_SERVICE_TITLE_COLOR;
+}
+
+/**
+ * Resolved description/list color. Custom descriptionColor wins; otherwise
+ * matches the title color (caller may apply muted opacity for defaults).
+ */
+export function resolveServiceDescriptionColor(item = {}, visualStyle = 'cards') {
+  const custom = normalizeOptionalColor(item.descriptionColor, DEFAULT_SERVICE_DESCRIPTION_COLOR);
+  if (custom) return custom;
+  return resolveServiceTitleColor(item, visualStyle);
+}
+
 export function createEmptyService(overrides = {}) {
   return {
     id: createContentId('service'),
@@ -36,9 +67,14 @@ export function createEmptyService(overrides = {}) {
     description: '',
     listItems: [],
     imageUrl: '',
+    price: '',
+    titleColor: '',
+    descriptionColor: '',
     ...overrides,
     layout: normalizeServiceLayout(overrides.layout || 'title_description'),
     listItems: normalizeServiceListItems(overrides.listItems ?? []),
+    titleColor: normalizeOptionalColor(overrides.titleColor, DEFAULT_SERVICE_TITLE_COLOR),
+    descriptionColor: normalizeOptionalColor(overrides.descriptionColor, DEFAULT_SERVICE_DESCRIPTION_COLOR),
   };
 }
 
@@ -86,6 +122,9 @@ export function normalizeService(item = {}, index = 0) {
     description,
     listItems,
     imageUrl: item.imageUrl || item.imagenUrl || '',
+    price: String(item.price ?? item.precio ?? '').trim(),
+    titleColor: normalizeOptionalColor(item.titleColor, DEFAULT_SERVICE_TITLE_COLOR),
+    descriptionColor: normalizeOptionalColor(item.descriptionColor, DEFAULT_SERVICE_DESCRIPTION_COLOR),
   };
 }
 

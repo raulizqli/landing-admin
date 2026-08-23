@@ -185,7 +185,7 @@ export default function UsersAdminPage() {
           form.invitationChannel === INVITATION_CHANNELS.WHATSAPP
           && !String(form.whatsappPhone ?? '').replace(/\D/g, '')
         ) {
-          throw new Error('Ingresa un teléfono de WhatsApp con código de país.');
+          throw new Error('Ingresa un teléfono de WhatsApp.');
         }
         const result = await createCmsUser({
           ...payload,
@@ -199,6 +199,7 @@ export default function UsersAdminPage() {
             invitationLink: result.invitationLink,
             channel: form.invitationChannel,
             phone: form.whatsappPhone,
+            phoneCountry: form.whatsappPhoneCountry || 'mx',
             emailSent: result.invitationEmailSent === true,
           });
           setInvitationStatus(

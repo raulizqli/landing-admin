@@ -19,6 +19,7 @@ export const PAGE_AUDIT_KEYS = [
   'aboutSectionEnabled',
   'email',
   'phone',
+  'phoneCountry',
   'phoneIsWhatsapp',
   'location',
   'locationMapsUrl',

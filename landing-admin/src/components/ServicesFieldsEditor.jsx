@@ -296,6 +296,20 @@ export default function ServicesFieldsEditor({
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase">Precio (opcional)</label>
+                  <input
+                    type="text"
+                    value={item.price || ''}
+                    onChange={(e) => updateItem(index, 'price', e.target.value)}
+                    placeholder="MX$189 / mes · Desde $50"
+                    className="w-full border p-2.5 text-xs rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                  <p className="text-[10px] text-gray-400">
+                    Omítelo si el servicio no lleva precio visible.
+                  </p>
+                </div>
+
                 {meta.fields.description && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">

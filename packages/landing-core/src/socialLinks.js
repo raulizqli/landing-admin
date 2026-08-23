@@ -1,7 +1,8 @@
+import { buildWhatsAppUrl, getPhoneCountryMeta, normalizePhoneCountry } from './phone.js';
 
 export const SOCIAL_FIELDS = [
   { key: 'instagram', label: 'Instagram', prefix: 'https://instagram.com/', placeholder: 'usuario' },
-  { key: 'whatsapp', label: 'WhatsApp', prefix: 'https://wa.me/', placeholder: '525512345678' },
+  { key: 'whatsapp', label: 'WhatsApp', prefix: 'https://wa.me/', placeholder: '55 1234 5678' },
   { key: 'facebook', label: 'Facebook', prefix: 'https://facebook.com/', placeholder: 'page' },
   { key: 'linkedin', label: 'LinkedIn', prefix: 'https://linkedin.com/in/', placeholder: 'usuario' },
   { key: 'doctoralia', label: 'Doctoralia', prefix: 'https://www.doctoralia.com.mx/', placeholder: 'nombre-apellido/especialidad' },
@@ -59,7 +60,7 @@ export function parseSocialHandle(stored, network) {
   return stripAt(raw);
 }
 
-export function buildSocialUrl(handle, network) {
+export function buildSocialUrl(handle, network, options = {}) {
   const value = parseSocialHandle(handle, network);
   if (!value) return '';
 
@@ -67,7 +68,7 @@ export function buildSocialUrl(handle, network) {
     case 'instagram':
       return `https://instagram.com/${value}`;
     case 'whatsapp':
-      return `https://wa.me/${value}`;
+      return buildWhatsAppUrl(value, normalizePhoneCountry(options.country));
     case 'facebook':
       return `https://facebook.com/${value}`;
     case 'tiktok':
@@ -83,10 +84,15 @@ export function buildSocialUrl(handle, network) {
   }
 }
 
+export function getWhatsAppSocialPlaceholder(country) {
+  return getPhoneCountryMeta(country).placeholder;
+}
+
 export function getSocialLinks(data) {
+  const country = normalizePhoneCountry(data?.phoneCountry);
   return SOCIAL_FIELDS
     .map(({ key, label }) => {
-      const href = buildSocialUrl(data?.[key], key);
+      const href = buildSocialUrl(data?.[key], key, { country });
       if (!href) return null;
       return { key, label, href };
     })

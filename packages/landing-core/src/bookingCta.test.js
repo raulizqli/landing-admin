@@ -12,6 +12,16 @@ describe('resolveBookingCta', () => {
     expect(cta.href).toMatch(/^https:\/\/wa\.me\/5215512345678\?text=/);
   });
 
+  it('normalizes a local Mexico number for WhatsApp CTA', () => {
+    const cta = resolveBookingCta({
+      navCtaTarget: 'whatsapp',
+      whatsapp: '5512345678',
+      phoneCountry: 'mx',
+      labelLanguage: 'es',
+    });
+    expect(cta.href).toMatch(/^https:\/\/wa\.me\/5215512345678\?text=/);
+  });
+
   it('resolves external link CTA and prefixes https when missing', () => {
     const cta = resolveBookingCta({
       navCtaTarget: 'link',

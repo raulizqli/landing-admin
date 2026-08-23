@@ -7,10 +7,77 @@ import {
   normalizeServicesDisplayMode,
   normalizeServicesVisualStyle,
   isServiceItemVisible,
+  serviceListItemsToText,
 } from './services.js';
 import { createEmptySectionCustomStyle, normalizeSectionCustomStyle } from './sectionCustomStyle.js';
 import { normalizePreHeroImageSide } from './preHero.js';
 import { createContentId, normalizeContentId } from './contentIds.js';
+import { parseColorToHex } from './sectionBackground.js';
+
+export const DEFAULT_STEPS_CARD_BG_COLOR = '#F4F7F5';
+export const DEFAULT_STEPS_TITLE_COLOR = '#0A5C3A';
+export const DEFAULT_STEPS_BODY_COLOR = '#1A2420';
+export const DEFAULT_STEPS_MUTED_COLOR = '#0A5C3A';
+
+export const DEFAULT_FAQ_CARD_BG_COLOR = DEFAULT_STEPS_CARD_BG_COLOR;
+export const DEFAULT_FAQ_TEXT_COLOR = DEFAULT_STEPS_TITLE_COLOR;
+
+export const DEFAULT_CTA_BUTTON_BG_COLOR = '#4A5D4E';
+export const DEFAULT_CTA_BUTTON_TEXT_COLOR = '#FFFFFF';
+
+function normalizeOptionalColor(value, fallback) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return parseColorToHex(raw, fallback);
+}
+
+function resolveEmbedCardColors(embed = {}, { bgField, textField }) {
+  const defaultBg = DEFAULT_STEPS_CARD_BG_COLOR;
+  const cardBgColor = normalizeOptionalColor(embed[bgField], defaultBg) || defaultBg;
+  const customText = normalizeOptionalColor(embed[textField], DEFAULT_STEPS_TITLE_COLOR);
+
+  if (customText) {
+    return {
+      cardBgColor,
+      titleColor: customText,
+      bodyColor: `${customText}CC`,
+      mutedColor: `${customText}8C`,
+    };
+  }
+
+  return {
+    cardBgColor,
+    titleColor: DEFAULT_STEPS_TITLE_COLOR,
+    bodyColor: `${DEFAULT_STEPS_BODY_COLOR}CC`,
+    mutedColor: `${DEFAULT_STEPS_MUTED_COLOR}8C`,
+  };
+}
+
+/** Resolved card + text colors for steps embeds (empty fields keep legacy defaults). */
+export function resolveStepsCardColors(embed = {}) {
+  return resolveEmbedCardColors(embed, {
+    bgField: 'stepsCardBgColor',
+    textField: 'stepsTextColor',
+  });
+}
+
+/** Resolved card + text colors for FAQ embeds (empty fields keep legacy defaults). */
+export function resolveFaqCardColors(embed = {}) {
+  return resolveEmbedCardColors(embed, {
+    bgField: 'faqCardBgColor',
+    textField: 'faqTextColor',
+  });
+}
+
+/** Resolved button colors for booking CTA embeds (empty fields keep legacy defaults). */
+export function resolveCtaButtonColors(embed = {}) {
+  return {
+    buttonBgColor: normalizeOptionalColor(embed.ctaButtonBgColor, DEFAULT_CTA_BUTTON_BG_COLOR)
+      || DEFAULT_CTA_BUTTON_BG_COLOR,
+    buttonTextColor: normalizeOptionalColor(embed.ctaButtonTextColor, DEFAULT_CTA_BUTTON_TEXT_COLOR)
+      || DEFAULT_CTA_BUTTON_TEXT_COLOR,
+  };
+}
 
 export const EMBED_PLACEMENTS = [
   { value: 'before_pre_hero', label: 'Antes de la sección principal' },
@@ -149,6 +216,7 @@ export function createEmptyFaqItem(overrides = {}) {
     id: createContentId('faq'),
     question: '',
     answer: '',
+    price: '',
     ...overrides,
   };
 }
@@ -168,6 +236,7 @@ function normalizeFaqItems(items) {
     id: normalizeContentId(item?.id, `faq-${index + 1}`),
     question: String(item?.question ?? item?.pregunta ?? '').trim(),
     answer: String(item?.answer ?? item?.respuesta ?? '').trim(),
+    price: String(item?.price ?? item?.precio ?? '').trim(),
   }));
 }
 
@@ -206,6 +275,8 @@ export function createEmptyCustomEmbed(overrides = {}) {
     ctaText: '',
     ctaButtonLabel: 'Reservar cita',
     ctaButtonUrl: '',
+    ctaButtonBgColor: '',
+    ctaButtonTextColor: '',
     faqItems: [createEmptyFaqItem()],
     steps: [createEmptyStepItem(), createEmptyStepItem(), createEmptyStepItem()],
     imageUrl: '',
@@ -220,6 +291,10 @@ export function createEmptyCustomEmbed(overrides = {}) {
     servicesCustomStyle: createEmptySectionCustomStyle(),
     portfolioUrl: '',
     portfolioProvider: 'custom',
+    stepsCardBgColor: '',
+    stepsTextColor: '',
+    faqCardBgColor: '',
+    faqTextColor: '',
     fullWidth: false,
     sortOrder: 0,
     ...overrides,
@@ -274,6 +349,205 @@ export function createCustomSectionByType(type, overrides = {}) {
   return createEmptyCustomEmbed(base);
 }
 
+const LIST_SECTION_TYPES = new Set(['faq', 'steps', 'services']);
+
+function pickEmbedLongText(embed = {}) {
+  return String(embed.body ?? embed.ctaText ?? embed.quoteText ?? '').trim();
+}
+
+function extractTitleDescriptionItems(embed = {}, fromType = embed.type) {
+  const type = normalizeSectionType(fromType);
+
+  if (type === 'faq') {
+    return normalizeFaqItems(embed.faqItems).map((item) => ({
+      id: item.id,
+      title: item.question,
+      description: item.answer,
+      price: item.price,
+    }));
+  }
+
+  if (type === 'steps') {
+    return normalizeStepItems(embed.steps).map((item) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      price: '',
+    }));
+  }
+
+  if (type === 'services') {
+    return normalizeServiceItems(embed.serviceItems).map((item) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description || serviceListItemsToText(item.listItems),
+      price: item.price,
+      layout: item.layout,
+      listItems: item.listItems,
+      imageUrl: item.imageUrl,
+    }));
+  }
+
+  return [];
+}
+
+function formatTitleDescriptionItemsAsBody(items = []) {
+  return items
+    .filter((item) => item.title || item.description || item.price)
+    .map((item) => {
+      const parts = [];
+      if (item.title) parts.push(item.title);
+      if (item.price) parts.push(item.price);
+      if (item.description) parts.push(item.description);
+      return parts.join('\n');
+    })
+    .join('\n\n');
+}
+
+function applyTitleDescriptionItems(target, toType, items = []) {
+  const normalized = items.filter((item) => item.title || item.description || item.price);
+  if (!normalized.length) return;
+
+  if (toType === 'faq') {
+    target.faqItems = normalized.map((item) => createEmptyFaqItem({
+      id: item.id,
+      question: item.title,
+      answer: item.description,
+      price: item.price || '',
+    }));
+    return;
+  }
+
+  if (toType === 'steps') {
+    target.steps = normalized.map((item) => createEmptyStepItem({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+    }));
+    return;
+  }
+
+  if (toType === 'services') {
+    target.serviceItems = normalized.map((item) => createEmptyService({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      price: item.price || '',
+      layout: item.layout || 'title_description',
+      listItems: item.listItems || [],
+      imageUrl: item.imageUrl || '',
+    }));
+  }
+}
+
+function migrateCardColors(source, target, fromType, toType) {
+  if (fromType === 'faq' && toType === 'steps') {
+    target.stepsCardBgColor = source.stepsCardBgColor || source.faqCardBgColor || '';
+    target.stepsTextColor = source.stepsTextColor || source.faqTextColor || '';
+    return;
+  }
+
+  if (fromType === 'steps' && toType === 'faq') {
+    target.faqCardBgColor = source.faqCardBgColor || source.stepsCardBgColor || '';
+    target.faqTextColor = source.faqTextColor || source.stepsTextColor || '';
+  }
+}
+
+function copyServicesSettings(source, target) {
+  target.servicesDisplayMode = source.servicesDisplayMode ?? target.servicesDisplayMode;
+  target.servicesCarouselPerView = source.servicesCarouselPerView ?? target.servicesCarouselPerView;
+  target.servicesCarouselAutoplay = source.servicesCarouselAutoplay ?? target.servicesCarouselAutoplay;
+  target.servicesVisualStyle = source.servicesVisualStyle ?? target.servicesVisualStyle;
+  target.servicesCarouselTransition = source.servicesCarouselTransition ?? target.servicesCarouselTransition;
+  target.servicesCustomStyle = source.servicesCustomStyle ?? target.servicesCustomStyle;
+}
+
+/**
+ * Maps shared content when switching custom embed section types in the admin.
+ * Preserves id, label, title, placement, and translates list/prose fields when possible.
+ */
+export function migrateCustomEmbedType(embed = {}, nextTypeRaw) {
+  const fromType = normalizeSectionType(embed?.type);
+  const toType = normalizeSectionType(nextTypeRaw);
+  if (fromType === toType) return { ...embed, type: toType };
+
+  const meta = getSectionTypeMeta(toType);
+  const template = createCustomSectionByType(toType, { sortOrder: embed.sortOrder });
+  const longText = pickEmbedLongText(embed);
+  const listItems = extractTitleDescriptionItems(embed, fromType);
+
+  const migrated = {
+    ...template,
+    id: embed.id,
+    enabled: embed.enabled !== false,
+    label: String(embed.label ?? '').trim(),
+    title: String(embed.title ?? '').trim() || meta.defaultTitle || template.title || '',
+    placement: embed.placement || meta.defaultPlacement || template.placement,
+    fullWidth: embed.fullWidth === true,
+    sortOrder: Number.isFinite(Number(embed.sortOrder)) ? Number(embed.sortOrder) : template.sortOrder,
+  };
+
+  migrateCardColors(embed, migrated, fromType, toType);
+
+  if (LIST_SECTION_TYPES.has(fromType) || LIST_SECTION_TYPES.has(toType)) {
+    applyTitleDescriptionItems(migrated, toType, listItems);
+  }
+
+  if (toType === 'text' || toType === 'pre_hero') {
+    migrated.body = longText || formatTitleDescriptionItemsAsBody(listItems) || migrated.body;
+  }
+
+  if (toType === 'quote') {
+    migrated.quoteText = String(embed.quoteText ?? '').trim() || longText || formatTitleDescriptionItemsAsBody(listItems);
+    migrated.quoteAttribution = String(embed.quoteAttribution ?? '').trim();
+  }
+
+  if (toType === 'cta') {
+    migrated.ctaText = String(embed.ctaText ?? '').trim() || longText || formatTitleDescriptionItemsAsBody(listItems);
+  }
+
+  if (toType === 'pre_hero' || fromType === 'pre_hero') {
+    migrated.imageUrl = String(embed.imageUrl ?? '').trim() || migrated.imageUrl;
+    migrated.preHeroMode = embed.preHeroMode ?? migrated.preHeroMode;
+    migrated.preHeroImageSide = embed.preHeroImageSide ?? migrated.preHeroImageSide;
+  }
+
+  if (toType === 'embed' || toType === 'portfolio' || fromType === 'embed' || fromType === 'portfolio') {
+    migrated.htmlCode = String(embed.htmlCode ?? '').trim() || migrated.htmlCode;
+  }
+
+  if (toType === 'portfolio' || fromType === 'portfolio') {
+    migrated.portfolioUrl = String(embed.portfolioUrl ?? '').trim() || migrated.portfolioUrl;
+    migrated.portfolioProvider = embed.portfolioProvider || migrated.portfolioProvider;
+  }
+
+  if (toType === 'services') {
+    copyServicesSettings(embed, migrated);
+  }
+
+  if (embed.ctaButtonLabel) {
+    migrated.ctaButtonLabel = embed.ctaButtonLabel;
+  }
+  if (embed.ctaButtonUrl) {
+    migrated.ctaButtonUrl = embed.ctaButtonUrl;
+  }
+  if (embed.ctaButtonBgColor) {
+    migrated.ctaButtonBgColor = embed.ctaButtonBgColor;
+  }
+  if (embed.ctaButtonTextColor) {
+    migrated.ctaButtonTextColor = embed.ctaButtonTextColor;
+  }
+
+  if (toType === 'portfolio') {
+    migrated.ctaButtonLabel = embed.ctaButtonLabel && embed.ctaButtonLabel !== 'Reservar cita'
+      ? embed.ctaButtonLabel
+      : (migrated.ctaButtonLabel || 'Ver portafolio completo');
+    migrated.portfolioProvider = embed.portfolioProvider || migrated.portfolioProvider || 'custom';
+  }
+
+  return migrated;
+}
+
 export function normalizeCustomEmbeds(embeds) {
   if (!Array.isArray(embeds)) return [];
 
@@ -295,6 +569,8 @@ export function normalizeCustomEmbeds(embeds) {
       ctaText: String(embed.ctaText ?? '').trim(),
       ctaButtonLabel: String(embed.ctaButtonLabel ?? defaultCtaLabel).trim() || defaultCtaLabel,
       ctaButtonUrl: String(embed.ctaButtonUrl ?? '').trim(),
+      ctaButtonBgColor: normalizeOptionalColor(embed.ctaButtonBgColor, DEFAULT_CTA_BUTTON_BG_COLOR),
+      ctaButtonTextColor: normalizeOptionalColor(embed.ctaButtonTextColor, DEFAULT_CTA_BUTTON_TEXT_COLOR),
       faqItems: normalizeFaqItems(embed.faqItems),
       steps: normalizeStepItems(embed.steps),
       imageUrl: String(embed.imageUrl ?? embed.preHeroImageUrl ?? embed.imagenUrl ?? '').trim(),
@@ -309,6 +585,10 @@ export function normalizeCustomEmbeds(embeds) {
       servicesCustomStyle: normalizeSectionCustomStyle(embed.servicesCustomStyle),
       portfolioUrl: String(embed.portfolioUrl ?? '').trim(),
       portfolioProvider: normalizePortfolioProvider(embed.portfolioProvider),
+      stepsCardBgColor: normalizeOptionalColor(embed.stepsCardBgColor, DEFAULT_STEPS_CARD_BG_COLOR),
+      stepsTextColor: normalizeOptionalColor(embed.stepsTextColor, DEFAULT_STEPS_TITLE_COLOR),
+      faqCardBgColor: normalizeOptionalColor(embed.faqCardBgColor, DEFAULT_FAQ_CARD_BG_COLOR),
+      faqTextColor: normalizeOptionalColor(embed.faqTextColor, DEFAULT_FAQ_TEXT_COLOR),
       fullWidth: embed.fullWidth === true,
       sortOrder: Number.isFinite(Number(embed.sortOrder)) ? Number(embed.sortOrder) : index,
     };

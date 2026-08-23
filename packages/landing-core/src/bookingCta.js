@@ -1,15 +1,16 @@
-
-import { buildSocialUrl } from './socialLinks';
-import { SECTION_IDS } from './sectionAnchors';
-import { getLabel, resolvePageLabels } from './labels';
+import { buildWhatsAppUrl, normalizePhoneCountry } from './phone.js';
+import { SECTION_IDS } from './sectionAnchors.js';
+import { getLabel, resolvePageLabels } from './labels.js';
 
 export function resolveBookingCta(data) {
   const labels = resolvePageLabels(data);
   const target = data?.navCtaTarget || 'email';
   const email = String(data?.email ?? '').trim();
+  const country = normalizePhoneCountry(data?.phoneCountry);
 
   if (target === 'whatsapp') {
-    const whatsappUrl = buildSocialUrl(data?.whatsapp, 'whatsapp');
+    const whatsappUrl = buildWhatsAppUrl(data?.whatsapp, country)
+      || buildWhatsAppUrl(data?.phone, country);
     if (whatsappUrl) {
       return {
         href: `${whatsappUrl}?text=${encodeURIComponent(getLabel(labels, 'booking.whatsappMessage'))}`,

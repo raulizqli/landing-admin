@@ -46,7 +46,7 @@ function buildCustomVisualClasses(customStyle) {
     },
     media: 'overflow-hidden',
     body: 'p-5 sm:p-6 flex flex-col flex-1',
-    title: 'font-serif text-lg sm:text-xl text-[#0A5C3A] leading-snug',
+    title: 'font-serif text-lg sm:text-xl leading-snug',
     entrance: entranceClass(style.entrance),
     gapClass: gapClassForCustom(style.gap),
   };
@@ -68,7 +68,7 @@ export function getItemVisualClasses(visualStyle, customStyle) {
       articleStyle: undefined,
       media: 'rounded-lg overflow-hidden',
       body: 'px-1 py-4 sm:py-5 flex flex-col flex-1',
-      title: 'font-serif text-lg sm:text-xl text-[#2A342D] leading-snug',
+      title: 'font-serif text-lg sm:text-xl leading-snug',
       entrance: 'motion-safe:animate-section-fade-in',
       gapClass: 'gap-8 sm:gap-10',
     };
@@ -80,7 +80,7 @@ export function getItemVisualClasses(visualStyle, customStyle) {
       articleStyle: undefined,
       media: 'rounded-sm overflow-hidden mb-1',
       body: 'px-0 pt-5 pb-2 flex flex-col flex-1',
-      title: 'font-serif text-xl sm:text-2xl text-[#2A342D] leading-snug tracking-tight',
+      title: 'font-serif text-xl sm:text-2xl leading-snug tracking-tight',
       entrance: 'motion-safe:animate-section-slide-up',
       gapClass: 'gap-10 sm:gap-12',
     };
@@ -91,7 +91,7 @@ export function getItemVisualClasses(visualStyle, customStyle) {
     articleStyle: undefined,
     media: 'overflow-hidden',
     body: 'p-5 sm:p-6 flex flex-col flex-1',
-    title: 'font-serif text-lg sm:text-xl text-[#2A342D] leading-snug',
+    title: 'font-serif text-lg sm:text-xl leading-snug',
     entrance: 'motion-safe:animate-section-fade-in',
     gapClass: 'gap-5 sm:gap-6',
   };

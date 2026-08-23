@@ -44,6 +44,7 @@ import {
   normalizeSiteMode,
 } from './marketingSite.js';
 import { normalizeSiteAccess } from './siteAccess.js';
+import { DEFAULT_PHONE_COUNTRY, normalizePhoneCountry } from './phone.js';
 
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
@@ -155,6 +156,7 @@ export const EMPTY_PAGE = {
   contactMapLayout: 'below',
   email: '',
   phone: '',
+  phoneCountry: 'mx',
   phoneIsWhatsapp: false,
   socialSectionEnabled: true,
   instagram: '',
@@ -371,6 +373,7 @@ export function normalizePageData(data = {}) {
   Object.assign(next, syncLegacyLocationFields(next));
   next.contactMapLayout = normalizeContactMapLayout(next.contactMapLayout);
   next.phoneIsWhatsapp = next.phoneIsWhatsapp === true;
+  next.phoneCountry = normalizePhoneCountry(next.phoneCountry ?? DEFAULT_PHONE_COUNTRY);
   next.socialIconOnly = next.socialIconOnly === true;
   next.showHeroSpecialty = next.showHeroSpecialty === true;
   next.heroHeightMode = normalizeHeroHeightMode(next.heroHeightMode);

@@ -1,11 +1,17 @@
+import {
+  buildWhatsAppUrl,
+  normalizePhoneCountry,
+  toWhatsAppMeNumber,
+} from '@raulizqli/landing-core/phone';
+
 export const INVITATION_CHANNELS = Object.freeze({
   NONE: 'none',
   EMAIL: 'email',
   WHATSAPP: 'whatsapp',
 });
 
-export function normalizeWhatsAppPhone(value) {
-  return String(value ?? '').replace(/\D/g, '');
+export function normalizeWhatsAppPhone(value, country = 'mx') {
+  return toWhatsAppMeNumber(value, normalizePhoneCountry(country));
 }
 
 export function buildUserInvitationMessage({ displayName, email, invitationLink }) {
@@ -21,6 +27,7 @@ export function buildUserInvitationMessage({ displayName, email, invitationLink 
 export function buildUserInvitationUrl({
   channel,
   phone,
+  phoneCountry = 'mx',
   email,
   displayName,
   invitationLink,
@@ -33,11 +40,11 @@ export function buildUserInvitationUrl({
   }
 
   if (channel === INVITATION_CHANNELS.WHATSAPP) {
-    const normalizedPhone = normalizeWhatsAppPhone(phone);
-    if (!normalizedPhone) {
-      throw new Error('Ingresa un teléfono de WhatsApp con código de país.');
+    const href = buildWhatsAppUrl(phone, phoneCountry);
+    if (!href) {
+      throw new Error('Ingresa un teléfono de WhatsApp válido.');
     }
-    return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+    return `${href}?text=${encodeURIComponent(message)}`;
   }
 
   return '';
