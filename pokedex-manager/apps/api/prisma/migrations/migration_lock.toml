@@ -1,2 +1,0 @@
-# It is used to prevent accidental migration drift.
-provider = "postgresql"

@@ -15,7 +15,6 @@ Plataforma multi-tenant para crear, administrar y publicar landing pages dinámi
 | [`packages/landing-core/`](packages/landing-core/) | — | Modelo de página, normalización y utilidades compartidas |
 | [`packages/landing-ui/`](packages/landing-ui/) | — | Componentes React compartidos |
 | [`functions/`](functions/) | — | Gestión de usuarios y despliegues mediante Cloud Functions |
-| [`pokedex-manager/`](pokedex-manager/) | `5177` / `4000` | Exam project: PokéDex Manager (React + Express + PostgreSQL) |
 
 ## Inicio rápido
 
