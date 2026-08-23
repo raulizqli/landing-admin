@@ -37,6 +37,9 @@
     "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui",
     "test": "npm test -w @raulizqli/landing-core && npm test --prefix landing-admin && npm test --prefix landing-template",
     "test:core": "npm run test -w @raulizqli/landing-core",
+    "dev:pokedex": "npm run dev --prefix pokedex-manager",
+    "build:pokedex": "npm run build --prefix pokedex-manager",
+    "test:pokedex": "npm run test --prefix pokedex-manager",
     "ollama:serve": "bash scripts/ollama-serve.sh"
   },
 
