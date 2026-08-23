@@ -317,7 +317,7 @@ exports.createBillingCheckout = (0, https_1.onCall)(callableOptions, async (requ
         throw new https_1.HttpsError("failed-precondition", "Necesitamos el email del pagador para Mercado Pago.");
     }
     const body = {
-        reason: `TapSite — ${planId}`,
+        reason: `Toqua — ${planId}`,
         external_reference: `${account.id}:${planId}`,
         payer_email: payerEmail,
         back_url: successUrl,

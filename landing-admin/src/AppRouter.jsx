@@ -29,7 +29,7 @@ function homePathForProfile(profile) {
   return canViewPagesOverview(profile) ? '/app/pages' : '/app';
 }
 
-/** Admin host `/` (e.g. admin.leftsidedev.site): session → CMS, else login. */
+/** Admin host `/` (e.g. admin.toqua.site): session → CMS, else login. */
 function RootRoute() {
   const { user, profile, loading } = useAuth();
   if (loading) return <AuthLoadingScreen />;

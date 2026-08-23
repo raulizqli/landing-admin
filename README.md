@@ -11,6 +11,7 @@ Plataforma multi-tenant para crear, administrar y publicar landing pages dinámi
 | [`landing-admin/`](landing-admin/) | `5173` | CMS, usuarios y vista previa en vivo |
 | [`landing-template/`](landing-template/) | `5174` | Aplicación pública de solo lectura |
 | [`leftsidedev-site/`](leftsidedev-site/) | `5175` | Sitio corporativo LeftSideDev (AI Engineering Studio) |
+| [`toqua-site/`](toqua-site/) | `5176` | Marketing del producto Toqua (ES/EN) |
 | [`packages/landing-core/`](packages/landing-core/) | — | Modelo de página, normalización y utilidades compartidas |
 | [`packages/landing-ui/`](packages/landing-ui/) | — | Componentes React compartidos |
 | [`functions/`](functions/) | — | Gestión de usuarios y despliegues mediante Cloud Functions |
@@ -43,6 +44,7 @@ npm run dev
 URLs locales:
 
 - Corporate sandbox: `http://localhost:5175`
+- Toqua marketing: `http://localhost:5176`
 - Marketing (template `/`): `http://localhost:5174/` → `pages/leftsidedev`
 - Admin `/`: `VITE_CORPORATE_SITE_URL` si existe; si no, `VITE_MARKETING_URL` (template)
 - Login: `http://localhost:5173/login`
@@ -106,7 +108,10 @@ Ejecuta estos comandos desde la raíz:
 ```bash
 npm run build             # admin + template + corporate site
 npm run dev:site          # LeftSideDev corporate site
+npm run dev:toqua         # Toqua product marketing (ES/EN)
 npm run build:site        # solo leftsidedev-site
+npm run build:toqua       # solo toqua-site
+npm run deploy:toqua      # hosting:toqua-marketing
 npm run deploy:rules      # Firestore, índices y Storage
 npm run deploy:functions  # Cloud Functions
 npm run deploy:admin      # CMS en Firebase Hosting
@@ -122,6 +127,7 @@ Lint por aplicación:
 npm run lint --prefix landing-admin
 npm run lint --prefix landing-template
 npm run lint --prefix leftsidedev-site
+npm run lint --prefix toqua-site
 ```
 
 ## Convenciones importantes
@@ -141,6 +147,7 @@ ecosistema-landings/
 ├── landing-admin/       CMS React + Vite
 ├── landing-template/    aplicación pública React + Vite
 ├── leftsidedev-site/    sitio corporativo AI Engineering Studio
+├── toqua-site/          marketing del producto Toqua (ES/EN)
 ├── packages/
 │   ├── landing-core/    modelo y utilidades
 │   └── landing-ui/      componentes compartidos
@@ -178,6 +185,7 @@ Multi-tenant platform for creating, managing, and publishing dynamic landing pag
 | [`landing-admin/`](landing-admin/) | `5173` | CMS, users, and live preview |
 | [`landing-template/`](landing-template/) | `5174` | Read-only public application |
 | [`leftsidedev-site/`](leftsidedev-site/) | `5175` | LeftSideDev corporate site (AI Engineering Studio) |
+| [`toqua-site/`](toqua-site/) | `5176` | Toqua product marketing (ES/EN) |
 | [`packages/landing-core/`](packages/landing-core/) | — | Page model, normalization, and shared utilities |
 | [`packages/landing-ui/`](packages/landing-ui/) | — | Shared React components |
 | [`functions/`](functions/) | — | User management and deployments via Cloud Functions |
@@ -210,6 +218,7 @@ npm run dev
 Local URLs:
 
 - Corporate site: `http://localhost:5175`
+- Toqua marketing: `http://localhost:5176`
 - Marketing (CMS seed): `http://localhost:5174?pageId=leftsidedev`
 - Login: `http://localhost:5173/login`
 - CMS: `http://localhost:5173/app`
@@ -272,7 +281,10 @@ Run these commands from the root:
 ```bash
 npm run build             # admin + template + corporate site
 npm run dev:site          # LeftSideDev corporate site
+npm run dev:toqua         # Toqua product marketing (ES/EN)
 npm run build:site        # leftsidedev-site only
+npm run build:toqua       # toqua-site only
+npm run deploy:toqua      # hosting:toqua-marketing
 npm run deploy:rules      # Firestore, indexes, and Storage
 npm run deploy:functions  # Cloud Functions
 npm run deploy:admin      # CMS on Firebase Hosting
@@ -288,6 +300,7 @@ Lint per application:
 npm run lint --prefix landing-admin
 npm run lint --prefix landing-template
 npm run lint --prefix leftsidedev-site
+npm run lint --prefix toqua-site
 ```
 
 ## Important Conventions
@@ -307,6 +320,7 @@ ecosistema-landings/
 ├── landing-admin/       CMS React + Vite
 ├── landing-template/    public application React + Vite
 ├── leftsidedev-site/    LeftSideDev corporate site (AI Engineering Studio)
+├── toqua-site/          Toqua product marketing (ES/EN)
 ├── packages/
 │   ├── landing-core/    model and utilities
 │   └── landing-ui/      shared components

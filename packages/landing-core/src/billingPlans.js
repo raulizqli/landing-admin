@@ -1,5 +1,5 @@
 /**
- * SaaS billing plans / entitlements for TapSite.
+ * SaaS billing plans / entitlements for Toqua.
  * Keep in sync with Cloud Functions checkout price mapping (env).
  */
 

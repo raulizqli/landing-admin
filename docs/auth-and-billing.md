@@ -37,7 +37,7 @@ Los correos del CMS (aprobación de acceso, recuperación de contraseña e invit
 
 ```env
 RESEND_API_KEY=re_...
-RESEND_FROM=TapSite <noreply@tudominio.com>
+RESEND_FROM=Toqua <noreply@tudominio.com>
 ```
 
 (`APPROVAL_EMAIL_FROM` es alias de `RESEND_FROM`.)
@@ -49,7 +49,7 @@ RESEND_FROM=TapSite <noreply@tudominio.com>
 | Reenviar invitación | `generateCmsUserInvitation` |
 | Aprobar auto-registro | `approveCmsAccess` |
 
-El dominio del remitente debe estar verificado en Resend (p. ej. `leftsidedev.site`). El enlace de reset/invitación sigue generándose con Firebase Admin; solo cambia quién entrega el email (Resend en lugar de `noreply@*.firebaseapp.com`).
+El dominio del remitente debe estar verificado en Resend (p. ej. `toqua.site`). El enlace de reset/invitación sigue generándose con Firebase Admin; solo cambia quién entrega el email (Resend en lugar de `noreply@*.firebaseapp.com`).
 
 Validación de teléfono: solo México (`+52`) y Estados Unidos (`+1`).
 
@@ -104,20 +104,20 @@ El enlace tiene **dos dominios distintos**:
 | Parte | Ejemplo | Qué controla |
 |---|---|---|
 | **Host del enlace** (página de reset) | `landing-admin-9452e.firebaseapp.com/__/auth/action?...` | Dominio de Auth emails en Firebase |
-| **continueUrl** (vuelta al admin tras reset) | `admin.leftsidedev.site/login?email=...` | `ADMIN_PUBLIC_URL` + Authorized domains |
+| **continueUrl** (vuelta al admin tras reset) | `admin.toqua.site/login?email=...` | `ADMIN_PUBLIC_URL` + Authorized domains |
 
 Si ves `landing-admin-9452e` en el enlace, es **normal** mientras no configures dominio personalizado en Auth. Tras el fix de invitaciones, quitamos `linkDomain` automático porque rompía la generación; Firebase usa entonces su dominio por defecto del proyecto.
 
-Si `admin.leftsidedev.site` **no** está en *Authorized domains*, el `continueUrl` también cae a `landing-admin-9452e.web.app`.
+Si `admin.toqua.site` **no** está en *Authorized domains*, el `continueUrl` también cae a `landing-admin-9452e.web.app`.
 
-### Marca completa (`admin.leftsidedev.site` en el enlace)
+### Marca completa (`admin.toqua.site` en el enlace)
 
-1. Firebase Console → **Authentication** → **Settings** → **Authorized domains** → añade `admin.leftsidedev.site`.
-2. **Authentication** → **Templates** → en cada plantilla → **Customize domain** → `admin.leftsidedev.site` → verifica registros DNS (TXT/CNAME).
+1. Firebase Console → **Authentication** → **Settings** → **Authorized domains** → añade `admin.toqua.site`.
+2. **Authentication** → **Templates** → en cada plantilla → **Customize domain** → `admin.toqua.site` → verifica registros DNS (TXT/CNAME).
 3. Cuando diga *Verification complete*, en `functions/.env`:
 
    ```env
-   AUTH_LINK_DOMAIN=admin.leftsidedev.site
+   AUTH_LINK_DOMAIN=admin.toqua.site
    ```
 
 4. Redeploy: `firebase deploy --only functions:createCmsUser,functions:generateCmsUserInvitation`

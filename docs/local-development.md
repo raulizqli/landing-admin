@@ -159,7 +159,7 @@ cd functions
 node scripts/seed-leftsidedev-page.mjs
 ```
 
-Vista: `http://localhost:5174/?pageId=leftsidedev` o `https://us.leftsidedev.site/?pageId=leftsidedev`.  
+Vista: `http://localhost:5174/?pageId=leftsidedev` o `https://web.toqua.site/?pageId=leftsidedev`.  
 Ejecuta el script únicamente con las credenciales y el proyecto Firebase correctos.
 
 ## App Check
@@ -167,7 +167,7 @@ Ejecuta el script únicamente con las credenciales y el proyecto Firebase correc
 App Check protege escrituras del CMS y llamadas sensibles:
 
 1. Crea una clave **reCAPTCHA Enterprise (score)** o **reCAPTCHA v3** clásica; no uses el checkbox v2.
-2. Registra dominios del admin: `admin.leftsidedev.site`, `landing-admin-9452e.web.app`, `landing-admin-9452e.firebaseapp.com`, `localhost`, `127.0.0.1`.
+2. Registra dominios del admin: `admin.toqua.site`, `landing-admin-9452e.web.app`, `landing-admin-9452e.firebaseapp.com`, `localhost`, `127.0.0.1`.
 3. Añade la site key como `VITE_RECAPTCHA_SITE_KEY`. Si la clave es Enterprise (Google Cloud / `gcloud recaptcha keys`), usa `VITE_RECAPTCHA_ENTERPRISE=true`.
 4. En Firebase Console → App Check → tu app web, registra la **misma** site key.
 5. Para desarrollo, define un UUID estable en `VITE_APP_CHECK_DEBUG_TOKEN` y regístralo en Firebase Console → App Check → Manage debug tokens (o copia el token que imprime la consola del navegador).

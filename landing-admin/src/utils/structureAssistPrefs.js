@@ -3,7 +3,7 @@ import {
   normalizeStructureContentTargets,
 } from '@raulizqli/landing-core/aiAssist';
 
-const STORAGE_PREFIX = 'tapsite:structure-assist:';
+const STORAGE_PREFIX = 'toqua:structure-assist:';
 
 export function loadStructureAssistPrefs(pageId) {
   if (!pageId || typeof window === 'undefined' || !window.localStorage) {

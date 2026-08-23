@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://toqua.site/es</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/what-you-get</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/what-you-get" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/what-you-get" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/pricing</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/pricing" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/pricing" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/professions</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/how-it-works</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/how-it-works" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/how-it-works" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/faq</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/faq" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/faq" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/blog</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/resources</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/resources" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/resources" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/contact</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/contact" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/compare</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/compare" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/compare" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/professions/psychology</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/psychology" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/psychology" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/professions/pediatrics</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/pediatrics" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/pediatrics" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/professions/dental</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/dental" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/dental" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/professions/legal</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/legal" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/legal" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/blog/first-professional-page-checklist</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/first-professional-page-checklist" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/first-professional-page-checklist" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/blog/what-patients-look-for-online</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/what-patients-look-for-online" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/what-patients-look-for-online" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/what-you-get</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/what-you-get" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/what-you-get" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/pricing</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/pricing" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/pricing" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/professions</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/how-it-works</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/how-it-works" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/how-it-works" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/faq</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/faq" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/faq" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/blog</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/resources</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/resources" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/resources" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/contact</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/contact" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/contact" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/compare</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/compare" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/compare" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/professions/psychology</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/psychology" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/psychology" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/professions/pediatrics</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/pediatrics" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/pediatrics" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/professions/dental</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/dental" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/dental" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/professions/legal</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/professions/legal" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/professions/legal" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/blog/first-professional-page-checklist</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/first-professional-page-checklist" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/first-professional-page-checklist" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/blog/what-patients-look-for-online</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/what-patients-look-for-online" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/what-patients-look-for-online" />
+  </url>
+</urlset>

@@ -408,7 +408,7 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
   }
 
   const body = {
-    reason: `TapSite — ${planId}`,
+    reason: `Toqua — ${planId}`,
     external_reference: `${account.id}:${planId}`,
     payer_email: payerEmail,
     back_url: successUrl,

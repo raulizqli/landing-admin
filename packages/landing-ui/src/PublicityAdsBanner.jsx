@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 
-const STORAGE_KEY = 'tapsite-publicity-chrome-open';
+const STORAGE_KEY = 'toqua-publicity-chrome-open';
 
 function readChromeOpen(defaultOpen) {
   if (typeof window === 'undefined') return defaultOpen;

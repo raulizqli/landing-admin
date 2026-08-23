@@ -20,10 +20,10 @@ describe('platformLegal', () => {
   });
 
   it('builds absolute URLs from an admin origin', () => {
-    expect(getPlatformLegalUrls('https://admin.leftsidedev.site/')).toEqual({
-      privacy: 'https://admin.leftsidedev.site/privacy',
-      terms: 'https://admin.leftsidedev.site/terms',
-      dataDeletion: 'https://admin.leftsidedev.site/data-deletion',
+    expect(getPlatformLegalUrls('https://admin.toqua.site/')).toEqual({
+      privacy: 'https://admin.toqua.site/privacy',
+      terms: 'https://admin.toqua.site/terms',
+      dataDeletion: 'https://admin.toqua.site/data-deletion',
     });
   });
 

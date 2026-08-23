@@ -26,11 +26,11 @@ function displayNameOrDefault(displayName) {
 function buildApprovalEmailContent(payload) {
     const name = displayNameOrDefault(payload.displayName);
     const loginUrl = String(payload.loginUrl || adminPublicLoginUrl()).trim();
-    const subject = "Tu acceso a TapSite fue aprobado";
+    const subject = "Tu acceso a Toqua fue aprobado";
     const text = [
         `${name},`,
         "",
-        "Tu solicitud de acceso al panel de TapSite fue aprobada.",
+        "Tu solicitud de acceso al panel de Toqua fue aprobada.",
         "Ya puedes iniciar sesión con el email y la contraseña que registraste:",
         loginUrl,
         "",
@@ -38,7 +38,7 @@ function buildApprovalEmailContent(payload) {
     ].join("\n");
     const html = `
     <p>${name},</p>
-    <p>Tu solicitud de acceso al panel de <strong>TapSite</strong> fue aprobada.</p>
+    <p>Tu solicitud de acceso al panel de <strong>Toqua</strong> fue aprobada.</p>
     <p>Ya puedes iniciar sesión con el email y la contraseña que registraste:</p>
     <p><a href="${loginUrl}">${loginUrl}</a></p>
     <p style="color:#666;font-size:12px">Si no solicitaste esta cuenta, ignora este mensaje.</p>
@@ -49,11 +49,11 @@ function buildPasswordResetEmailContent(payload) {
     var _a;
     const name = displayNameOrDefault(payload.displayName);
     const resetLink = String((_a = payload.resetLink) !== null && _a !== void 0 ? _a : "").trim();
-    const subject = "Restablece tu contraseña de TapSite";
+    const subject = "Restablece tu contraseña de Toqua";
     const text = [
         `${name},`,
         "",
-        "Recibimos una solicitud para restablecer la contraseña de tu cuenta en TapSite.",
+        "Recibimos una solicitud para restablecer la contraseña de tu cuenta en Toqua.",
         "Si fuiste tú, abre este enlace para elegir una nueva contraseña:",
         resetLink,
         "",
@@ -61,7 +61,7 @@ function buildPasswordResetEmailContent(payload) {
     ].join("\n");
     const html = `
     <p>${name},</p>
-    <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>TapSite</strong>.</p>
+    <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Toqua</strong>.</p>
     <p>Si fuiste tú, abre este enlace para elegir una nueva contraseña:</p>
     <p><a href="${resetLink}">${resetLink}</a></p>
     <p style="color:#666;font-size:12px">Si no solicitaste este cambio, ignora este mensaje.</p>
@@ -73,11 +73,11 @@ function buildInvitationEmailContent(payload) {
     const name = displayNameOrDefault(payload.displayName);
     const invitationLink = String((_a = payload.invitationLink) !== null && _a !== void 0 ? _a : "").trim();
     const loginUrl = adminPublicLoginUrl();
-    const subject = "Invitación a TapSite";
+    const subject = "Invitación a Toqua";
     const text = [
         `${name},`,
         "",
-        "Te invitaron al panel de TapSite.",
+        "Te invitaron al panel de Toqua.",
         "Abre este enlace para crear tu contraseña y acceder:",
         invitationLink,
         "",
@@ -87,7 +87,7 @@ function buildInvitationEmailContent(payload) {
     ].join("\n");
     const html = `
     <p>${name},</p>
-    <p>Te invitaron al panel de <strong>TapSite</strong>.</p>
+    <p>Te invitaron al panel de <strong>Toqua</strong>.</p>
     <p>Abre este enlace para crear tu contraseña y acceder:</p>
     <p><a href="${invitationLink}">${invitationLink}</a></p>
     <p>Después podrás iniciar sesión en <a href="${loginUrl}">${loginUrl}</a>.</p>

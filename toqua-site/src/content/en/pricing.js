@@ -1,0 +1,72 @@
+export const pricing = {
+  metaTitle: 'Plans and pricing',
+  metaDescription:
+    'Toqua plans: Starter from $10 USD, Pro $25, Agency $75. Enterprise custom.',
+  eyebrow: 'Plans',
+  title: 'Pick the plan that fits your practice',
+  description:
+    'Monthly prices in US dollars. Cancel anytime. Explained in clinic language — not tech jargon.',
+  currencyNote: 'Monthly prices in US dollars (USD).',
+  plans: [
+    {
+      id: 'starter',
+      name: 'Starter',
+      priceUsd: 10,
+      priceMxn: 189,
+      blurb: 'One page with the essentials to introduce yourself and get contacted.',
+      highlights: [
+        '1 professional page',
+        'Basic sections (about you, services, contact)',
+        'Ideal to start or try',
+      ],
+      cta: 'Start with Starter',
+      featured: false,
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      priceUsd: 25,
+      priceMxn: 469,
+      blurb: 'The same page, with more sections to show your work in depth.',
+      highlights: [
+        '1 page with more sections',
+        'Blog, gallery, and extra blocks',
+        'More visual and contact control',
+      ],
+      cta: 'Choose Pro',
+      featured: true,
+    },
+    {
+      id: 'agency',
+      name: 'Agency',
+      priceUsd: 75,
+      priceMxn: 1399,
+      blurb: 'Several pages when you run more than one space or brand.',
+      highlights: [
+        'Up to 5 pages',
+        'Everything in Pro',
+        'Priority support',
+      ],
+      cta: 'Choose Agency',
+      featured: false,
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise',
+      priceUsd: null,
+      priceMxn: null,
+      priceLabel: 'Custom',
+      blurb: 'For teams, clinic networks, or special needs.',
+      highlights: [
+        'Many pages and team roles',
+        'Closer guidance',
+        'Agreements tailored to your organization',
+      ],
+      cta: 'Talk about Enterprise',
+      featured: false,
+    },
+  ],
+  compareTitle: 'Not sure which to pick?',
+  compareText: 'Just need to introduce yourself: Starter. Want a blog or gallery: Pro. Manage several pages: Agency.',
+  compareCta: 'See how we compare to other options',
+};

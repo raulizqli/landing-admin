@@ -1,0 +1,23 @@
+export const nav = {
+  links: [
+    { path: '/what-you-get', label: 'Qué incluye' },
+    { path: '/pricing', label: 'Planes' },
+    { path: '/professions', label: 'Profesiones' },
+    { path: '/how-it-works', label: 'Cómo funciona' },
+    { path: '/faq', label: 'Preguntas' },
+    { path: '/blog', label: 'Blog' },
+    { path: '/contact', label: 'Contacto' },
+  ],
+  ctaPrimary: 'Crear mi página',
+  ctaSecondary: 'Ver planes',
+  menu: 'Menú',
+  skipToContent: 'Saltar al contenido',
+  languageLabel: 'Idioma',
+  footerExplore: 'Explorar',
+  footerMore: 'Más',
+  footerRss: 'Feed RSS',
+  footerCompare: 'Comparar opciones',
+  footerResources: 'Recursos',
+  copyright: 'Todos los derechos reservados.',
+  closeMenu: 'Cerrar menú',
+};

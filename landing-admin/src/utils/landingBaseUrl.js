@@ -1,7 +1,10 @@
 /** Prod default host for client landings (?pageId=...) when no hosting/custom domain is set. */
-export const PROD_DEFAULT_LANDING_BASE_URL = 'https://us.leftsidedev.site';
+export const PROD_DEFAULT_LANDING_BASE_URL = 'https://web.toqua.site';
+/** Public Toqua product marketing site (not the CMS admin). */
+export const PROD_DEFAULT_MARKETING_URL = 'https://toqua.site';
 
 const DEV_DEFAULT_LANDING_BASE_URL = 'http://localhost:5174';
+const DEV_DEFAULT_MARKETING_URL = 'http://localhost:5176';
 
 export function normalizePublicBaseUrl(raw) {
   const url = String(raw ?? '').trim();
@@ -17,10 +20,10 @@ export function getLandingBaseUrl() {
   return import.meta.env.DEV ? DEV_DEFAULT_LANDING_BASE_URL : PROD_DEFAULT_LANDING_BASE_URL;
 }
 
-/** Default marketing showcase URL (?pageId=leftsidedev) in prod. */
+/** Default public marketing URL (toqua-site). */
 export function getDefaultMarketingShowcaseUrl() {
   if (import.meta.env.DEV) {
-    return `${DEV_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`;
+    return DEV_DEFAULT_MARKETING_URL;
   }
-  return `${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`;
+  return PROD_DEFAULT_MARKETING_URL;
 }

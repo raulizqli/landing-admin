@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PROD_DEFAULT_LANDING_BASE_URL } from './landingBaseUrl.js';
+import { PROD_DEFAULT_LANDING_BASE_URL, PROD_DEFAULT_MARKETING_URL } from './landingBaseUrl.js';
 import {
   getCorporateSiteUrl,
   getMarketingUrl,
@@ -12,7 +12,7 @@ describe('isExternalPublicUrl', () => {
     expect(
       isExternalPublicUrl(
         `${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`,
-        'https://admin.leftsidedev.site',
+        'https://admin.toqua.site',
       ),
     ).toBe(true);
   });
@@ -20,15 +20,15 @@ describe('isExternalPublicUrl', () => {
   it('returns false for same-origin public URLs to prevent redirect loops', () => {
     expect(
       isExternalPublicUrl(
-        'https://leftsidedev.site/?pageId=leftsidedev',
-        'https://leftsidedev.site',
+        'https://admin.toqua.site/?pageId=leftsidedev',
+        'https://admin.toqua.site',
       ),
     ).toBe(false);
 
     expect(
       isExternalPublicUrl(
         '/?pageId=leftsidedev',
-        'https://leftsidedev.site',
+        'https://admin.toqua.site',
       ),
     ).toBe(false);
   });
@@ -62,7 +62,7 @@ describe('getMarketingUrl', () => {
   it('falls back to the production default outside DEV when unset', () => {
     vi.stubEnv('VITE_MARKETING_URL', '');
     vi.stubEnv('DEV', false);
-    expect(getMarketingUrl()).toBe(`${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`);
+    expect(getMarketingUrl()).toBe(PROD_DEFAULT_MARKETING_URL);
   });
 });
 

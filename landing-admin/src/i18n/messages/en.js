@@ -37,7 +37,7 @@ export default {
   },
   login: {
     backToSite: 'Back to site',
-    eyebrow: 'TapSite',
+    eyebrow: 'Toqua',
     title: 'Sign in',
     subtitle: 'Sign in to edit your assigned landings.',
     email: 'Email',
@@ -82,7 +82,7 @@ export default {
     errorDemo: 'Demo accounts can only sign in on development or stage, not production.',
   },
   legal: {
-    navAria: 'TapSite legal documents',
+    navAria: 'Toqua legal documents',
     privacy: 'Privacy policy',
     terms: 'Terms of service',
     dataDeletion: 'App deletion',
@@ -91,7 +91,7 @@ export default {
     contactLabel: 'Contact:',
   },
   shell: {
-    title: 'TapSite',
+    title: 'Toqua',
     subtitle: 'Integrated live preview',
     emptyLandings: 'No landings yet. Create the first one.',
     demoPreview: 'Demo preview',
@@ -110,7 +110,7 @@ export default {
     openEditor: 'Open editor',
     empty: 'No landings yet. Create the first one to get started.',
     search: 'Search',
-    searchPlaceholder: 'Name, ID, specialty…',
+    searchPlaceholder: 'Name, specialty…',
     loadError: 'Could not load pages.',
   },
   billing: {

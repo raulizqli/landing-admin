@@ -1,6 +1,27 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+:root {
+  --bg-primary: #FCFBF9;
+  --text-purple: #523677;
+  --gradient-q-start: #B58FFF;
+  --gradient-q-mid: #A074FF;
+  --gradient-q-blue: #4D9CFF;
+  --gradient-q-end: #3FA9FF;
+  --q-gradient: linear-gradient(
+    135deg,
+    var(--gradient-q-start) 0%,
+    var(--gradient-q-mid) 35%,
+    var(--gradient-q-blue) 70%,
+    var(--gradient-q-end) 100%
+  );
+  --color-surface: #ffffff;
+  --color-mute: rgba(82, 54, 119, 0.55);
+  --color-line: rgba(82, 54, 119, 0.12);
+  --color-cta: #523677;
+  --color-cta-hover: #3f295c;
+}
+
 html,
 body,
 #root {
@@ -18,4 +39,25 @@ html.preview-frame #root {
   min-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.text-brand {
+  color: var(--text-purple);
+}
+
+.bg-brand-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-q-gradient {
+  background-image: var(--q-gradient);
+}
+
+.btn-primary-brand {
+  background-color: var(--color-cta);
+  color: #fff;
+}
+
+.btn-primary-brand:hover {
+  background-color: var(--color-cta-hover);
 }

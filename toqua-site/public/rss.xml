@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Toqua Blog</title>
+    <link>https://toqua.site/es/blog</link>
+    <description>Tips claros para profesionales de la salud y servicios: tu página, confianza y primeros pasos.</description>
+    <language>es</language>
+    <item>
+      <title>Lista corta para tu primera página profesional</title>
+      <link>https://toqua.site/es/blog/first-professional-page-checklist</link>
+      <guid>https://toqua.site/es/blog/first-professional-page-checklist</guid>
+      <pubDate>Sun, 23 Aug 2026 07:20:46 GMT</pubDate>
+      <description>Qué incluir en tu página antes de compartirla con clientes: datos de contacto, servicios y una foto clara.</description>
+    </item>
+    <item>
+      <title>A short checklist for your first professional page</title>
+      <link>https://toqua.site/en/blog/first-professional-page-checklist</link>
+      <guid>https://toqua.site/en/blog/first-professional-page-checklist</guid>
+      <pubDate>Sun, 23 Aug 2026 07:20:46 GMT</pubDate>
+      <description>What to include before you share your page with clients: contact details, services, and a clear photo.</description>
+    </item>
+    <item>
+      <title>Qué buscan tus clientes cuando te buscan en internet</title>
+      <link>https://toqua.site/es/blog/what-patients-look-for-online</link>
+      <guid>https://toqua.site/es/blog/what-patients-look-for-online</guid>
+      <pubDate>Sun, 23 Aug 2026 07:20:46 GMT</pubDate>
+      <description>Cómo se ve una página que genera confianza: claridad, ubicación y un siguiente paso fácil.</description>
+    </item>
+    <item>
+      <title>What clients look for when they search for you online</title>
+      <link>https://toqua.site/en/blog/what-patients-look-for-online</link>
+      <guid>https://toqua.site/en/blog/what-patients-look-for-online</guid>
+      <pubDate>Sun, 23 Aug 2026 07:20:46 GMT</pubDate>
+      <description>How a trustworthy page looks: clarity, location, and an easy next step.</description>
+    </item>
+  </channel>
+</rss>

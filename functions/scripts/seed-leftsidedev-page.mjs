@@ -12,7 +12,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 const PROJECT_ID = 'landing-admin-9452e';
 const PAGE_ID = 'leftsidedev';
 const CONTACT_MAILTO = 'mailto:hello@leftsidedev.site';
-const SITE_URL = 'https://us.leftsidedev.site';
+const SITE_URL = 'https://leftsidedev.site';
 const LOGO_URL = 'https://landing-admin-9452e.web.app/brand-name.png';
 const ICON_URL = 'https://landing-admin-9452e.web.app/favicon-circle.png';
 

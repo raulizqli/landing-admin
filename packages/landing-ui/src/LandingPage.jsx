@@ -69,10 +69,10 @@ export default function LandingPage({
                 rel="noopener noreferrer"
                 className="underline-offset-2 hover:underline hover:opacity-100 transition-opacity"
               >
-                TapSite
+                Toqua
               </a>
             ) : (
-              <span>TapSite</span>
+              <span>Toqua</span>
             )}
           </p>
         </footer>

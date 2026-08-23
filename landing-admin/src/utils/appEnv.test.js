@@ -36,7 +36,7 @@ describe('appEnv', () => {
       viteAppEnv: '',
       viteMode: 'production',
       isDev: false,
-      hostname: 'admin.tapsite.example',
+      hostname: 'admin.toqua.example',
     })).toBe('prod');
   });
 
@@ -45,7 +45,7 @@ describe('appEnv', () => {
       viteAppEnv: '',
       viteMode: '',
       isDev: false,
-      hostname: 'admin.stage.leftsidedev.site',
+      hostname: 'admin.stage.toqua.site',
     })).toBe('stage');
   });
 

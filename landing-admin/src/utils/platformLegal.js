@@ -1,6 +1,6 @@
-export const PLATFORM_PRODUCT_NAME = 'TapSite';
+export const PLATFORM_PRODUCT_NAME = 'Toqua';
 export const PLATFORM_OPERATOR_NAME = 'LeftSideDev';
-export const DEFAULT_LEGAL_CONTACT_EMAIL = 'hello@leftsidedev.site';
+export const DEFAULT_LEGAL_CONTACT_EMAIL = 'hello@toqua.site';
 
 export const PLATFORM_LEGAL_KINDS = ['privacy', 'terms', 'dataDeletion'];
 
@@ -31,7 +31,7 @@ const DOCUMENTS = {
         {
           heading: 'Quiénes somos',
           paragraphs: [
-            '{product} es el panel de administración de landings operado por {operator}. Esta política describe cómo tratamos los datos personales cuando usas el panel (por ejemplo admin.leftsidedev.site), no el contenido de cada landing de cliente.',
+            '{product} es el panel de administración de landings operado por {operator}. Esta política describe cómo tratamos los datos personales cuando usas el panel (por ejemplo admin.toqua.site), no el contenido de cada landing de cliente.',
             'Contacto de privacidad: {email}.',
           ],
         },
@@ -119,7 +119,7 @@ const DOCUMENTS = {
           heading: 'Cómo solicitarlo',
           paragraphs: [
             'Esta página cumple el requisito de instrucciones de eliminación de datos de Facebook / Meta y de otros servicios que conectes a {product}.',
-            'Envía un correo a {email} desde la dirección de tu cuenta, con el asunto «Eliminar mi cuenta TapSite». Incluye el correo de la cuenta y, si lo sabes, el ID de usuario.',
+            'Envía un correo a {email} desde la dirección de tu cuenta, con el asunto «Eliminar mi cuenta Toqua». Incluye el correo de la cuenta y, si lo sabes, el ID de usuario.',
             'Confirmaremos la solicitud y, cuando termine, te avisaremos. El plazo habitual es de 30 días.',
           ],
         },
@@ -132,9 +132,9 @@ const DOCUMENTS = {
           ],
         },
         {
-          heading: 'Desconectar Facebook u otro servicio sin borrar TapSite',
+          heading: 'Desconectar Facebook u otro servicio sin borrar Toqua',
           paragraphs: [
-            'Facebook: Configuración y privacidad → Configuración → Aplicaciones y sitios web → TapSite / LeftSideDev → Quitar. Eso revoca el permiso; no borra tu cuenta de {product} ni las landings ya guardadas.',
+            'Facebook: Configuración y privacidad → Configuración → Aplicaciones y sitios web → Toqua / LeftSideDev → Quitar. Eso revoca el permiso; no borra tu cuenta de {product} ni las landings ya guardadas.',
             'Otros proveedores futuros: usa su panel de permisos de aplicaciones o escríbenos a {email} para que revoquemos la conexión en nuestro lado.',
             'Si solo quieres borrar una landing, un administrador puede eliminarla desde el panel sin cerrar la cuenta.',
           ],
@@ -150,7 +150,7 @@ const DOCUMENTS = {
         {
           heading: 'Who we are',
           paragraphs: [
-            '{product} is the landing-page admin operated by {operator}. This policy covers personal data when you use the admin (for example admin.leftsidedev.site), not visitor-facing copy on each client landing.',
+            '{product} is the landing-page admin operated by {operator}. This policy covers personal data when you use the admin (for example admin.toqua.site), not visitor-facing copy on each client landing.',
             'Privacy contact: {email}.',
           ],
         },
@@ -238,7 +238,7 @@ const DOCUMENTS = {
           heading: 'How to request it',
           paragraphs: [
             'This page is the user data deletion instructions URL for Facebook / Meta and for other services you may connect to {product}.',
-            'Email {email} from your account address with the subject “Delete my TapSite account”. Include the account email and, if you know it, your user id.',
+            'Email {email} from your account address with the subject “Delete my Toqua account”. Include the account email and, if you know it, your user id.',
             'We will confirm the request and notify you when it is done. Typical completion is within 30 days.',
           ],
         },
@@ -251,9 +251,9 @@ const DOCUMENTS = {
           ],
         },
         {
-          heading: 'Disconnect Facebook or another service without deleting TapSite',
+          heading: 'Disconnect Facebook or another service without deleting Toqua',
           paragraphs: [
-            'Facebook: Settings & privacy → Settings → Apps and websites → TapSite / LeftSideDev → Remove. That revokes permission; it does not delete your {product} account or saved landings.',
+            'Facebook: Settings & privacy → Settings → Apps and websites → Toqua / LeftSideDev → Remove. That revokes permission; it does not delete your {product} account or saved landings.',
             'Future providers: use their app-permissions settings, or email {email} so we can disconnect on our side.',
             'To delete a single landing, an admin can remove it from the panel without closing the account.',
           ],

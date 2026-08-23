@@ -107,7 +107,7 @@ function formatAppCheckTokenError(detail) {
       `Dominio actual: ${host || '(desconocido)'}.`,
       'En producción: comprueba VITE_RECAPTCHA_SITE_KEY (debe coincidir con Firebase → App Check → reCAPTCHA),',
       'que este dominio esté en la clave reCAPTCHA, y que App Check use la misma site key para esta app web.',
-      'Dominios típicos del admin: admin.leftsidedev.site, landing-admin-9452e.web.app, landing-admin-9452e.firebaseapp.com.',
+      'Dominios típicos del admin: admin.toqua.site, landing-admin-9452e.web.app, landing-admin-9452e.firebaseapp.com.',
     );
   }
 

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LanguageSwitcher, useLocale } from '../i18n/LocaleContext';
 import FacebookDomainVerification from './FacebookDomainVerification';
 import { PlatformLegalLinks } from './LegalPublicPage';
+import ToquaLogo from './ToquaLogo';
 import { getRootPublicUrl, isExternalPublicUrl } from '../utils/marketingUrl';
 import { isValidEmail, isValidMxUsPhone } from '../utils/contactValidation';
 import { requestCmsAccess } from '../utils/userFunctions';
@@ -131,33 +132,35 @@ export default function LoginScreen() {
   const onSubmit = isRegister ? handleRegister : isReset ? handleReset : handleSignIn;
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden bg-[#081810] font-sans">
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden bg-[var(--bg-primary)] font-sans">
       <FacebookDomainVerification />
       <div className="flex min-h-full items-center justify-center p-6 py-10">
-        <div className="w-full max-w-md bg-white border border-[#2A342D]/10 rounded-2xl shadow-xl p-8">
+        <div className="w-full max-w-md bg-white border border-[var(--color-line)] rounded-2xl shadow-xl p-8">
         <div className={`flex items-center mb-2 gap-2 ${showBackToSite ? 'justify-between' : 'justify-end'}`}>
           {showBackToSite ? (
             <a
               href={publicUrl}
-              className="text-[11px] font-semibold text-[#40B850] hover:underline underline-offset-2"
+              className="text-[11px] font-semibold text-[var(--text-purple)] hover:underline underline-offset-2"
             >
               ← {t('login.backToSite')}
             </a>
           ) : null}
-          <LanguageSwitcher className="text-[#2A342D]" />
+          <LanguageSwitcher className="text-[var(--text-purple)]" />
         </div>
         <div className="mb-8 text-center">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-[#40B850] font-semibold mb-2">
-            {t('login.eyebrow')}
-          </p>
-          <h1 className="font-serif text-3xl text-[#101820]">{title}</h1>
-          <p className="text-sm text-[#101820]/60 mt-2">{subtitle}</p>
+          <ToquaLogo
+            variant="lockupTagline"
+            className="mx-auto mb-6 justify-center"
+            imgClassName="h-16 sm:h-20 w-auto max-w-full object-contain"
+          />
+          <h1 className="font-sans text-2xl font-semibold text-[var(--text-purple)]">{title}</h1>
+          <p className="text-sm text-[var(--color-mute)] mt-2">{subtitle}</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           {isRegister ? (
             <div className="space-y-1.5">
-              <label htmlFor="login-name" className="block text-[11px] font-bold text-[#101820]/50 uppercase">
+              <label htmlFor="login-name" className="block text-[11px] font-bold text-[var(--text-purple)]/50 uppercase">
                 {t('login.displayName')}
               </label>
               <input
@@ -166,14 +169,14 @@ export default function LoginScreen() {
                 autoComplete="name"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
-                className="w-full border border-[#101820]/15 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#40B850]/40"
+                className="w-full border border-[var(--color-line)] rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--text-purple)]/40"
                 placeholder={t('login.displayNamePlaceholder')}
               />
             </div>
           ) : null}
 
           <div className="space-y-1.5">
-            <label htmlFor="login-email" className="block text-[11px] font-bold text-[#101820]/50 uppercase">
+            <label htmlFor="login-email" className="block text-[11px] font-bold text-[var(--text-purple)]/50 uppercase">
               {t('login.email')}
             </label>
             <input
@@ -183,21 +186,21 @@ export default function LoginScreen() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full border border-[#101820]/15 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#40B850]/40"
+              className="w-full border border-[var(--color-line)] rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--text-purple)]/40"
               placeholder="you@email.com"
             />
           </div>
 
           {isRegister ? (
             <div className="space-y-1.5">
-              <label htmlFor="login-phone" className="block text-[11px] font-bold text-[#101820]/50 uppercase">
+              <label htmlFor="login-phone" className="block text-[11px] font-bold text-[var(--text-purple)]/50 uppercase">
                 {t('login.phone')}
               </label>
               <div className="flex gap-2">
                 <select
                   value={phoneCountry}
                   onChange={(event) => setPhoneCountry(event.target.value)}
-                  className="shrink-0 border border-[#101820]/15 rounded-lg px-2 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#40B850]/40 bg-white"
+                  className="shrink-0 border border-[var(--color-line)] rounded-lg px-2 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--text-purple)]/40 bg-white"
                   aria-label={t('login.phoneCountry')}
                 >
                   <option value="mx">MX +52</option>
@@ -210,25 +213,25 @@ export default function LoginScreen() {
                   required
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
-                  className="flex-1 min-w-0 border border-[#101820]/15 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#40B850]/40"
+                  className="flex-1 min-w-0 border border-[var(--color-line)] rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--text-purple)]/40"
                   placeholder={phoneCountry === 'us' ? '4155552671' : '5512345678'}
                 />
               </div>
-              <p className="text-[10px] text-[#101820]/45">{t('login.phoneHint')}</p>
+              <p className="text-[10px] text-[var(--text-purple)]/45">{t('login.phoneHint')}</p>
             </div>
           ) : null}
 
           {!isReset ? (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <label htmlFor="login-password" className="block text-[11px] font-bold text-[#101820]/50 uppercase">
+                <label htmlFor="login-password" className="block text-[11px] font-bold text-[var(--text-purple)]/50 uppercase">
                   {t('login.password')}
                 </label>
                 {!isRegister ? (
                   <button
                     type="button"
                     onClick={() => switchMode('reset')}
-                    className="text-[11px] font-semibold text-[#40B850] hover:underline underline-offset-2"
+                    className="text-[11px] font-semibold text-[var(--text-purple)] hover:underline underline-offset-2"
                   >
                     {t('login.forgotPassword')}
                   </button>
@@ -241,7 +244,7 @@ export default function LoginScreen() {
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full border border-[#101820]/15 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#40B850]/40"
+                className="w-full border border-[var(--color-line)] rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--text-purple)]/40"
                 placeholder="••••••••"
                 minLength={isRegister ? 6 : undefined}
               />
@@ -250,7 +253,7 @@ export default function LoginScreen() {
 
           {isRegister ? (
             <div className="space-y-1.5">
-              <label htmlFor="login-password-confirm" className="block text-[11px] font-bold text-[#101820]/50 uppercase">
+              <label htmlFor="login-password-confirm" className="block text-[11px] font-bold text-[var(--text-purple)]/50 uppercase">
                 {t('login.passwordConfirm')}
               </label>
               <input
@@ -260,7 +263,7 @@ export default function LoginScreen() {
                 required
                 value={passwordConfirm}
                 onChange={(event) => setPasswordConfirm(event.target.value)}
-                className="w-full border border-[#101820]/15 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#40B850]/40"
+                className="w-full border border-[var(--color-line)] rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--text-purple)]/40"
                 placeholder="••••••••"
                 minLength={6}
               />
@@ -268,13 +271,13 @@ export default function LoginScreen() {
           ) : null}
 
           {registerSent ? (
-            <p className="text-sm text-[#2A342D] bg-[#40B850]/10 border border-[#40B850]/25 rounded-lg px-3 py-2">
+            <p className="text-sm text-[#2A342D] bg-[var(--text-purple)]/10 border border-[var(--text-purple)]/25 rounded-lg px-3 py-2">
               {t('login.registerSent')}
             </p>
           ) : null}
 
           {resetSent ? (
-            <p className="text-sm text-[#2A342D] bg-[#40B850]/10 border border-[#40B850]/25 rounded-lg px-3 py-2">
+            <p className="text-sm text-[#2A342D] bg-[var(--text-purple)]/10 border border-[var(--text-purple)]/25 rounded-lg px-3 py-2">
               {t('login.resetSent')}
             </p>
           ) : null}
@@ -288,7 +291,7 @@ export default function LoginScreen() {
           <button
             type="submit"
             disabled={submitting || registerSent}
-            className="w-full bg-[#40B850] text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-[#289848] transition disabled:opacity-60"
+            className="w-full bg-[var(--text-purple)] text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-[var(--color-cta-hover)] transition disabled:opacity-60"
           >
             {submitting
               ? (isRegister ? t('login.registerSubmitting') : isReset ? t('login.resetSubmitting') : t('login.submitting'))
@@ -299,7 +302,7 @@ export default function LoginScreen() {
             <button
               type="button"
               onClick={() => switchMode('signin')}
-              className="w-full text-sm font-semibold text-[#101820]/70 hover:text-[#101820] py-1"
+              className="w-full text-sm font-semibold text-[var(--text-purple)]/70 hover:text-[var(--text-purple)] py-1"
             >
               {t('login.backToSignIn')}
             </button>
@@ -307,15 +310,15 @@ export default function LoginScreen() {
             <button
               type="button"
               onClick={() => switchMode('register')}
-              className="w-full text-sm font-semibold text-[#40B850] hover:underline underline-offset-2 py-1"
+              className="w-full text-sm font-semibold text-[var(--text-purple)] hover:underline underline-offset-2 py-1"
             >
               {t('login.createAccount')}
             </button>
           )}
         </form>
         <PlatformLegalLinks
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-[#101820]/55"
-          linkClassName="hover:text-[#40B850] hover:underline underline-offset-2"
+          className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-purple)]/55"
+          linkClassName="hover:text-[var(--text-purple)] hover:underline underline-offset-2"
         />
         </div>
       </div>

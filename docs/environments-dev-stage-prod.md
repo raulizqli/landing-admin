@@ -30,11 +30,13 @@ Principle: **one Firebase project per environment** (not shared Firestore). Same
                     └─────────────────┘
 ```
 
-| Env | Firebase project (example) | Admin URL | Template URL | Purpose |
-|---|---|---|---|---|
-| **Dev** | `landings-dev` | `admin-dev.…` or localhost | `template-dev.…` / `:5174` | Daily coding; emulators preferred |
-| **Stage** | `landings-stage` | `admin.stage.leftsidedev.site` | `sites.stage.leftsidedev.site` | QA, demos, Stripe **test** mode |
-| **Prod** | `landings-prod` (current hub) | `admin.…` / current hosting | client domains + apex | Live tenants |
+| Env | Firebase project (example) | Admin URL | Template URL | Product marketing | Purpose |
+|---|---|---|---|---|---|
+| **Dev** | `landings-dev` | `admin-dev.…` or localhost | `template-dev.…` / `:5174` | `toqua-site` / `:5176` | Daily coding; emulators preferred |
+| **Stage** | `landings-stage` | `admin.stage.toqua.site` | `sites.stage.toqua.site` | (optional) | QA, demos, Stripe **test** mode |
+| **Prod** | `landings-prod` (current hub) | `admin.toqua.site` | `web.toqua.site` | `toqua.site` (`toqua-marketing`) | Live tenants + product site |
+
+Agency corporate site **LeftSideDev** remains on `leftsidedev.site` (`hosting:marketing` → `leftsidedev-marketing`) and is unchanged by the Toqua product marketing app.
 
 Rename IDs to match your Firebase naming; keep the **three-project** split.
 

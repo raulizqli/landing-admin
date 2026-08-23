@@ -10,7 +10,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const PROJECT_ID = 'landing-admin-9452e';
 const PAGE_ID = 'stilette';
-const SITE_URL = 'https://us.leftsidedev.site';
+const SITE_URL = 'https://web.toqua.site';
 
 const COLORS = {
   forest: '#2F4A3A',

@@ -1,0 +1,23 @@
+export const nav = {
+  links: [
+    { path: '/what-you-get', label: 'What you get' },
+    { path: '/pricing', label: 'Pricing' },
+    { path: '/professions', label: 'Professions' },
+    { path: '/how-it-works', label: 'How it works' },
+    { path: '/faq', label: 'FAQ' },
+    { path: '/blog', label: 'Blog' },
+    { path: '/contact', label: 'Contact' },
+  ],
+  ctaPrimary: 'Create my page',
+  ctaSecondary: 'See plans',
+  menu: 'Menu',
+  skipToContent: 'Skip to content',
+  languageLabel: 'Language',
+  footerExplore: 'Explore',
+  footerMore: 'More',
+  footerRss: 'RSS feed',
+  footerCompare: 'Compare options',
+  footerResources: 'Resources',
+  copyright: 'All rights reserved.',
+  closeMenu: 'Close menu',
+};

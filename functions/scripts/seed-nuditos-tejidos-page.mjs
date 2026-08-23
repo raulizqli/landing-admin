@@ -11,7 +11,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const PROJECT_ID = 'landing-admin-9452e';
 const PAGE_ID = 'nuditos-tejidos';
-const SITE_URL = 'https://us.leftsidedev.site';
+const SITE_URL = 'https://web.toqua.site';
 const FACEBOOK_URL = 'https://www.facebook.com/amigurumis.and.more/';
 
 const COLORS = {

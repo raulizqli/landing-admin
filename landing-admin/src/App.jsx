@@ -33,6 +33,7 @@ import UserManagement from './components/UserManagement';
 import CreatePageModal from './components/CreatePageModal';
 import MetaImportPanel, { META_IMPORT_UI_ENABLED } from './components/MetaImportPanel';
 import PageStructureAssistSection from './components/PageStructureAssistSection';
+import ToquaLogo from './components/ToquaLogo';
 import VerticalFieldsEditor from './components/VerticalFieldsEditor';
 import BillingPlansPanel from './components/BillingPlansPanel';
 import PlanGate from './components/PlanGate';
@@ -427,10 +428,11 @@ export default function App() {
       const seoNote = result?.seoArtifacts?.baseUrl
         ? `\nSEO: ${result.seoArtifacts.baseUrl}/sitemap.xml · /rss.xml · /robots.txt`
         : '';
+      const pageLabel = String(dataToSave?.name || formData?.name || '').trim();
       if (result?.migratedToExternal) {
-        alert(`Contenido publicado en el Firebase externo. El hub solo guarda dominio y credenciales de [${selectedId}].${seoNote}`);
+        alert(`Contenido publicado en el Firebase externo. El hub solo guarda dominio y credenciales${pageLabel ? ` de ${pageLabel}` : ''}.${seoNote}`);
       } else {
-        alert(`¡Cambios guardados con éxito en la nube para [${selectedId}]!${seoNote}`);
+        alert(`¡Cambios guardados con éxito en la nube${pageLabel ? ` para ${pageLabel}` : ''}!${seoNote}`);
       }
     } catch (error) {
       console.error(error);
@@ -594,7 +596,12 @@ export default function App() {
             <div className="p-4 border-b border-gray-800">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h1 className="text-base font-bold tracking-tight text-indigo-400">{t('shell.title')}</h1>
+                  <ToquaLogo
+                    variant="mark"
+                    className="mb-2"
+                    imgClassName="h-9 w-9 object-contain rounded-lg"
+                  />
+                  <h1 className="text-base font-bold tracking-tight text-[var(--gradient-q-start)]">{t('shell.title')}</h1>
                   <p className="text-[11px] text-gray-500">{t('shell.subtitle')}</p>
                 </div>
                 <button
@@ -719,7 +726,6 @@ export default function App() {
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${selectedId === DEMO_PREVIEW_ID ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
                 >
                   <span>✨ {t('shell.demoPreview')}</span>
-                  <span className="text-[9px] bg-black/40 px-1 rounded font-mono">{DEMO_PREVIEW_ID}</span>
                 </button>
               )}
               {showPageList ? accessibleLandings.map(landing => (
@@ -727,19 +733,17 @@ export default function App() {
                   key={landing.id}
                   type="button"
                   onClick={() => handleSelectLanding(landing)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${selectedId === landing.id ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition ${selectedId === landing.id ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-900'}`}
                 >
-                  <span className="min-w-0 truncate">
+                  <span className="min-w-0 truncate block">
                     {isMarketingSite(landing) ? '◈ ' : '👤 '}
                     {landing.name || landing.id}
                   </span>
-                  <span className="text-[9px] bg-black/40 px-1 rounded font-mono shrink-0">{landing.id}</span>
                 </button>
               )) : accessibleLandings[0] && (
                 <div className="px-3 py-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30">
                   <p className="text-[10px] text-indigo-200 uppercase tracking-wide mb-1">{t('shell.yourPage')}</p>
                   <p className="text-xs font-medium text-white">{accessibleLandings[0].name || accessibleLandings[0].id}</p>
-                  <p className="text-[9px] text-indigo-200/80 font-mono mt-1">{accessibleLandings[0].id}</p>
                 </div>
               )}
             </div>
@@ -771,10 +775,11 @@ export default function App() {
             <div className="shrink-0 z-20 px-6 pt-4 pb-3 max-sm:px-3 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-gray-900">Editor Editorial</h2>
+                <h2 className="text-lg font-bold text-gray-900 truncate">
+                  {formData?.name || t('shell.title')}
+                </h2>
                 <p className="text-xs text-gray-500 truncate">
-                  ID del Documento: {selectedId}
-                  {isDemoPreview && ' · modo demo'}
+                  {isDemoPreview ? t('shell.demoPreview') : (formData?.specialty || '')}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
@@ -810,7 +815,7 @@ export default function App() {
                     {t('shell.showLivePreview')}
                   </button>
                 ) : null}
-                <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0">
+                <button type="submit" disabled={saving || isDemoPreview || !canEditSelectedPage} className="bg-[var(--color-cta)] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[var(--color-cta-hover)] transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0">
                   {saving ? t('common.saving') : isDemoPreview ? t('common.demoNoSave') : !canEditSelectedPage ? t('common.noPermission') : t('common.savePublish')}
                 </button>
               </div>

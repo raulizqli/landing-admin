@@ -1,0 +1,72 @@
+export const pricing = {
+  metaTitle: 'Planes y precios',
+  metaDescription:
+    'Planes Toqua: Starter desde $189 MXN, Pro $469, Agency $1,399. Enterprise a medida.',
+  eyebrow: 'Planes',
+  title: 'Elige el plan que se ajusta a tu práctica',
+  description:
+    'Precios mensuales en pesos mexicanos. Cancela cuando quieras. Todo se explica en lenguaje de consultorio, no de tecnología.',
+  currencyNote: 'Precios mensuales en pesos mexicanos (MXN).',
+  plans: [
+    {
+      id: 'starter',
+      name: 'Starter',
+      priceUsd: 10,
+      priceMxn: 189,
+      blurb: 'Una página con lo esencial para presentarte y que te contacten.',
+      highlights: [
+        '1 página profesional',
+        'Secciones básicas (quién eres, servicios, contacto)',
+        'Ideal para empezar o probar',
+      ],
+      cta: 'Empezar con Starter',
+      featured: false,
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      priceUsd: 25,
+      priceMxn: 469,
+      blurb: 'La misma página, con más secciones para mostrar tu trabajo con profundidad.',
+      highlights: [
+        '1 página con más secciones',
+        'Blog, galería y bloques extra',
+        'Más control visual y de contacto',
+      ],
+      cta: 'Elegir Pro',
+      featured: true,
+    },
+    {
+      id: 'agency',
+      name: 'Agency',
+      priceUsd: 75,
+      priceMxn: 1399,
+      blurb: 'Varias páginas cuando atiendes más de un espacio o marca.',
+      highlights: [
+        'Hasta 5 páginas',
+        'Todo lo de Pro',
+        'Prioridad en soporte',
+      ],
+      cta: 'Elegir Agency',
+      featured: false,
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise',
+      priceUsd: null,
+      priceMxn: null,
+      priceLabel: 'A medida',
+      blurb: 'Para equipos, redes de consultorios o necesidades especiales.',
+      highlights: [
+        'Varias páginas y roles de equipo',
+        'Acompañamiento cercano',
+        'Acuerdos según tu organización',
+      ],
+      cta: 'Hablar de Enterprise',
+      featured: false,
+    },
+  ],
+  compareTitle: '¿No sabes cuál elegir?',
+  compareText: 'Si solo necesitas presentarte: Starter. Si quieres blog o galería: Pro. Si manejas varias páginas: Agency.',
+  compareCta: 'Ver comparación con otras opciones',
+};

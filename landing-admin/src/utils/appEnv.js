@@ -1,5 +1,5 @@
 /**
- * Runtime environment for TapSite admin.
+ * Runtime environment for Toqua admin.
  * Prefer VITE_APP_ENV; fall back to Vite MODE / hostname.
  * Default when unknown: prod (deny demo logins).
  */

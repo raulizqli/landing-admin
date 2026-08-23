@@ -57,12 +57,12 @@ Stage/Dev leave ads empty. Prod uses `landing-template/.env.production` and GitH
 ```env
 VITE_GOOGLE_ADS_CLIENT=ca-pub-xxxxxxxxxxxxxxxx
 VITE_GOOGLE_ADS_SLOT=##########
-VITE_ADMIN_PUBLIC_URL=https://admin.leftsidedev.site
+VITE_ADMIN_PUBLIC_URL=https://admin.toqua.site
 ```
 
 Admin CMS (free-tier bar + Save & Publish) uses a **separate** Display slot in `landing-admin/.env.production` (`VITE_GOOGLE_ADS_SLOT`), synced to GitHub as `VITE_GOOGLE_ADS_SLOT_ADMIN`.
 
-1. Create AdSense **display** ad units (responsive). Do **not** use an AMP unit — TapSite pages are React/Vite SPAs (`adsbygoogle`), not AMP HTML (`amp-ad`).
+1. Create AdSense **display** ad units (responsive). Do **not** use an AMP unit — Toqua pages are React/Vite SPAs (`adsbygoogle`), not AMP HTML (`amp-ad`).
 2. Put publisher ID + **landing** slot in `landing-template/.env.production`; put the **admin** slot in `landing-admin/.env.production`.
 3. Sync secrets: `./scripts/sync-github-secrets.sh`
 4. Redeploy template/admin hosting so the Vite bundles pick up the values.

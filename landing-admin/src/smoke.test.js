@@ -9,7 +9,7 @@ describe('landing-admin smoke', () => {
     expect(
       isExternalPublicUrl(
         `${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`,
-        'https://admin.leftsidedev.site',
+        'https://admin.toqua.site',
       ),
     ).toBe(true);
   });
@@ -34,7 +34,7 @@ describe('landing-admin smoke', () => {
     expect(legal.PLATFORM_LEGAL_PATHS.dataDeletion).toBe('/data-deletion');
     expect(legal.isPublicLegalPath('/privacy')).toBe(true);
     expect(legal.isPublicLegalPath('/login')).toBe(false);
-    expect(legal.getPlatformLegalUrls('https://admin.leftsidedev.site').dataDeletion)
-      .toBe('https://admin.leftsidedev.site/data-deletion');
+    expect(legal.getPlatformLegalUrls('https://admin.toqua.site').dataDeletion)
+      .toBe('https://admin.toqua.site/data-deletion');
   });
 });

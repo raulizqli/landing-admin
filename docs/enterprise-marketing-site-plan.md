@@ -266,7 +266,7 @@ Extend **`landing-template`** (not per-client forks of `leftsidedev-site`):
 
 - On publish: generate `sitemap.xml` / RSS artifacts (Hosting + Function or Storage public files).
 - Migrate `leftsidedev-site` content into `pages/leftsidedev` marketing mode.
-- Point `leftsidedev.site` at template; deprecate static `leftsidedev-site` deploy (or keep as design sandbox only).
+- Point `web.toqua.site` at template; keep static `leftsidedev-site` on `leftsidedev.site`.
 
 **Exit:** one engine; showcase edited from admin.
 

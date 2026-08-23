@@ -5,7 +5,7 @@ import LandingMirror from './LandingMirror';
 /**
  * Espejo preview inside an about:blank iframe.
  * Keeps Tailwind breakpoints tied to the device frame width without loading
- * admin.leftsidedev.site in a nested frame (avoids frame-ancestors / CSP fights).
+ * admin.toqua.site in a nested frame (avoids frame-ancestors / CSP fights).
  */
 function copyParentStyles(iframeDoc) {
   document.head.querySelectorAll('link[rel="stylesheet"], link[href*="fonts"], style').forEach((node) => {

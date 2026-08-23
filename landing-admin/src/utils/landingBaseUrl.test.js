@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   PROD_DEFAULT_LANDING_BASE_URL,
+  PROD_DEFAULT_MARKETING_URL,
   getDefaultMarketingShowcaseUrl,
   getLandingBaseUrl,
 } from './landingBaseUrl';
@@ -17,14 +18,13 @@ describe('landingBaseUrl', () => {
   });
 
   it('prefers VITE_TEMPLATE_PREVIEW_URL when set', () => {
-    vi.stubEnv('VITE_TEMPLATE_PREVIEW_URL', 'https://us.leftsidedev.site/');
-    expect(getLandingBaseUrl()).toBe('https://us.leftsidedev.site');
+    vi.stubEnv('VITE_TEMPLATE_PREVIEW_URL', 'https://web.toqua.site/');
+    expect(getLandingBaseUrl()).toBe('https://web.toqua.site');
   });
 
-  it('builds default marketing showcase from prod landing host', () => {
+  it('uses the Toqua marketing site as the prod default showcase', () => {
     vi.stubEnv('DEV', false);
-    expect(getDefaultMarketingShowcaseUrl()).toBe(
-      `${PROD_DEFAULT_LANDING_BASE_URL}/?pageId=leftsidedev`,
-    );
+    expect(getDefaultMarketingShowcaseUrl()).toBe(PROD_DEFAULT_MARKETING_URL);
+    expect(PROD_DEFAULT_MARKETING_URL).toBe('https://toqua.site');
   });
 });

@@ -1,6 +1,13 @@
 # Marketing Site deploy notes (Phases 5–6)
 
-Enterprise Marketing Sites are served by **`landing-template`** when `siteMode: 'marketing'`. The static `leftsidedev-site/` app remains a **design sandbox**; production apex should use the template + CMS.
+Public marketing for LeftSideDev stays on **`leftsidedev.site`** (`leftsidedev-site/`).
+Toqua hosts split as:
+
+| Host | App |
+|---|---|
+| `admin.toqua.site` | Admin CMS (`landing-admin`) |
+| `web.toqua.site` | Client landings (`landing-template`) |
+| `leftsidedev.site` | Agency marketing (`leftsidedev-site`) |
 
 ## LeftSideDev showcase (client #0)
 
@@ -74,19 +81,18 @@ Deploy also publishes:
 
 Onboarding checklist: `docs/enterprise-marketing-onboarding.md`.
 
-## Point `leftsidedev.site` at the template
+## Hosts
 
-1. Firebase Hosting target `template` already serves `landing-template/dist`.
-2. Attach custom domain `leftsidedev.site` to that hosting site (not a separate marketing Vite deploy).
-3. Keep `pages/leftsidedev.customDomain = leftsidedev.site`.
-4. Set admin marketing redirect:
+1. Attach `admin.toqua.site` to the **admin** Hosting site.
+2. Attach `web.toqua.site` to the **template** Hosting site.
+3. Keep `leftsidedev.site` on `leftsidedev-site` (not the CMS template).
+4. Admin «Volver al sitio»:
 
 ```env
+VITE_CORPORATE_SITE_URL=https://leftsidedev.site
 VITE_MARKETING_URL=https://leftsidedev.site
+VITE_TEMPLATE_PREVIEW_URL=https://web.toqua.site
 ```
-
-5. Optional: stop deploying `leftsidedev-site` to any public host; keep the folder for design reference only.
-
 ## Edit showcase from admin
 
 1. Enterprise/root → open `leftsidedev`

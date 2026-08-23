@@ -135,15 +135,15 @@ export default function PagesOverviewPage() {
     : `${entitlements.pageCount} / ${entitlements.pageLimit}`;
 
   return (
-    <div className="flex h-dvh w-full flex-col bg-[#F4F1EA] text-[#2A342D] overflow-hidden font-sans">
-      <header className="shrink-0 border-b border-[#2A342D]/10 bg-white">
+    <div className="flex h-dvh w-full flex-col bg-[var(--bg-primary)] text-[var(--text-purple)] overflow-hidden font-sans">
+      <header className="shrink-0 border-b border-[var(--color-line)] bg-white">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#4A5D4E]/70">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-purple)]/70">
               {t('shell.title')}
             </p>
-            <h1 className="font-serif text-2xl text-[#2A342D]">{t('pagesOverview.title')}</h1>
-            <p className="text-xs text-[#2A342D]/60 mt-0.5">{t('pagesOverview.subtitle')}</p>
+            <h1 className="font-serif text-2xl text-[var(--text-purple)]">{t('pagesOverview.title')}</h1>
+            <p className="text-xs text-[var(--color-mute)] mt-0.5">{t('pagesOverview.subtitle')}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
               <span className="truncate text-gray-500" title={user.email}>{user.email}</span>
               <span className="rounded-full bg-indigo-50 border border-indigo-100 px-2 py-0.5 font-semibold text-indigo-700 uppercase tracking-wide">
@@ -281,7 +281,6 @@ export default function PagesOverviewPage() {
                           </span>
                         ) : null}
                       </div>
-                      <p className="text-[10px] font-mono text-gray-400 mt-1 truncate">{page.id}</p>
                       {page.specialty ? (
                         <p className="text-xs text-[#2A342D]/70 mt-2 line-clamp-2">{page.specialty}</p>
                       ) : null}

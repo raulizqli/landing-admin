@@ -5,7 +5,7 @@
 export const PORTFOLIO = [
   {
     slug: 'landing-cms',
-    title: 'TapSite',
+    title: 'Toqua',
     industry: 'SaaS · Professional services',
     challenge:
       'Agencies needed many branded landings without forking code or paying for preview writes on every keystroke.',
@@ -13,7 +13,7 @@ export const PORTFOLIO = [
       'A central CMS with local mirror preview, shared template deploys, bilingual labels, and billing-gated features.',
     summary: 'Central admin, shared template, Firebase-backed pages for professionals and agencies.',
     imagePlaceholder: true,
-    imageAlt: '[PLACEHOLDER] TapSite product screenshot — replace with real capture',
+    imageAlt: '[PLACEHOLDER] Toqua product screenshot — replace with real capture',
     demoUrl: 'https://leftsidedev.site',
     videoUrl: '',
     githubUrl: '',

@@ -88,6 +88,7 @@ export default function DevicePreviewPanel({
   const isMobile = deviceView === 'mobile';
   const compactViewport = useCompactViewport();
   const collapsedOnDesktop = hiddenOnDesktop && !compactViewport;
+  const previewName = String(formData?.name ?? '').trim() || 'vista previa';
   const { hostRef: phoneHostRef, scale: phoneScale } = useScaledPhoneFrame(
     isMobile,
     compactViewport,
@@ -182,7 +183,7 @@ export default function DevicePreviewPanel({
           scrollSectionId={previewScrollSectionId}
           activeMarketingRouteId={activeMarketingRouteId}
           lockedHeroSlideIndex={lockedHeroSlideIndex}
-          title={`Vista previa espejo de ${selectedId}`}
+          title={`Vista previa espejo de ${previewName}`}
         />
       );
     }
@@ -204,7 +205,7 @@ export default function DevicePreviewPanel({
       <iframe
         ref={previewIframeRef}
         key={`local:${localPreviewUrl}`}
-        title={`Vista previa local de ${selectedId}`}
+        title={`Vista previa local de ${previewName}`}
         src={localPreviewUrl}
         onLoad={postLocalPreviewUpdate}
         className="w-full h-full border-0 bg-white"
@@ -402,7 +403,7 @@ export default function DevicePreviewPanel({
                 <span className="h-2.5 w-2.5 rounded-full bg-[#A8C3A0]" />
               </div>
               <div className="min-w-0 flex-1 rounded-md bg-white border border-gray-200 px-2.5 py-1 text-[11px] text-gray-500 truncate font-sans">
-                {selectedId ? `${selectedId} · vista previa` : 'vista previa'}
+                {previewName}
               </div>
             </div>
             <div className="flex-1 min-h-0 overflow-hidden bg-white">

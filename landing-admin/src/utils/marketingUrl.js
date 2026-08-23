@@ -3,8 +3,8 @@
  * Admin host `/` itself is session-aware: guests → /login, signed-in → /app.
  *
  * Priority:
- * 1. VITE_CORPORATE_SITE_URL (leftsidedev-site / corporate)
- * 2. VITE_MARKETING_URL / template showcase (configured marketing landing)
+ * 1. VITE_CORPORATE_SITE_URL (toqua-site / product marketing)
+ * 2. VITE_MARKETING_URL / showcase fallback
  */
 
 import { getDefaultMarketingShowcaseUrl } from './landingBaseUrl.js';
