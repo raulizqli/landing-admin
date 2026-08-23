@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "landing-admin-9452e",
+    "dev": "landing-admin-9452e",
+    "stage": "landings-stage",
+    "prod": "landing-admin-9452e"
+  },
+  "targets": {
+    "landing-admin-9452e": {
+      "hosting": {
+        "toqua-marketing": [
+          "toqua-marketing"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
