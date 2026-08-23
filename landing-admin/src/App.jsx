@@ -81,6 +81,7 @@ import { buildPageAuditSnapshot } from '@raulizqli/landing-core/pageAudit';
 import { syncDomainIndexesRemote } from './utils/domainFunctions';
 const DEMO_PREVIEW_ID = 'preview-demo';
 const SIDEBAR_COLLAPSED_KEY = 'landing-admin:pages-sidebar-collapsed';
+const SIDEBAR_PINNED_KEY = 'landing-admin:pages-sidebar-pinned';
 const PREVIEW_HIDDEN_KEY = 'landing-admin:preview-panel-hidden';
 
 function readStoredFlag(key, fallback) {
@@ -144,6 +145,9 @@ export default function App() {
   const [creatingPage, setCreatingPage] = useState(false);
   const [accessError, setAccessError] = useState('');
   const [pagesSidebarCollapsed, setPagesSidebarCollapsed] = useState(readSidebarCollapsedDefault);
+  const [pagesSidebarPinned, setPagesSidebarPinned] = useState(() => (
+    readStoredFlag(SIDEBAR_PINNED_KEY, false)
+  ));
   const [previewPanelHidden, setPreviewPanelHiddenState] = useState(() => (
     readStoredFlag(PREVIEW_HIDDEN_KEY, false)
   ));
@@ -157,6 +161,20 @@ export default function App() {
     setPagesSidebarCollapsed(collapsed);
     persistStoredFlag(SIDEBAR_COLLAPSED_KEY, collapsed);
   };
+
+  const setSidebarPinned = (pinned) => {
+    setPagesSidebarPinned(pinned);
+    persistStoredFlag(SIDEBAR_PINNED_KEY, pinned);
+    if (pinned) {
+      setSidebarCollapsed(false);
+    }
+  };
+
+  const collapseSidebarAfterPageSelect = useCallback(() => {
+    if (!pagesSidebarPinned && showPageList) {
+      setSidebarCollapsed(true);
+    }
+  }, [pagesSidebarPinned, showPageList]);
 
   const setPreviewPanelHidden = (hidden) => {
     setPreviewPanelHiddenState(hidden);
@@ -257,10 +275,6 @@ export default function App() {
       setLayoutBaseline(hydrated);
       setActiveMarketingRouteId(normalizeMarketingRoutes(hydrated.marketingRoutes)[0]?.id || '');
     }
-  };
-
-  const selectDemoPreview = () => {
-    selectLanding({ id: DEMO_PREVIEW_ID });
   };
 
   const reloadSelectedFromCloud = async () => {
@@ -378,6 +392,11 @@ export default function App() {
 
   const handleSelectLanding = async (landing) => {
     await selectLanding(landing);
+    collapseSidebarAfterPageSelect();
+  };
+
+  const selectDemoPreview = () => {
+    void handleSelectLanding({ id: DEMO_PREVIEW_ID });
   };
 
   const isDemoPreview = selectedId === DEMO_PREVIEW_ID;
@@ -488,6 +507,7 @@ export default function App() {
       setEditingLanguage(normalizePageLanguage(hydrated.defaultLanguage ?? hydrated.labelLanguage));
       setLayoutBaseline(hydrated);
       setShowCreatePage(false);
+      collapseSidebarAfterPageSelect();
       try {
         // Profile must refresh so assignedPageIds/pageId unlock list + Guardar (Agency first page).
         await refreshProfile?.();
@@ -604,16 +624,36 @@ export default function App() {
                   <h1 className="text-base font-bold tracking-tight text-[var(--gradient-q-start)]">{t('shell.title')}</h1>
                   <p className="text-[11px] text-gray-500">{t('shell.subtitle')}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSidebarCollapsed(true)}
-                  className="shrink-0 w-8 h-8 rounded-lg border border-gray-700 text-gray-400 hover:bg-gray-900 hover:text-white transition flex items-center justify-center"
-                  title={t('shell.collapseSidebar')}
-                  aria-label={t('shell.collapseSidebar')}
-                  aria-expanded={true}
-                >
-                  <span className="text-sm font-bold" aria-hidden>«</span>
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  {showPageList ? (
+                    <button
+                      type="button"
+                      onClick={() => setSidebarPinned(!pagesSidebarPinned)}
+                      className={`w-8 h-8 rounded-lg border transition flex items-center justify-center ${
+                        pagesSidebarPinned
+                          ? 'border-indigo-400 bg-indigo-600/30 text-indigo-100'
+                          : 'border-gray-700 text-gray-400 hover:bg-gray-900 hover:text-white'
+                      }`}
+                      title={pagesSidebarPinned ? t('shell.unpinSidebar') : t('shell.pinSidebar')}
+                      aria-label={pagesSidebarPinned ? t('shell.unpinSidebar') : t('shell.pinSidebar')}
+                      aria-pressed={pagesSidebarPinned}
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+                        <path d="M16 3v2.2l1.6 1.6-1.4 1.4L14.5 6.8V9h-2V6.8L9.8 8.2 8.4 6.8 10 5.2V3h6zm-4 6h2v9.8l-2.5 2.5-2.5-2.5V9z" />
+                      </svg>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setSidebarCollapsed(true)}
+                    className="w-8 h-8 rounded-lg border border-gray-700 text-gray-400 hover:bg-gray-900 hover:text-white transition flex items-center justify-center"
+                    title={t('shell.collapseSidebar')}
+                    aria-label={t('shell.collapseSidebar')}
+                    aria-expanded={true}
+                  >
+                    <span className="text-sm font-bold" aria-hidden>«</span>
+                  </button>
+                </div>
               </div>
               <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
                 <AiQuotaBadge>
@@ -751,17 +791,35 @@ export default function App() {
         ) : null}
       </div>
 
-      {pagesSidebarCollapsed ? (
-        <button
-          type="button"
-          onClick={() => setSidebarCollapsed(false)}
-          className="absolute left-0 top-1/2 z-30 -translate-y-1/2 flex h-16 w-6 items-center justify-center rounded-r-lg border border-l-0 border-indigo-500/50 bg-gray-950 text-indigo-200 shadow-lg hover:bg-indigo-900/80 hover:text-white transition"
-          title={t('shell.expandSidebar')}
-          aria-label={t('shell.expandSidebar')}
-          aria-expanded={false}
-        >
-          <span className="text-xs font-bold" aria-hidden>»</span>
-        </button>
+      {pagesSidebarCollapsed && showPageList ? (
+        <div className="absolute left-0 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(false)}
+            className="flex h-16 w-6 items-center justify-center rounded-r-lg border border-l-0 border-indigo-500/50 bg-gray-950 text-indigo-200 shadow-lg hover:bg-indigo-900/80 hover:text-white transition"
+            title={t('shell.expandSidebar')}
+            aria-label={t('shell.expandSidebar')}
+            aria-expanded={false}
+          >
+            <span className="text-xs font-bold" aria-hidden>»</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarPinned(!pagesSidebarPinned)}
+            className={`flex h-8 w-6 items-center justify-center rounded-r-lg border border-l-0 shadow-lg transition ${
+              pagesSidebarPinned
+                ? 'border-indigo-400 bg-indigo-600/40 text-indigo-100'
+                : 'border-gray-700 bg-gray-950 text-gray-400 hover:bg-gray-900 hover:text-white'
+            }`}
+            title={pagesSidebarPinned ? t('shell.unpinSidebar') : t('shell.pinSidebar')}
+            aria-label={pagesSidebarPinned ? t('shell.unpinSidebar') : t('shell.pinSidebar')}
+            aria-pressed={pagesSidebarPinned}
+          >
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
+              <path d="M16 3v2.2l1.6 1.6-1.4 1.4L14.5 6.8V9h-2V6.8L9.8 8.2 8.4 6.8 10 5.2V3h6zm-4 6h2v9.8l-2.5 2.5-2.5-2.5V9z" />
+            </svg>
+          </button>
+        </div>
       ) : null}
 
       {/* 2. FORMULARIO */}

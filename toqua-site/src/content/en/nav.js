@@ -18,6 +18,10 @@ export const nav = {
   footerRss: 'RSS feed',
   footerCompare: 'Compare options',
   footerResources: 'Resources',
+  footerLegal: 'Legal',
+  footerAbout: 'About',
+  footerPrivacy: 'Privacy',
+  footerTerms: 'Terms',
   copyright: 'All rights reserved.',
   closeMenu: 'Close menu',
 };

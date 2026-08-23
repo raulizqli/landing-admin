@@ -12,6 +12,8 @@ const professionSlugs = ['psychology', 'pediatrics', 'dental', 'legal'];
 const blogSlugs = [
   'first-professional-page-checklist',
   'what-patients-look-for-online',
+  'how-to-write-your-practice-bio',
+  'common-professional-page-mistakes',
 ];
 
 const staticPaths = [
@@ -25,6 +27,9 @@ const staticPaths = [
   '/resources',
   '/contact',
   '/compare',
+  '/about',
+  '/privacy',
+  '/terms',
 ];
 
 const routes = [];
@@ -87,6 +92,30 @@ const blogMeta = {
       title: 'What clients look for when they search for you online',
       description:
         'How a trustworthy page looks: clarity, location, and an easy next step.',
+    },
+  },
+  'how-to-write-your-practice-bio': {
+    es: {
+      title: 'Cómo escribir la bio de tu consultorio (sin sonar genérica)',
+      description:
+        'Guía paso a paso para redactar tu presentación profesional: tono, estructura, qué incluir y qué evitar.',
+    },
+    en: {
+      title: 'How to write your practice bio (without sounding generic)',
+      description:
+        'A step-by-step guide to your professional intro: tone, structure, what to include, and what to skip.',
+    },
+  },
+  'common-professional-page-mistakes': {
+    es: {
+      title: 'Siete errores comunes en páginas profesionales (y cómo corregirlos)',
+      description:
+        'Desde el contacto escondido hasta fotos genéricas: errores que hacen perder clientes y cómo arreglarlos hoy.',
+    },
+    en: {
+      title: 'Seven common professional page mistakes (and how to fix them)',
+      description:
+        'From hidden contact info to generic photos: mistakes that lose clients and how to fix them today.',
     },
   },
 };

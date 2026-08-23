@@ -13,6 +13,10 @@ import { blog as blogEs, getPost as getPostEs } from '../content/es/blog';
 import { blog as blogEn, getPost as getPostEn } from '../content/en/blog';
 import * as pagesEs from '../content/es/pages';
 import * as pagesEn from '../content/en/pages';
+import { legal as legalEs } from '../content/es/legal';
+import { legal as legalEn } from '../content/en/legal';
+import { about as aboutEs } from '../content/es/about';
+import { about as aboutEn } from '../content/en/about';
 
 const catalogs = {
   es: {
@@ -28,6 +32,8 @@ const catalogs = {
     contact: pagesEs.contact,
     compare: pagesEs.compare,
     notFound: pagesEs.notFound,
+    legal: legalEs,
+    about: aboutEs,
     getProfession: getProfessionEs,
     getPost: getPostEs,
   },
@@ -44,6 +50,8 @@ const catalogs = {
     contact: pagesEn.contact,
     compare: pagesEn.compare,
     notFound: pagesEn.notFound,
+    legal: legalEn,
+    about: aboutEn,
     getProfession: getProfessionEn,
     getPost: getPostEn,
   },

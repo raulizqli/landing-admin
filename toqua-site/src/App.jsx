@@ -12,6 +12,8 @@ import BlogPostPage from './pages/BlogPostPage';
 import ResourcesPage from './pages/ResourcesPage';
 import ContactPage from './pages/ContactPage';
 import ComparePage from './pages/ComparePage';
+import AboutPage from './pages/AboutPage';
+import LegalPage from './pages/LegalPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { DEFAULT_LANG } from './content/site';
 
@@ -32,6 +34,9 @@ export default function App() {
         <Route path="resources" element={<ResourcesPage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="compare" element={<ComparePage />} />
+        <Route path="about" element={<AboutPage />} />
+        <Route path="privacy" element={<LegalPage kind="privacy" />} />
+        <Route path="terms" element={<LegalPage kind="terms" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route path="*" element={<Navigate to={`/${DEFAULT_LANG}`} replace />} />

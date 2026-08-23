@@ -160,6 +160,149 @@ export const BLOG_POSTS = [
       'Measure baseline weeks before you launch. Otherwise “AI success” is a vibe.',
     ],
   },
+  {
+    slug: 'choosing-a-software-agency',
+    title: 'How to Choose a Software Agency (Without Regretting It Six Months Later)',
+    category: 'Software Development',
+    date: '2026-08-10',
+    readingMinutes: 14,
+    excerpt:
+      'A practical checklist for founders and operators: signals of senior delivery, red flags, and questions that reveal how an agency actually works.',
+    tags: ['Agencies', 'Procurement', 'Strategy'],
+    sections: [
+      {
+        heading: 'Start with the outcome, not the stack',
+        paragraphs: [
+          'Most RFPs list technologies before problems. Flip it: write the business outcome first—reduce support tickets by 30%, launch a paid tier, replace a spreadsheet workflow—and ask agencies how they would measure success.',
+          'Strong partners push back on vague goals. Weak ones agree to everything and disappear into tickets.',
+        ],
+      },
+      {
+        heading: 'Look for production evidence, not deck polish',
+        paragraphs: [
+          'Ask for systems they still maintain, not only launches from three years ago. Who owns on-call? What broke after go-live and how did they fix it?',
+          'Case studies should name constraints: timeline, team size, integrations, compliance. “We built an AI platform” without context is marketing, not proof.',
+        ],
+      },
+      {
+        heading: 'Interview the people who will actually build',
+        paragraphs: [
+          'Sales calls are not delivery. Request time with the lead engineer or architect who would own your account.',
+          'Good signs: they ask about your users, data model, and release cadence. Bad signs: they promise a fixed price before understanding scope, or only the salesperson ever shows up.',
+        ],
+      },
+      {
+        heading: 'Understand how they handle change',
+        paragraphs: [
+          'Software projects change. Ask how they handle scope shifts, who approves them, and how billing works when priorities move.',
+          'Fixed-price can work for well-bounded work. Discovery-heavy products often need time-and-materials with capped iterations and clear demos.',
+        ],
+      },
+      {
+        heading: 'Security and ownership basics',
+        paragraphs: [
+          'You should own the repo, cloud accounts, and domains. Credentials live in your vault, not theirs forever.',
+          'Ask about secrets handling, backup strategy, and what happens if you stop working together. If answers are fuzzy, assume you will inherit debt.',
+        ],
+      },
+      {
+        heading: 'Communication rhythm',
+        paragraphs: [
+          'Weekly written updates beat surprise demos. Ask for a sample status report and how they document decisions.',
+          'Time zone overlap matters for fast feedback. Clarify response SLAs for blockers vs. nice-to-haves.',
+        ],
+      },
+      {
+        heading: 'Red flags we see often',
+        paragraphs: [
+          'No tests, “we will add them later.”',
+          'Everything is a custom framework only they understand.',
+          'They cannot explain trade-offs in plain language.',
+          'They outsource the core build without telling you who holds quality.',
+          'They guarantee dates before a technical discovery session.',
+        ],
+      },
+      {
+        heading: 'A short question list you can steal',
+        paragraphs: [
+          'What would you build in the first two weeks to de-risk this project?',
+          'What is explicitly out of scope for phase one?',
+          'Show me monitoring or logging from a live client system (redacted).',
+          'How do you hand off to an internal team?',
+          'What happens if we pause for a month?',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'ai-automation-roi-guide',
+    title: 'AI Automation ROI: A Blunt Guide for Operators',
+    category: 'Business Automation',
+    date: '2026-08-20',
+    readingMinutes: 13,
+    excerpt:
+      'Where automation pays off first, how to measure it, and why data cleanup beats model hype every time.',
+    tags: ['AI', 'ROI', 'Automation'],
+    sections: [
+      {
+        heading: 'ROI shows up in boring places first',
+        paragraphs: [
+          'Leaders want a flagship copilot. Operators win faster on ticket triage, invoice matching, internal search, and draft replies with human approval.',
+          'These workflows already have volume, text, and measurable before/after times. That is where you fund the next experiment.',
+        ],
+      },
+      {
+        heading: 'Measure baseline before you build',
+        paragraphs: [
+          'Track median handle time, error rate, or hours spent on a task for two to four weeks. Without a baseline, any “50% faster” claim is fiction.',
+          'Include human review time. An agent that drafts in seconds but needs ten minutes of fixes is not a win.',
+        ],
+      },
+      {
+        heading: 'Augment before you automate',
+        paragraphs: [
+          'Start with suggestions: classify, summarize, route, draft. Keep irreversible actions behind a human click.',
+          'Autonomy works on narrow, low-risk paths with clear rollback. Expense categorization with audit logs, not payments without approval.',
+        ],
+      },
+      {
+        heading: 'Data cleanup is the multiplier',
+        paragraphs: [
+          'RAG and agents fail on messy ACLs, duplicate docs, and PDFs nobody maintained. Cleaning access and canonical sources often beats upgrading the model.',
+          'Budget time for ingestion, chunking strategy, and eval questions pulled from real Slack threads—not hypothetical FAQs.',
+        ],
+      },
+      {
+        heading: 'Cost model beyond tokens',
+        paragraphs: [
+          'Include engineering time, review labor, monitoring, and retraining when upstream systems change. Token bills are often the smaller line item.',
+          'Set budgets and alerts early. A runaway agent loop is an ops incident, not a surprise invoice.',
+        ],
+      },
+      {
+        heading: 'Evals are not optional',
+        paragraphs: [
+          'Maintain ten to thirty real failure cases from production or staging. Run them on every prompt or tool change.',
+          'Track groundedness and task completion, not vibes. Regression should block release.',
+        ],
+      },
+      {
+        heading: 'When to stop',
+        paragraphs: [
+          'If accuracy cannot clear your quality bar after two focused iterations, the workflow may need redesign—not a bigger model.',
+          'Sometimes the ROI answer is a better form, a clearer policy, or a human team hire. That is still a good outcome.',
+        ],
+      },
+      {
+        heading: 'A simple ROI worksheet',
+        paragraphs: [
+          'Hours saved per week × loaded hourly cost = gross benefit.',
+          'Subtract: build, maintenance, review time, infra, and risk buffer.',
+          'If payback is under six months with conservative assumptions, prioritize. If not, shrink scope or pick another workflow.',
+        ],
+      },
+    ],
+  },
 ];
 
 export function getPostBySlug(slug) {

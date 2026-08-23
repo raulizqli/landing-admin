@@ -62,6 +62,24 @@ export default function SiteFooter() {
               </a>
             </li>
           </ul>
+          <p className="mt-8 text-sm font-semibold text-[var(--color-mist)]">Legal</p>
+          <ul className="mt-4 space-y-2 text-sm text-[var(--color-mute)]">
+            <li>
+              <Link to="/about" className="hover:text-[var(--color-accent)]">
+                About
+              </Link>
+            </li>
+            <li>
+              <Link to="/privacy" className="hover:text-[var(--color-accent)]">
+                Privacy
+              </Link>
+            </li>
+            <li>
+              <Link to="/terms" className="hover:text-[var(--color-accent)]">
+                Terms
+              </Link>
+            </li>
+          </ul>
         </div>
 
         <div>
@@ -86,7 +104,14 @@ export default function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-[var(--color-line)] px-5 py-5 text-center text-xs text-[var(--color-mute)] sm:px-8">
-        © {new Date().getFullYear()} {SITE.name}. All rights reserved.
+        © {new Date().getFullYear()} {SITE.name}. All rights reserved.{' '}
+        <Link to="/privacy" className="hover:text-[var(--color-accent)]">
+          Privacy
+        </Link>
+        {' · '}
+        <Link to="/terms" className="hover:text-[var(--color-accent)]">
+          Terms
+        </Link>
       </div>
     </footer>
   );

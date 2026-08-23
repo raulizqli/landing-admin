@@ -35,6 +35,8 @@ const blogSlugs = [
   'openai-responses-api',
   'n8n-automation-at-work',
   'ai-for-businesses',
+  'choosing-a-software-agency',
+  'ai-automation-roi-guide',
 ];
 
 const staticRoutes = [
@@ -48,6 +50,8 @@ const staticRoutes = [
   '/contact',
   '/estimate',
   '/resources',
+  '/privacy',
+  '/terms',
 ];
 
 const industrySlugs = [

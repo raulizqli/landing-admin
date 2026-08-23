@@ -81,6 +81,30 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/compare" />
   </url>
   <url>
+    <loc>https://toqua.site/es/about</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/about" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/privacy</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/privacy" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/privacy" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/terms</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/terms" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/terms" />
+  </url>
+  <url>
     <loc>https://toqua.site/es/professions/psychology</loc>
     <lastmod>2026-08-23</lastmod>
     <changefreq>monthly</changefreq>
@@ -127,6 +151,22 @@
     <priority>0.7</priority>
     <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/what-patients-look-for-online" />
     <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/what-patients-look-for-online" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/blog/how-to-write-your-practice-bio</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/how-to-write-your-practice-bio" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/how-to-write-your-practice-bio" />
+  </url>
+  <url>
+    <loc>https://toqua.site/es/blog/common-professional-page-mistakes</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/common-professional-page-mistakes" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/common-professional-page-mistakes" />
   </url>
   <url>
     <loc>https://toqua.site/en</loc>
@@ -209,6 +249,30 @@
     <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/compare" />
   </url>
   <url>
+    <loc>https://toqua.site/en/about</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/about" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/about" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/privacy</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/privacy" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/privacy" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/terms</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/terms" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/terms" />
+  </url>
+  <url>
     <loc>https://toqua.site/en/professions/psychology</loc>
     <lastmod>2026-08-23</lastmod>
     <changefreq>monthly</changefreq>
@@ -255,5 +319,21 @@
     <priority>0.7</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/what-patients-look-for-online" />
     <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/what-patients-look-for-online" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/blog/how-to-write-your-practice-bio</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/how-to-write-your-practice-bio" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/how-to-write-your-practice-bio" />
+  </url>
+  <url>
+    <loc>https://toqua.site/en/blog/common-professional-page-mistakes</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://toqua.site/en/blog/common-professional-page-mistakes" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://toqua.site/es/blog/common-professional-page-mistakes" />
   </url>
 </urlset>

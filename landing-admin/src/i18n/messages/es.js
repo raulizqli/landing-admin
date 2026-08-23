@@ -98,6 +98,8 @@ export default {
     yourPage: 'Tu página',
     collapseSidebar: 'Ocultar menú de páginas',
     expandSidebar: 'Mostrar menú de páginas',
+    pinSidebar: 'Mantener menú de páginas fijo',
+    unpinSidebar: 'Ocultar menú al elegir una página',
     hideLivePreview: 'Ocultar vista previa',
     showLivePreview: 'Mostrar vista previa',
     pagesMenu: 'Páginas',

@@ -56,6 +56,33 @@ npm run deploy:toqua
 
 Requiere sitio Firebase Hosting `toqua-marketing` vinculado al target en `.firebaserc`.
 
+## Dominio custom (`toqua.site`)
+
+El dominio debe apuntar al sitio **`toqua-marketing`**, no al sitio por defecto del proyecto.
+
+| Registro | Valor |
+|---|---|
+| `A` | `199.36.158.100` |
+| `TXT` | `hosting-site=toqua-marketing` |
+
+Si el TXT sigue en `hosting-site=landing-admin-9452e`, Firebase responde **404** aunque el deploy esté bien (`toqua-marketing.web.app` sí funciona).
+
+Diagnóstico:
+
+```bash
+node scripts/check-toqua-site-dns.mjs
+```
+
+En Firebase Console: **Hosting → toqua-marketing → Dominios personalizados → toqua.site**.
+
+## AdSense
+
+- Script + meta en `toqua-site/index.html`
+- `public/ads.txt` (publisher `ca-pub-8125831908133216`)
+- CSP en `toqua-site/firebase.json` incluye dominios de Google Ads
+
+Validar en AdSense con `toqua.site` solo después de que el dominio custom responda 200 (TXT correcto).
+
 ## SEO
 
 `npm run generate:seo` (también en `prebuild`): `sitemap.xml`, `rss.xml`, `og-default.svg` para ES y EN.

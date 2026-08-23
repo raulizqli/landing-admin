@@ -68,10 +68,27 @@ export default function BlogPostPage() {
           </div>
         </header>
 
-        <div className="mx-auto max-w-3xl space-y-5 px-5 py-12 text-base leading-relaxed text-[var(--color-mute)] sm:px-8">
-          {post.body.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
+        <div className="mx-auto max-w-3xl px-5 py-12 text-base leading-relaxed text-[var(--color-mute)] sm:px-8">
+          {post.sections?.length ? (
+            <div className="space-y-10">
+              {post.sections.map((section) => (
+                <section key={section.heading}>
+                  <h2 className="font-display text-xl font-semibold text-[var(--color-mist)]">{section.heading}</h2>
+                  <div className="mt-4 space-y-5">
+                    {section.paragraphs.map((paragraph) => (
+                      <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {post.body.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 pt-4">
             {post.tags.map((tag) => (
               <span key={tag} className="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs">

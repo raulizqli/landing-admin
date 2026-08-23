@@ -43,10 +43,27 @@ export default function BlogPostPage() {
           {post.title}
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-[var(--mute)]">{post.excerpt}</p>
-        <div className="mt-10 max-w-3xl space-y-4 text-base leading-relaxed text-[var(--mute)]">
-          {post.body.map((paragraph) => (
-            <p key={paragraph.slice(0, 48)}>{paragraph}</p>
-          ))}
+        <div className="mt-10 max-w-3xl text-base leading-relaxed text-[var(--mute)]">
+          {post.sections?.length ? (
+            <div className="space-y-10">
+              {post.sections.map((section) => (
+                <section key={section.heading}>
+                  <h2 className="font-display text-xl font-semibold text-[var(--text)]">{section.heading}</h2>
+                  <div className="mt-4 space-y-4">
+                    {section.paragraphs.map((paragraph) => (
+                      <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {post.body.map((paragraph) => (
+                <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+              ))}
+            </div>
+          )}
         </div>
         <div className="mt-6 flex flex-wrap gap-2">
           {post.tags.map((tag) => (

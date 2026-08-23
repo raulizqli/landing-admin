@@ -56,6 +56,24 @@ export default function SiteFooter() {
               </a>
             </li>
           </ul>
+          <p className="mt-8 text-sm font-semibold text-[var(--text)]">{t.nav.footerLegal}</p>
+          <ul className="mt-4 space-y-2 text-sm text-[var(--mute)]">
+            <li>
+              <Link to={path('/about')} className="hover:text-[var(--text-purple)]">
+                {t.nav.footerAbout}
+              </Link>
+            </li>
+            <li>
+              <Link to={path('/privacy')} className="hover:text-[var(--text-purple)]">
+                {t.nav.footerPrivacy}
+              </Link>
+            </li>
+            <li>
+              <Link to={path('/terms')} className="hover:text-[var(--text-purple)]">
+                {t.nav.footerTerms}
+              </Link>
+            </li>
+          </ul>
           <div className="mt-6">
             <LanguageSwitcher />
           </div>
@@ -69,7 +87,14 @@ export default function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-[var(--line)] px-5 py-5 text-center text-xs text-[var(--mute)] sm:px-8">
-        © {new Date().getFullYear()} {SITE.name}. {t.nav.copyright}
+        © {new Date().getFullYear()} {SITE.name}. {t.nav.copyright}{' '}
+        <Link to={path('/privacy')} className="hover:text-[var(--text-purple)]">
+          {t.nav.footerPrivacy}
+        </Link>
+        {' · '}
+        <Link to={path('/terms')} className="hover:text-[var(--text-purple)]">
+          {t.nav.footerTerms}
+        </Link>
       </div>
     </footer>
   );

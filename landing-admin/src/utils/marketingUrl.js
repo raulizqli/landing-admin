@@ -7,7 +7,13 @@
  * 2. VITE_MARKETING_URL / showcase fallback
  */
 
-import { getDefaultMarketingShowcaseUrl } from './landingBaseUrl.js';
+import { getDefaultMarketingShowcaseUrl, PROD_DEFAULT_MARKETING_URL } from './landingBaseUrl.js';
+
+/** Legacy LeftSideDev studio URLs — product admin should link to Toqua marketing instead. */
+const LEGACY_STUDIO_URLS = new Set([
+  'https://leftsidedev.site',
+  'http://localhost:5175',
+]);
 
 function normalizePublicUrl(raw) {
   const url = String(raw ?? '').trim();
@@ -19,13 +25,15 @@ function normalizePublicUrl(raw) {
 
 /** Corporate / studio site. Empty when not configured. */
 export function getCorporateSiteUrl() {
-  return normalizePublicUrl(import.meta.env.VITE_CORPORATE_SITE_URL);
+  const url = normalizePublicUrl(import.meta.env.VITE_CORPORATE_SITE_URL);
+  if (!url || LEGACY_STUDIO_URLS.has(url)) return '';
+  return url;
 }
 
 /** Marketing / CMS showcase template URL. */
 export function getMarketingUrl() {
   const fromEnv = normalizePublicUrl(import.meta.env.VITE_MARKETING_URL);
-  if (fromEnv) return fromEnv;
+  if (fromEnv && !LEGACY_STUDIO_URLS.has(fromEnv)) return fromEnv;
   return getDefaultMarketingShowcaseUrl();
 }
 
@@ -36,7 +44,7 @@ export function getMarketingUrl() {
 export function getRootPublicUrl() {
   const corporate = getCorporateSiteUrl();
   if (corporate) return corporate;
-  return getMarketingUrl();
+  return getMarketingUrl() || PROD_DEFAULT_MARKETING_URL;
 }
 
 /**

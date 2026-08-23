@@ -12,6 +12,7 @@ import PortfolioDetailPage from './pages/PortfolioDetailPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
 import AboutPage from './pages/AboutPage';
+import LegalPage from './pages/LegalPage';
 import ContactPage from './pages/ContactPage';
 import EstimatePage from './pages/EstimatePage';
 import ResourcesPage from './pages/ResourcesPage';
@@ -33,6 +34,8 @@ export default function App() {
         <Route path="blog" element={<BlogPage />} />
         <Route path="blog/:slug" element={<BlogPostPage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="privacy" element={<LegalPage kind="privacy" />} />
+        <Route path="terms" element={<LegalPage kind="terms" />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="estimate" element={<EstimatePage />} />
         <Route path="resources" element={<ResourcesPage />} />

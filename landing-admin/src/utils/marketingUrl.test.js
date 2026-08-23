@@ -64,6 +64,14 @@ describe('getMarketingUrl', () => {
     vi.stubEnv('DEV', false);
     expect(getMarketingUrl()).toBe(PROD_DEFAULT_MARKETING_URL);
   });
+  it('ignores legacy LeftSideDev studio URLs', () => {
+    vi.stubEnv('VITE_CORPORATE_SITE_URL', 'https://leftsidedev.site');
+    vi.stubEnv('VITE_MARKETING_URL', 'https://leftsidedev.site');
+    vi.stubEnv('DEV', false);
+    expect(getCorporateSiteUrl()).toBe('');
+    expect(getMarketingUrl()).toBe(PROD_DEFAULT_MARKETING_URL);
+    expect(getRootPublicUrl()).toBe(PROD_DEFAULT_MARKETING_URL);
+  });
 });
 
 describe('getRootPublicUrl', () => {
@@ -72,10 +80,10 @@ describe('getRootPublicUrl', () => {
   });
 
   it('prefers corporate site when configured', () => {
-    vi.stubEnv('VITE_CORPORATE_SITE_URL', 'http://localhost:5175/');
+    vi.stubEnv('VITE_CORPORATE_SITE_URL', 'http://localhost:5176/');
     vi.stubEnv('VITE_MARKETING_URL', 'http://localhost:5174/?pageId=leftsidedev');
-    expect(getCorporateSiteUrl()).toBe('http://localhost:5175');
-    expect(getRootPublicUrl()).toBe('http://localhost:5175');
+    expect(getCorporateSiteUrl()).toBe('http://localhost:5176');
+    expect(getRootPublicUrl()).toBe('http://localhost:5176');
   });
 
   it('falls back to marketing/template when corporate is unset', () => {
