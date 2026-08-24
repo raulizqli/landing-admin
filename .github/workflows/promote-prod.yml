@@ -98,3 +98,18 @@ jobs:
           projectId: landing-admin-9452e
           entryPoint: landing-template
           target: template
+
+      - name: Build toqua-site
+        run: npm run build:toqua
+        env:
+          VITE_ADMIN_URL: https://admin.toqua.site
+
+      - name: Deploy hosting (toqua-site)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LANDING_ADMIN_9452E }}
+          channelId: live
+          projectId: landing-admin-9452e
+          entryPoint: toqua-site
+          target: toqua-marketing
