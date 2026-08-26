@@ -135,5 +135,7 @@ const ogSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"
 </svg>`;
 
 writeFileSync(join(publicDir, 'og-default.svg'), ogSvg);
+mkdirSync(join(publicDir, 'brand'), { recursive: true });
+writeFileSync(join(publicDir, 'brand', 'leftside-og-default.svg'), ogSvg);
 
 console.log(`SEO artifacts written (${routes.length} sitemap URLs)`);

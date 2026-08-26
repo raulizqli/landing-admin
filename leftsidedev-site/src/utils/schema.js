@@ -8,7 +8,7 @@ export function organizationSchema() {
     name: SITE.name,
     legalName: SITE.legalName,
     url: SITE.url,
-    logo: absoluteUrl('/favicon.svg'),
+    logo: absoluteUrl('/brand/leftside-wordmark-horizontal-dark.png'),
     email: SITE.email,
     description: SITE.tagline,
     foundingDate: String(SITE.foundingYear),
@@ -69,7 +69,7 @@ export function articleSchema(post) {
       name: SITE.name,
       logo: {
         '@type': 'ImageObject',
-        url: absoluteUrl('/favicon.svg'),
+        url: absoluteUrl('/brand/leftside-wordmark-horizontal-dark.png'),
       },
     },
     mainEntityOfPage: absoluteUrl(`/blog/${post.slug}`),

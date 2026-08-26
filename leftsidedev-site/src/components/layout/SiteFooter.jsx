@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { NAV_LINKS, SITE, SPECIALIZATIONS } from '../../content/site';
 import Button from '../ui/Button';
+import LeftSideLogo from '../brand/LeftSideLogo';
 
 export default function SiteFooter() {
   return (
     <footer className="border-t border-[var(--color-line)] bg-[var(--color-ink-elevated)]">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1.2fr_1fr_1fr] lg:px-12">
         <div>
-          <p className="font-display text-2xl font-bold">{SITE.name}</p>
+          <LeftSideLogo variant="wordmark" size="md" />
           <p className="mt-2 text-sm uppercase tracking-[0.18em] text-[var(--color-accent)]">{SITE.brand}</p>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-[var(--color-mute)]">{SITE.tagline}</p>
           <form

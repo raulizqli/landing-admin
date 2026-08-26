@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { CTA, NAV_LINKS, SITE } from '../../content/site';
 import Button from '../ui/Button';
+import LeftSideLogo from '../brand/LeftSideLogo';
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -9,13 +10,17 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-line)] bg-[rgba(7,11,10,0.8)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-12">
-        <Link to="/" className="group flex min-w-0 flex-col" onClick={() => setOpen(false)}>
-          <span className="font-display text-lg font-bold tracking-tight text-[var(--color-mist)] sm:text-xl">
-            {SITE.name}
-          </span>
-          <span className="truncate text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-accent)]">
-            {SITE.brand}
-          </span>
+        <Link to="/" className="group flex min-w-0 items-center gap-3" onClick={() => setOpen(false)}>
+          <LeftSideLogo variant="mark" size="sm" priority className="sm:hidden" />
+          <div className="min-w-0">
+            <LeftSideLogo variant="wordmark" size="sm" priority className="hidden sm:block" />
+            <span className="font-display text-lg font-bold tracking-tight text-[var(--color-mist)] sm:hidden">
+              {SITE.name}
+            </span>
+            <span className="truncate text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              {SITE.brand}
+            </span>
+          </div>
         </Link>
 
         <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">

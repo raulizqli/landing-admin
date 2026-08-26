@@ -15,7 +15,7 @@ export const SITE = {
   x: 'https://x.com/',
   github: 'https://github.com/',
   youtube: 'https://www.youtube.com/',
-  ogImage: 'https://leftsidedev.site/og-default.svg',
+  ogImage: 'https://leftsidedev.site/brand/leftside-og-default.svg',
   foundingYear: 2019,
   googleAdsenseAccount: 'ca-pub-8125831908133216',
   facebookDomainVerification: 'duaj2fc3ofev1y6etqswekkpvak2fk',
