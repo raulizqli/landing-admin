@@ -73,6 +73,22 @@ done
 # ---------------------------------------------------------------------------
 # 2) Storage: mirror prod default bucket into stage
 # ---------------------------------------------------------------------------
+log "Checking Storage bucket access before rsync"
+if ! gcloud storage buckets describe "gs://${PROD_BUCKET}" --project="${PROD_PROJECT}" >/dev/null 2>&1; then
+  echo "ERROR: Cannot read prod bucket gs://${PROD_BUCKET} (needs storage.buckets.get)." >&2
+  echo "Grant prod-to-stage-sync@${STAGE_PROJECT}.iam.gserviceaccount.com" >&2
+  echo "  roles/storage.legacyBucketReader on gs://${PROD_BUCKET}" >&2
+  echo "Run scripts/setup-replication-iam.sh once (requires Owner on both projects)." >&2
+  exit 1
+fi
+if ! gcloud storage buckets describe "gs://${STAGE_BUCKET}" --project="${STAGE_PROJECT}" >/dev/null 2>&1; then
+  echo "ERROR: Cannot read stage bucket gs://${STAGE_BUCKET} (needs storage.buckets.get)." >&2
+  echo "Grant prod-to-stage-sync@${STAGE_PROJECT}.iam.gserviceaccount.com" >&2
+  echo "  roles/storage.legacyBucketWriter on gs://${STAGE_BUCKET}" >&2
+  echo "Run scripts/setup-replication-iam.sh once (requires Owner on both projects)." >&2
+  exit 1
+fi
+
 log "Mirroring Storage gs://${PROD_BUCKET} -> gs://${STAGE_BUCKET}"
 gcloud storage rsync -r --delete-unmatched-destination-objects \
   "gs://${PROD_BUCKET}" "gs://${STAGE_BUCKET}"

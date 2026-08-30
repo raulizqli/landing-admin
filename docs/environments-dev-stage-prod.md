@@ -256,7 +256,20 @@ Runs daily at `03:00 UTC` via `.github/workflows/replicate-prod-to-stage.yml` (a
 
 Requirements / notes:
 
-- Secret `GCP_REPLICATION_SA`: JSON key for `prod-to-stage-sync@landings-stage.iam.gserviceaccount.com` (cross-project Firestore import/export + Storage roles on both projects).
+- Secret `GCP_REPLICATION_SA`: JSON key for `prod-to-stage-sync@landings-stage.iam.gserviceaccount.com`.
+- **One-time IAM** (Owner on prod + stage): run `scripts/setup-replication-iam.sh`. It grants:
+
+  | Scope | Role | Why |
+  |---|---|---|
+  | `landing-admin-9452e` (project) | `roles/datastore.importExportAdmin` | Firestore export |
+  | `landings-stage` (project) | `roles/datastore.importExportAdmin` | Firestore import |
+  | `landings-stage` (project) | `roles/storage.admin` | Create/manage transfer bucket |
+  | `gs://landing-admin-9452e.firebasestorage.app` | `roles/storage.legacyBucketReader` | Read prod images (`storage.buckets.get` + list/get objects) |
+  | `gs://landings-stage.firebasestorage.app` | `roles/storage.legacyBucketWriter` | Write/delete stage images |
+  | `gs://landings-stage-data-sync` | `roles/storage.objectAdmin` | Firestore export files |
+
+  If GitHub fails with `storage.buckets.get denied on landing-admin-9452e.firebasestorage.app`, the prod bucket row above is missing — re-run the script or add that binding manually in [Cloud Console → Storage → bucket → Permissions](https://console.cloud.google.com/storage/browser).
+
 - Firestore import **merges** by document ID; it does not delete docs removed in prod. Storage rsync **does** delete extra files in stage.
 - Billing/AI keys in Stage stay **TEST** — replication copies data, not `functions/.env.*`.
 - Budget alert on `landings-stage` fires at 50/90/100% of the monthly budget.
