@@ -57,6 +57,7 @@
     "./hostingDeploy": "./src/hostingDeploy.js",
     "./domainIndex": "./src/domainIndex.js",
     "./billingPlans": "./src/billingPlans.js",
+    "./referralTracking": "./src/referralTracking.js",
     "./marketingSite": "./src/marketingSite.js",
     "./marketingSeo": "./src/marketingSeo.js",
     "./siteAccess": "./src/siteAccess.js",
