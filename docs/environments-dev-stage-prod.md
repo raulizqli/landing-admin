@@ -329,9 +329,9 @@ Update `ADMIN_PUBLIC_URL` and Stripe redirect URLs when domains change.
 | `scripts/deploy-env.sh` + `npm run deploy:stage` / `deploy:prod` | Done |
 | Vite `build:staging` (`--mode staging`) | Done |
 | GitHub Actions `ci.yml` | Done |
-| GitHub Actions `deploy-stage.yml` (Environment `stage`) | Done — needs real `landings-stage` + secrets |
+| GitHub Actions `deploy-stage.yml` (Environment `stage`) | Scaffolding — **off by default** until `STAGE_ENABLED=true` + `landings-stage` |
 | GitHub Actions `promote-prod.yml` (Environment `prod`) | Done — manual `workflow_dispatch` |
-| Auto Prod on merge (`firebase-hosting-merge.yml`) | Still active until Phase C |
+| Auto Prod on merge (`firebase-hosting-merge.yml`) | **Disabled** — use `promote-prod.yml` (Phase C) |
 | Real Firebase projects `landings-dev` / `landings-stage` | **Ops** — create outside this repo |
 
 ### npm scripts
@@ -407,6 +407,8 @@ Copy `.firebaserc.example` → `.firebaserc` (gitignored) and fill Stage Vite fi
 | Mostly one Firebase hub (see `.firebaserc.example`) | Explicit `dev` / `stage` / `prod` aliases |
 | Local `.env` + production examples | + staging examples and CI secrets |
 | Manual / merge deploys to Prod | Stage on merge; Prod on approval (`promote-prod.yml`) |
+
+Operational playbook: [`deploy-strategy.md`](./deploy-strategy.md).
 
 Scaffolding is in-repo. Creating Firebase projects and GitHub Environment secrets remains an ops step. Product model (`pageModel`, entitlements) is unchanged.
 
