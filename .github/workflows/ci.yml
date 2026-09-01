@@ -30,6 +30,15 @@ jobs:
       - name: Unit tests (landing-core)
         run: npm run test:core
 
+      - name: Unit tests (landing-admin)
+        run: npm test --prefix landing-admin
+
+      - name: Lint Firebase client usage (admin)
+        run: npm run lint:firebase-clients
+
+      - name: Smoke admin bootstrap imports
+        run: npm run smoke:admin-bootstrap
+
       - name: Build Cloud Functions (tsc)
         run: |
           npm --prefix functions ci

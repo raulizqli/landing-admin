@@ -37,6 +37,9 @@
     "publish:packages": "npm publish -w packages/landing-core && npm publish -w packages/landing-ui",
     "test": "npm test -w @raulizqli/landing-core && npm test --prefix landing-admin && npm test --prefix landing-template",
     "test:core": "npm run test -w @raulizqli/landing-core",
+    "lint:firebase-clients": "node scripts/lint-firebase-clients.mjs",
+    "smoke:admin-bootstrap": "node scripts/smoke-admin-bootstrap.mjs",
+    "smoke:hosting": "node scripts/smoke-hosting.mjs",
     "ollama:serve": "bash scripts/ollama-serve.sh"
   },
 

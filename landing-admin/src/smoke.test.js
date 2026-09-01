@@ -33,6 +33,12 @@ describe('landing-admin smoke', () => {
     expect(typeof referral.enableReferralCodeRemote).toBe('function');
   });
 
+  it('loads billing callables through the hub Firebase app', async () => {
+    const billing = await import('./utils/billingFunctions.js');
+    expect(typeof billing.ensureBillingAccountRemote).toBe('function');
+    expect(typeof billing.createBillingCheckout).toBe('function');
+  });
+
   it('exposes public legal URLs for Meta and future providers', async () => {
     const legal = await import('./utils/platformLegal.js');
     expect(legal.PLATFORM_LEGAL_PATHS.privacy).toBe('/privacy');

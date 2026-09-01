@@ -31,6 +31,15 @@ jobs:
 
       - run: npm ci
 
+      - name: Unit tests (landing-admin)
+        run: npm test --prefix landing-admin
+
+      - name: Lint Firebase client usage (admin)
+        run: npm run lint:firebase-clients
+
+      - name: Smoke admin bootstrap imports
+        run: npm run smoke:admin-bootstrap
+
       - name: Require Stage Firebase Vite secrets
         run: |
           missing=0
@@ -146,3 +155,11 @@ jobs:
           projectId: landings-stage
           entryPoint: landing-template
           target: template
+
+      - name: Smoke Stage hosting (optional)
+        if: ${{ vars.STAGE_ADMIN_URL != '' }}
+        run: |
+          node scripts/smoke-hosting.mjs --url "${{ vars.STAGE_ADMIN_URL }}" --path /login --label stage-admin
+          if [ -n "${{ vars.STAGE_TEMPLATE_URL }}" ]; then
+            node scripts/smoke-hosting.mjs --url "${{ vars.STAGE_TEMPLATE_URL }}" --label stage-template
+          fi

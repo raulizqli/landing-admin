@@ -1,7 +1,6 @@
 # Manual promote to Prod after Stage sign-off.
 # Uses GitHub Environment "prod" (configure required reviewers).
-# Until Phase C, firebase-hosting-merge.yml still auto-deploys Prod on merge.
-# See docs/environments-dev-stage-prod.md.
+# Prod hosting is NOT auto-deployed on merge (Phase C). See docs/deploy-strategy.md.
 
 name: Promote to Prod
 
@@ -31,6 +30,18 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Unit tests (landing-core)
+        run: npm run test:core
+
+      - name: Unit tests (landing-admin)
+        run: npm test --prefix landing-admin
+
+      - name: Lint Firebase client usage (admin)
+        run: npm run lint:firebase-clients
+
+      - name: Smoke admin bootstrap imports
+        run: npm run smoke:admin-bootstrap
 
       - name: Env guardrails (production)
         run: node scripts/check-env.mjs --mode production --env prod
@@ -113,3 +124,9 @@ jobs:
           projectId: landing-admin-9452e
           entryPoint: toqua-site
           target: toqua-marketing
+
+      - name: Smoke production hosting
+        run: |
+          node scripts/smoke-hosting.mjs --url https://admin.toqua.site --path /login --label admin
+          node scripts/smoke-hosting.mjs --url https://web.toqua.site --label template
+          node scripts/smoke-hosting.mjs --url https://toqua.site --path /es --label toqua-marketing
