@@ -27,6 +27,12 @@ describe('landing-admin smoke', () => {
     expect(typeof ai.importMetaBusinessProfileRemote).toBe('function');
   });
 
+  it('loads referral callables without touching the default Firebase app', async () => {
+    const referral = await import('./utils/referralFunctions.js');
+    expect(typeof referral.getReferralAnalyticsRemote).toBe('function');
+    expect(typeof referral.enableReferralCodeRemote).toBe('function');
+  });
+
   it('exposes public legal URLs for Meta and future providers', async () => {
     const legal = await import('./utils/platformLegal.js');
     expect(legal.PLATFORM_LEGAL_PATHS.privacy).toBe('/privacy');
