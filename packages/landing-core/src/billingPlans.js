@@ -8,6 +8,7 @@ import {
   normalizeMonetization,
   resolveSiteAccessFromAccount,
 } from './siteAccess.js';
+import { normalizeReferralConfig, normalizeReferralCode } from './referralTracking.js';
 
 export const BILLING_PLANS = [
   {
@@ -302,6 +303,8 @@ export function createEmptyBillingAccount(overrides = {}) {
     aiProvider: normalizeAiProviderPublic(overrides.aiProvider),
     currentPeriodEnd: overrides.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: overrides.cancelAtPeriodEnd === true,
+    referralConfig: normalizeReferralConfig(overrides.referralConfig),
+    referredByCode: normalizeReferralCode(overrides.referredByCode || ''),
     createdAt: overrides.createdAt ?? null,
     updatedAt: overrides.updatedAt ?? null,
   };

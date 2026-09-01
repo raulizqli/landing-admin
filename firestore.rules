@@ -188,5 +188,31 @@ service cloud.firestore {
           || (isAdmin() && canEditPage(resource.data.pageId)));
       allow create, update, delete: if false;
     }
+
+    /**
+     * Referral codes — lookup by code for signup flow; owner can read their own.
+     */
+    match /referralCodes/{code} {
+      allow get: if true;
+      allow list: if isRoot();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * Referral clicks — tracking only via Cloud Functions.
+     */
+    match /referralClicks/{clickId} {
+      allow read: if isSignedIn() && isRoot();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * Referral conversions — referrer can read their own conversions.
+     */
+    match /referralConversions/{conversionId} {
+      allow read: if isSignedIn()
+        && (isRoot() || resource.data.referrerId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
   }
 }

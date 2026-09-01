@@ -43,11 +43,18 @@ import SavePublishAdGate from './components/SavePublishAdGate';
 import AiQuotaBadge from './components/AiQuotaBadge';
 import MarketingSiteFieldsEditor from './components/MarketingSiteFieldsEditor';
 import MarketingRoutesEditor from './components/MarketingRoutesEditor';
+import ReferralManagementPanel from './components/ReferralManagementPanel';
+import ReferralDashboard from './components/ReferralDashboard';
 import { hydrateFormSocial } from './utils/socialLinks';
 import { loadPageForEditor, savePageFromEditor } from './utils/pageRepository';
 import { resolvePageOpenUrl } from './utils/pageOpenUrl';
 import { createCmsPageRemote } from './utils/aiAssistFunctions';
 import { recordPageAuditRemote } from './utils/inboxFunctions';
+import {
+  enableReferralCodeRemote,
+  updateReferralCodeRemote,
+  toggleReferralEnabledRemote,
+} from './utils/referralFunctions';
 import { useAuth } from './contexts/AuthContext';
 import { useLocale, LanguageSwitcher } from './i18n/LocaleContext';
 import { useEntitlements } from './hooks/useEntitlements';
@@ -142,6 +149,8 @@ export default function App() {
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [showBilling, setShowBilling] = useState(false);
   const [showSaveAdGate, setShowSaveAdGate] = useState(false);
+  const [showReferralManagement, setShowReferralManagement] = useState(false);
+  const [showReferralDashboard, setShowReferralDashboard] = useState(false);
   const [creatingPage, setCreatingPage] = useState(false);
   const [accessError, setAccessError] = useState('');
   const [pagesSidebarCollapsed, setPagesSidebarCollapsed] = useState(readSidebarCollapsedDefault);
@@ -200,6 +209,35 @@ export default function App() {
     : null;
   const upgradeLabel = t('common.upgrade');
   const openBilling = () => setShowBilling(true);
+  const openReferralManagement = () => setShowReferralManagement(true);
+  const openReferralDashboard = () => setShowReferralDashboard(true);
+
+  const handleUpdateReferralConfig = async (updatedConfig) => {
+    try {
+      if (updatedConfig.code && !entitlements.account?.referralConfig?.code) {
+        // Enabling for the first time
+        const result = await enableReferralCodeRemote();
+        if (result.success) {
+          await refreshBillingAccount?.();
+        }
+      } else if (updatedConfig.code !== entitlements.account?.referralConfig?.code) {
+        // Updating code
+        const result = await updateReferralCodeRemote(updatedConfig.code);
+        if (result.success) {
+          await refreshBillingAccount?.();
+        }
+      } else if (updatedConfig.enabled !== entitlements.account?.referralConfig?.enabled) {
+        // Toggling enabled
+        const result = await toggleReferralEnabledRemote(updatedConfig.enabled);
+        if (result.success) {
+          await refreshBillingAccount?.();
+        }
+      }
+    } catch (error) {
+      console.error('Error updating referral config:', error);
+      throw error;
+    }
+  };
 
   const editorData = useMemo(
     () => (formData
@@ -703,6 +741,20 @@ export default function App() {
                       )}
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={openReferralManagement}
+                    className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 border border-purple-500 font-semibold"
+                  >
+                    🎁 Referidos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openReferralDashboard}
+                    className="flex-1 text-[10px] px-2 py-1.5 rounded bg-gray-900 text-purple-200 hover:bg-gray-800 border border-purple-500/40 font-semibold"
+                  >
+                    📊 Stats
+                  </button>
                   {canUseCmsInbox(profile, user?.uid) && (
                     <Link
                       to="/app/inbox"
@@ -1378,6 +1430,25 @@ export default function App() {
         <UserManagement
           pageOptions={landings}
           onClose={() => setShowUserManagement(false)}
+        />
+      )}
+
+      {showReferralManagement && (
+        <ReferralManagementPanel
+          billingAccount={entitlements.account}
+          onUpdate={handleUpdateReferralConfig}
+          onClose={() => setShowReferralManagement(false)}
+        />
+      )}
+
+      {showReferralDashboard && (
+        <ReferralDashboard
+          billingAccount={entitlements.account}
+          onClose={() => setShowReferralDashboard(false)}
+          onOpenManagement={() => {
+            setShowReferralDashboard(false);
+            setShowReferralManagement(true);
+          }}
         />
       )}
 
