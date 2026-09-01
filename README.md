@@ -80,6 +80,7 @@ La colección `paginas` y los campos antiguos en español se aceptan únicamente
 ### Operar la plataforma
 
 - [Despliegues, dominios y Firebase externo](docs/deployment.md)
+- [**Estrategia de deploy Prod seguro**](docs/deploy-strategy.md)
 - [Modelo de datos de una página](docs/page-model.md)
 
 ### Proyectos especiales
@@ -253,6 +254,7 @@ The `paginas` collection and old Spanish fields are only accepted for legacy rea
 ### Operating the Platform
 
 - [Deployments, domains, and external Firebase](docs/deployment.md)
+- [**Production-safe deploy strategy**](docs/deploy-strategy.md)
 - [Page data model](docs/page-model.md)
 
 ### Special Projects
