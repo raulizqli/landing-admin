@@ -1,17 +1,17 @@
-# Deploy Stage Firebase project on merge to main/master.
-# Requires GitHub Environment "stage" with Stage Vite + Firebase SA secrets.
-# Create landings-stage first; until then this job will fail on missing secrets
-# (prod continues via firebase-hosting-merge.yml).
-# See docs/environments-dev-stage-prod.md.
+# Deploy to Firebase project landings-stage (when it exists).
+# NOT wired yet for most teams — run only manually until STAGE_ENABLED=true.
+# Until then, use PR preview URLs + Promote to Prod. See docs/deploy-strategy.md.
 
 name: Deploy Stage
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
       - main
-  workflow_dispatch:
+
+# Skip automatic Stage deploy until ops enables it (GitHub repo variable STAGE_ENABLED=true).
 
 concurrency:
   group: deploy-stage
@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   deploy_stage:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.STAGE_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: stage
     steps:

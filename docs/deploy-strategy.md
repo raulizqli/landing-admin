@@ -6,9 +6,39 @@ Contexto técnico ampliado: [`environments-dev-stage-prod.md`](./environments-de
 
 ---
 
+## Modo actual: sin Stage real (interino)
+
+Hoy **no hay** entorno Stage operativo (`landings-stage`, `admin.stage.toqua.site`, etc.) — solo está documentado y el workflow existe como plantilla.
+
+Hasta que exista, el flujo es:
+
+```text
+feature/* ──PR──► CI (tests + smoke + lint)
+                    │
+                    ├─ Preview Hosting (URL temporal en el PR — esto ES tu “stage”)
+                    │     Abrir /login, probar login, editor, mirror
+                    │
+                    merge a main/master
+                    │
+                    ▼
+         Promote to Prod (manual, GitHub Actions)
+                    │
+                    └─ Smoke HTTP en admin / web / toqua
+```
+
+| Paso | Qué hacer |
+|---|---|
+| Antes del merge | CI verde + abrir preview del PR y pasar checklist (abajo) |
+| Después del merge | **Promote to Prod** (no esperes “Deploy Stage” — está desactivado por defecto) |
+| Emergencia | Workflow legacy “Deploy to Firebase Hosting (manual legacy)” con `confirm: deploy` |
+
+Activar Stage automático más adelante: crear proyecto `landings-stage`, secretos en Environment `stage`, y poner variable de repo **`STAGE_ENABLED=true`**.
+
+---
+
 ## Principios
 
-1. **Nada va directo a Prod al hacer merge.** Stage valida primero; Prod solo con aprobación explícita.
+1. **Nada va directo a Prod al hacer merge** (Phase C). Sin Stage, la compuerta es **CI + preview del PR**; Prod solo con **Promote to Prod**.
 2. **CI debe detectar regresiones de arranque** (pantalla en blanco, Firebase mal inicializado) antes del deploy.
 3. **Smoke post-deploy** confirma que HTML + assets responden 200 tras publicar.
 4. **Un proyecto Firebase por entorno** — nunca mezclar `VITE_FIREBASE_*` de Stage con dominios de Prod.
@@ -26,41 +56,31 @@ Contexto técnico ampliado: [`environments-dev-stage-prod.md`](./environments-de
 
 ---
 
-## Flujo obligatorio
+## Flujo objetivo (cuando Stage exista)
 
 ```text
-feature/* ──PR──► CI (tests + builds + smoke bootstrap)
-                    │
-                    ├─ Preview Hosting en el PR (canal temporal)
-                    │
-                    merge a main/master
-                    │
-                    ▼
-              Deploy Stage (automático)
-                    │
-                    ├─ QA manual en Stage (checklist abajo)
-                    │
-                    ▼
-         Promote to Prod (manual + aprobación GitHub Environment "prod")
-                    │
-                    └─ Smoke post-deploy en URLs de Prod
+merge → Deploy Stage (STAGE_ENABLED=true) → QA en Stage → Promote to Prod
 ```
+
+Ver sección **Modo actual** arriba si Stage aún no está cableado.
 
 ### Qué dispara cada workflow
 
 | Evento | Workflow | Destino |
 |---|---|---|
-| Pull request | `ci.yml` | Solo validación |
-| Pull request | `firebase-hosting-pull-request.yml` | Preview admin + template |
-| Push a `main`/`master` | `deploy-stage.yml` | **Stage** (rules, functions, hosting) |
+| Pull request | `ci.yml` | Validación (tests + smoke) |
+| Pull request | `firebase-hosting-pull-request.yml` | **Preview** admin + template (QA interino) |
+| Push a `main`/`master` | `deploy-stage.yml` | Stage **solo si** `STAGE_ENABLED=true` |
 | Manual «Promote to Prod» | `promote-prod.yml` | **Prod** (hosting admin + template + toqua) |
-| ~~Push a `main`~~ | ~~`firebase-hosting-merge.yml`~~ | **Desactivado** (Phase C) |
+| Manual legacy | `firebase-hosting-merge.yml` | Prod de emergencia (`confirm: deploy`) |
 
 ---
 
 ## Checklist antes de promover a Prod
 
-Mínimo 5 minutos en Stage (o preview del PR para hotfixes urgentes):
+**Sin Stage:** hacer esto en la **URL de preview del PR** (comentario del bot de Firebase Hosting).
+
+Mínimo 5 minutos:
 
 - [ ] `/login` muestra formulario (no pantalla en blanco)
 - [ ] Login con cuenta QA
@@ -76,12 +96,12 @@ Lista completa: [`environments-dev-stage-prod.md` → Smoke checklist](./environ
 
 ## Cómo promover a Prod
 
-1. Merge del PR a `main`/`master` y esperar **Deploy Stage** en verde.
-2. Validar Stage (checklist arriba).
+1. PR con CI verde; validar **preview del PR** (checklist arriba).
+2. Merge a `main`/`master`.
 3. GitHub → **Actions** → **Promote to Prod** → **Run workflow**.
 4. Input `confirm`: escribir `promote`.
-5. Aprobar en Environment **prod** (revisores configurados).
-6. El workflow construye con secretos Prod, despliega hosting y ejecuta smoke HTTP.
+5. Si configuraste Environment **prod**, aprobar revisores; si no, usa secretos del repo.
+6. El workflow despliega hosting y ejecuta smoke HTTP en Prod.
 
 ### Hotfix urgente (Prod caído)
 
@@ -147,7 +167,7 @@ scripts/sync-github-secrets.sh
 |---|---|
 | Dev | PR + CI verde; probar preview del PR |
 | Revisor | Merge solo con CI verde |
-| QA / ops | Stage checklist antes de promote |
+| QA / ops | Preview del PR (o Stage cuando exista) antes de promote |
 | Aprobador Prod | Ejecutar **Promote to Prod** tras QA |
 
 ---
@@ -164,7 +184,7 @@ scripts/sync-github-secrets.sh
 
 ## Próximos pasos ops (fuera del repo)
 
-- [ ] Crear / cablear `landings-stage` con dominios `admin.stage.toqua.site`
-- [ ] Configurar Environment `prod` con required reviewers
+- [ ] **Opcional:** crear `landings-stage` + dominios + `STAGE_ENABLED=true`
+- [ ] Configurar Environment `prod` con required reviewers (recomendado aunque no haya Stage)
 - [ ] Alertas: Functions errors, uptime en `/login`
 - [ ] Firestore scheduled backups en Prod
