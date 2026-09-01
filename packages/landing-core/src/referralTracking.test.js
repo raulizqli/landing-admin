@@ -33,7 +33,7 @@ describe('referralTracking', () => {
 
   describe('isValidReferralCode', () => {
     it('validates correct codes', () => {
-      expect(isValidReferralCode('ABC123')).toBe(true);
+      expect(isValidReferralCode('ABC234')).toBe(true);
       expect(isValidReferralCode('XYZ789')).toBe(true);
     });
 
@@ -48,7 +48,7 @@ describe('referralTracking', () => {
 
   describe('normalizeReferralCode', () => {
     it('normalizes to uppercase', () => {
-      expect(normalizeReferralCode('abc123')).toBe('ABC123');
+      expect(normalizeReferralCode('abc234')).toBe('ABC234');
       expect(normalizeReferralCode('  xyz789  ')).toBe('XYZ789');
     });
   });
@@ -87,24 +87,24 @@ describe('referralTracking', () => {
     it('normalizes existing config', () => {
       const config = normalizeReferralConfig({
         enabled: true,
-        code: 'abc123',
+        code: 'abc234',
         customSlug: 'MySlug',
       });
       expect(config.enabled).toBe(true);
-      expect(config.code).toBe('ABC123');
+      expect(config.code).toBe('ABC234');
       expect(config.customSlug).toBe('myslug');
     });
   });
 
   describe('generateReferralLink', () => {
     it('generates valid referral link', () => {
-      const link = generateReferralLink('ABC123');
-      expect(link).toBe('https://app.toqua.co/signup?ref=ABC123');
+      const link = generateReferralLink('ABC234');
+      expect(link).toBe('https://app.toqua.co/signup?ref=ABC234');
     });
 
     it('handles custom base URL', () => {
-      const link = generateReferralLink('ABC123', 'https://custom.com');
-      expect(link).toBe('https://custom.com/signup?ref=ABC123');
+      const link = generateReferralLink('ABC234', 'https://custom.com');
+      expect(link).toBe('https://custom.com/signup?ref=ABC234');
     });
 
     it('returns empty string for invalid code', () => {
@@ -115,8 +115,8 @@ describe('referralTracking', () => {
 
   describe('parseReferralCodeFromUrl', () => {
     it('parses code from URL', () => {
-      const code = parseReferralCodeFromUrl('https://app.toqua.co/signup?ref=ABC123');
-      expect(code).toBe('ABC123');
+      const code = parseReferralCodeFromUrl('https://app.toqua.co/signup?ref=ABC234');
+      expect(code).toBe('ABC234');
     });
 
     it('parses code with referral param', () => {
