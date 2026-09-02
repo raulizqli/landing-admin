@@ -4,6 +4,7 @@ import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import StickyCta from '../conversion/StickyCta';
 import FloatingContact from '../conversion/FloatingContact';
+import SiteAdBanner from '../ads/SiteAdBanner';
 import { SITE } from '../../content/site';
 
 export default function SiteLayout() {
@@ -24,6 +25,7 @@ export default function SiteLayout() {
         Skip to content
       </a>
       <SiteHeader />
+      <SiteAdBanner />
       <main id="main-content" className="flex-1 pb-28">
         <Outlet />
       </main>
