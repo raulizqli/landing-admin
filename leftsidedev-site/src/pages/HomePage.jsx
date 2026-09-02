@@ -9,6 +9,7 @@ import TrustSection from '../components/home/TrustSection';
 import FaqSection from '../components/home/FaqSection';
 import AiAnswersSection from '../components/home/AiAnswersSection';
 import FinalCta from '../components/home/FinalCta';
+import InContentAdBanner from '../components/ads/InContentAdBanner';
 import { SITE, HERO } from '../content/site';
 import { SITE_FAQS } from '../content/faq';
 import { buildPageMeta } from '../utils/seo';
@@ -45,6 +46,7 @@ export default function HomePage() {
       <TestimonialsSection />
       <TrustSection />
       <AiAnswersSection />
+      <InContentAdBanner />
       <FaqSection />
       <FinalCta />
     </>

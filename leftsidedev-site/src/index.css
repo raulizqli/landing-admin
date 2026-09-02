@@ -125,3 +125,27 @@
     animation: none !important;
   }
 }
+
+/* AdSense banner — injected at bottom of <body> after #root */
+.ld-ad-shell {
+  margin: 0 auto;
+  max-width: 64rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.ld-ad-shell--bottom {
+  border-top: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-ink-elevated) 80%, transparent);
+  padding-bottom: 5.5rem;
+}
+
+.ld-ad-shell:has(ins.adsbygoogle[data-ad-status='unfilled']),
+.ld-ad-shell:has(ins.adsbygoogle[data-ad-status='unfill-optimized']) {
+  display: none;
+}
+
+ins.adsbygoogle[data-ad-status='unfilled'],
+ins.adsbygoogle[data-ad-status='unfill-optimized'] {
+  display: none !important;
+  min-height: 0 !important;
+}

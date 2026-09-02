@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { GOOGLE_ADS_CLIENT, GOOGLE_ADS_SLOT, isAdSenseConfigured } from '../../config/ads';
+import { GOOGLE_ADS_CLIENT, GOOGLE_ADS_SLOT } from '../../config/ads';
 
 const ADS_SCRIPT_SELECTOR = 'script[src*="pagead/js/adsbygoogle.js"]';
 
@@ -34,6 +34,7 @@ function pushAdUnit() {
  * Hides itself when Google marks the slot unfilled (wrong slot/domain or no inventory).
  */
 export default function AdSenseUnit({
+  slot = GOOGLE_ADS_SLOT,
   layout = 'display',
   format = 'auto',
   className = '',
@@ -45,7 +46,8 @@ export default function AdSenseUnit({
   const insRef = useRef(null);
   const pushedRef = useRef(false);
   const [visible, setVisible] = useState(true);
-  const configured = isAdSenseConfigured();
+  const adsSlot = String(slot ?? '').trim();
+  const configured = Boolean(GOOGLE_ADS_CLIENT && adsSlot);
 
   useEffect(() => {
     if (!configured || typeof window === 'undefined') return undefined;
@@ -112,7 +114,7 @@ export default function AdSenseUnit({
     className: `adsbygoogle block w-full overflow-hidden ${className}`.trim(),
     style: { display: 'block', minHeight: `${minHeight}px` },
     'data-ad-client': GOOGLE_ADS_CLIENT,
-    'data-ad-slot': GOOGLE_ADS_SLOT,
+    'data-ad-slot': adsSlot,
     'data-ad-format': format,
     'data-full-width-responsive': 'true',
   };
