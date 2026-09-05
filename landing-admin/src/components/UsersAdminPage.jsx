@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
+import AssignedPagesMultiselect from './AssignedPagesMultiselect';
 import CmsUserForm, {
   EMPTY_CMS_USER_FORM,
   parsePageIdsInput,
@@ -301,7 +302,7 @@ export default function UsersAdminPage() {
       phone: user.phone || '',
       role: ROLES.USER,
       pageId: '',
-      assignedPageIds: '',
+      assignedPageIds: [],
     });
   };
 
@@ -716,14 +717,11 @@ export default function UsersAdminPage() {
               </div>
             ) : (
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase">Páginas (una por línea)</label>
-                <textarea
-                  required
-                  rows={3}
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Páginas asignadas</label>
+                <AssignedPagesMultiselect
                   value={approveDraft.assignedPageIds}
-                  onChange={(event) => setApproveDraft({ ...approveDraft, assignedPageIds: event.target.value })}
-                  className="w-full rounded-lg border px-3 py-2 text-xs font-mono"
-                  placeholder={pageOptions.map((p) => p.id).slice(0, 3).join('\n')}
+                  onChange={(assignedPageIds) => setApproveDraft({ ...approveDraft, assignedPageIds })}
+                  options={pageOptions}
                 />
               </div>
             )}

@@ -1,12 +1,16 @@
+import AssignedPagesMultiselect from './AssignedPagesMultiselect';
+import { parsePageIdsInput } from '../utils/assignedPages';
 import { ROLES } from '../utils/permissions';
 import { INVITATION_CHANNELS } from '../utils/userInvitation';
 import { PHONE_COUNTRIES } from '../utils/phone';
+
+export { parsePageIdsInput };
 
 export const EMPTY_CMS_USER_FORM = {
   email: '',
   displayName: '',
   role: ROLES.USER,
-  assignedPageIds: '',
+  assignedPageIds: [],
   pageId: '',
   isDemo: false,
   invitationChannel: INVITATION_CHANNELS.EMAIL,
@@ -14,19 +18,12 @@ export const EMPTY_CMS_USER_FORM = {
   whatsappPhoneCountry: 'mx',
 };
 
-export function parsePageIdsInput(value) {
-  return String(value ?? '')
-    .split(/[\n,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 export function userToForm(user) {
   return {
     email: user.email || '',
     displayName: user.displayName || '',
     role: user.role || ROLES.USER,
-    assignedPageIds: (user.assignedPageIds || []).join('\n'),
+    assignedPageIds: parsePageIdsInput(user.assignedPageIds),
     pageId: user.pageId || '',
     isDemo: user.isDemo === true,
     invitationChannel: INVITATION_CHANNELS.EMAIL,
@@ -127,18 +124,11 @@ function FormFields({ form, setForm, editingUid, pageOptions }) {
       {form.role === ROLES.ADMIN && (
         <div className="space-y-1">
           <label className="block text-[10px] font-bold text-gray-400 uppercase">Páginas asignadas</label>
-          <textarea
-            rows={6}
+          <AssignedPagesMultiselect
             value={form.assignedPageIds}
-            onChange={(event) => setForm({ ...form, assignedPageIds: event.target.value })}
-            placeholder="maria-garcia&#10;ana-lopez"
-            className="w-full border rounded-lg px-3 py-2 text-xs font-mono"
+            onChange={(assignedPageIds) => setForm({ ...form, assignedPageIds })}
+            options={pageOptions}
           />
-          {pageOptions.length > 0 && (
-            <p className="text-[10px] text-gray-400">
-              Disponibles: {pageOptions.map((page) => page.id).join(', ')}
-            </p>
-          )}
         </div>
       )}
 
