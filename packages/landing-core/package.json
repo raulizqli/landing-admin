@@ -53,6 +53,7 @@
     "./pageTranslations": "./src/pageTranslations.js",
     "./contentIds": "./src/contentIds.js",
     "./legalDocuments": "./src/legalDocuments.js",
+    "./expeditionDocuments": "./src/expeditionDocuments.js",
     "./externalFirebase": "./src/externalFirebase.js",
     "./hostingDeploy": "./src/hostingDeploy.js",
     "./domainIndex": "./src/domainIndex.js",

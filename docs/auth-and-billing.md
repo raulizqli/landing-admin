@@ -42,6 +42,8 @@ RESEND_FROM=Toqua <noreply@tudominio.com>
 
 (`APPROVAL_EMAIL_FROM` es alias de `RESEND_FROM`.)
 
+El dominio del `from` debe coincidir **exactamente** con un dominio verificado en [Resend → Domains](https://resend.com/domains), y la API key no puede estar restringida a otro dominio. Si Resend responde `403 This API key is not authorized to send emails from …`, las variables de Functions ya están bien: hay que verificar el dominio (mejor un subdominio de envío como `mail.toqua.site` para no tocar el MX del apex) o crear una API key de *Sending access* sin restricción / ligada a ese dominio, actualizar `RESEND_API_KEY` y redesplegar Functions.
+
 | Flujo | Callable / acción |
 |---|---|
 | Recuperar contraseña (`/login`) | `requestPasswordResetEmail` (pública) |

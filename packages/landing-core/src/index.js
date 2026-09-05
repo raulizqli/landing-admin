@@ -29,6 +29,7 @@ export * from './pageModel.js';
 export * from './pageTranslations.js';
 export * from './contentIds.js';
 export * from './legalDocuments.js';
+export * from './expeditionDocuments.js';
 export * from './externalFirebase.js';
 export * from './hostingDeploy.js';
 export * from './domainIndex.js';

@@ -16,6 +16,11 @@ describe('landing-template smoke', () => {
     expect(typeof pageContent.fetchPageContent).toBe('function');
   });
 
+  it('parses expedition document paths', async () => {
+    const expedition = await import('./utils/expeditionDocuments.js');
+    expect(expedition.parseExpeditionPath('/expedicion/cedula')).toEqual({ list: false, slug: 'cedula' });
+  });
+
   it('resolves env fallback without Firestore when query is empty in dev', async () => {
     const context = await resolvePageContext({
       searchParams: new URLSearchParams(),

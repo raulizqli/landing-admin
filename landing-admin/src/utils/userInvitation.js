@@ -49,3 +49,25 @@ export function buildUserInvitationUrl({
 
   return '';
 }
+
+const MISSING_RESEND_HINT =
+  'Configura RESEND_API_KEY + APPROVAL_EMAIL_FROM en Functions, o la extensión Trigger Email.';
+
+const DOMAIN_HINT =
+  ' En Resend, verifica el dominio del remitente y usa una API key con permiso para enviar desde ese dominio.';
+
+export function describeTransactionalEmailFailure(result, missingConfigHint = MISSING_RESEND_HINT) {
+  const reason = String(result?.emailReason || result?.invitationEmailReason || '').trim();
+  const detail = String(result?.emailError || result?.invitationEmailError || '').trim();
+
+  if (reason === 'missing_resend_config' || (!reason && !detail)) {
+    return missingConfigHint;
+  }
+  if (detail) {
+    return `${detail}${DOMAIN_HINT}`;
+  }
+  if (reason === 'resend_error') {
+    return `Resend rechazó el envío.${DOMAIN_HINT}`;
+  }
+  return `No se pudo entregar el correo (${reason || 'error'}).${DOMAIN_HINT}`;
+}

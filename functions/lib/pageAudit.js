@@ -83,6 +83,9 @@ exports.PAGE_AUDIT_KEYS = [
     "termsOfUseBody",
     "privacyPolicyTitle",
     "privacyPolicyBody",
+    "expeditionIssuerName",
+    "expeditionLicenseNumber",
+    "expeditionDocuments",
 ];
 function stableStringify(value) {
     if (value === null || value === undefined)

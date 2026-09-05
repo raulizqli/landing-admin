@@ -7,6 +7,7 @@ import {
   sendAccessApprovedEmail,
   sendInvitationEmail,
   sendPasswordResetEmail,
+  type EmailSendResult,
 } from "./approvalEmail.js";
 import {
   isValidEmail,
@@ -358,6 +359,7 @@ export const createCmsUser = onCall(
     let invitationError: string | null = null;
     let invitationEmailSent = false;
     let invitationEmailReason: string | null = null;
+    let invitationEmailError: string | null = null;
     if (request.data?.createInvitation === true) {
       try {
         invitationLink = await generateInvitationLink(String(profileData.email));
@@ -368,6 +370,7 @@ export const createCmsUser = onCall(
         });
         invitationEmailSent = emailResult.sent === true;
         invitationEmailReason = emailResult.reason ?? null;
+        invitationEmailError = emailResult.emailError ?? null;
       } catch (error) {
         invitationError = error instanceof HttpsError
           ? error.message
@@ -384,6 +387,7 @@ export const createCmsUser = onCall(
       invitationError,
       invitationEmailSent,
       invitationEmailReason,
+      invitationEmailError,
     };
   },
 );
@@ -426,6 +430,7 @@ export const generateCmsUserInvitation = onCall(
       invitationLink,
       emailSent: emailResult.sent === true,
       emailReason: emailResult.reason ?? null,
+      emailError: emailResult.emailError ?? null,
     };
   },
 );
@@ -871,7 +876,7 @@ export const approveCmsAccess = onCall(
     }, { merge: true });
 
     const email = normalizeEmail(current.email);
-    let emailResult: { sent: boolean; reason?: string } = { sent: false };
+    let emailResult: EmailSendResult = { sent: false, reason: "missing_to" };
     if (email) {
       emailResult = await sendAccessApprovedEmail({
         to: email,
@@ -886,6 +891,7 @@ export const approveCmsAccess = onCall(
       role: profileData.role,
       emailSent: emailResult.sent === true,
       emailReason: emailResult.reason ?? null,
+      emailError: emailResult.emailError ?? null,
     };
   },
 );

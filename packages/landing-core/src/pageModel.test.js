@@ -185,4 +185,21 @@ describe('services and catalog visual styles', () => {
     expect(normalized.customEmbeds[1].servicesVisualStyle).toBe('cards');
     expect(normalized.customEmbeds[1].servicesCarouselTransition).toBe('fade');
   });
+
+  it('normalizes expedition documents with unique slugs', () => {
+    const normalized = hydratePageForm({
+      expeditionDocuments: [
+        { title: 'Cédula profesional', imageUrl: 'https://cdn.example/cedula.jpg' },
+        { title: 'Constancia', imageUrl: '' },
+      ],
+    });
+    expect(normalized.expeditionDocuments).toHaveLength(2);
+    expect(normalized.expeditionDocuments[0].slug).toBe('cedula-profesional');
+    expect(normalized.expeditionDocuments[0].documentType).toBe('Cédula profesional');
+    expect(normalized.expeditionDocuments[0].imageUrl).toBe('https://cdn.example/cedula.jpg');
+    expect(normalized.expeditionIssuerName).toBe('');
+    expect(normalized.expeditionLicenseNumber).toBe('');
+    expect(EMPTY_PAGE.expeditionDocuments).toEqual([]);
+    expect(EMPTY_PAGE.expeditionIssuerName).toBe('');
+  });
 });

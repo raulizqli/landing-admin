@@ -56,11 +56,4 @@ var askOllamaCloud_js_1 = require("./askOllamaCloud.js");
 Object.defineProperty(exports, "askOllamaCloud", { enumerable: true, get: function () { return askOllamaCloud_js_1.askOllamaCloud; } });
 var domainIndex_js_1 = require("./domainIndex.js");
 Object.defineProperty(exports, "syncDomainIndexes", { enumerable: true, get: function () { return domainIndex_js_1.syncDomainIndexes; } });
-var referralTracking_js_1 = require("./referralTracking.js");
-Object.defineProperty(exports, "enableReferralCode", { enumerable: true, get: function () { return referralTracking_js_1.enableReferralCode; } });
-Object.defineProperty(exports, "updateReferralCode", { enumerable: true, get: function () { return referralTracking_js_1.updateReferralCode; } });
-Object.defineProperty(exports, "toggleReferralEnabled", { enumerable: true, get: function () { return referralTracking_js_1.toggleReferralEnabled; } });
-Object.defineProperty(exports, "trackReferralClick", { enumerable: true, get: function () { return referralTracking_js_1.trackReferralClick; } });
-Object.defineProperty(exports, "recordReferralConversion", { enumerable: true, get: function () { return referralTracking_js_1.recordReferralConversion; } });
-Object.defineProperty(exports, "getReferralAnalytics", { enumerable: true, get: function () { return referralTracking_js_1.getReferralAnalytics; } });
 //# sourceMappingURL=index.js.map

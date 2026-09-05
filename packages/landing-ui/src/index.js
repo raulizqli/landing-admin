@@ -19,4 +19,5 @@ export { default as CustomEmbedSlot } from './CustomEmbedSlot.jsx';
 export { default as CustomEmbedBlock } from './CustomEmbedBlock.jsx';
 export { default as FooterLegalLinks } from './FooterLegalLinks.jsx';
 export { default as LegalDocumentDialog } from './LegalDocumentDialog.jsx';
+export { default as ExpeditionDocumentsPage } from './ExpeditionDocumentsPage.jsx';
 export * from './trackInteraction.js';

@@ -190,6 +190,10 @@ export function getEditorSectionFill(sectionKey, data) {
       if (data.hostingProvider && data.hostingProvider !== 'hub') bits.push('hosting');
       if (data.useExternalFirebase === true) bits.push('Firebase ext.');
       if (data.termsOfUseEnabled !== false || data.privacyPolicyEnabled !== false) bits.push('legal');
+      const expeditionCount = Array.isArray(data.expeditionDocuments)
+        ? data.expeditionDocuments.filter((item) => String(item?.imageUrl ?? '').trim()).length
+        : 0;
+      if (expeditionCount > 0) bits.push(expeditionCount === 1 ? '1 documento QR' : `${expeditionCount} documentos QR`);
       return bits.length ? filled(bits.join(' · ')) : empty('Solo pie');
     }
 

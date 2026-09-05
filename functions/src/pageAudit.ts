@@ -79,6 +79,9 @@ export const PAGE_AUDIT_KEYS = [
   "termsOfUseBody",
   "privacyPolicyTitle",
   "privacyPolicyBody",
+  "expeditionIssuerName",
+  "expeditionLicenseNumber",
+  "expeditionDocuments",
 ] as const;
 
 function stableStringify(value: unknown): string {

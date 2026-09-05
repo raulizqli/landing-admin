@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildUserInvitationMessage,
   buildUserInvitationUrl,
+  describeTransactionalEmailFailure,
   INVITATION_CHANNELS,
   normalizeWhatsAppPhone,
 } from './userInvitation';
@@ -43,5 +44,14 @@ describe('userInvitation', () => {
       phoneCountry: 'mx',
     });
     expect(url).toMatch(/^https:\/\/wa\.me\/5215512345678\?text=/);
+  });
+
+  it('explains missing Resend config vs a Resend domain rejection', () => {
+    expect(describeTransactionalEmailFailure({ emailReason: 'missing_resend_config' }))
+      .toContain('RESEND_API_KEY');
+    expect(describeTransactionalEmailFailure({
+      emailReason: 'resend_error',
+      emailError: 'This API key is not authorized to send emails from toqua.site',
+    })).toContain('not authorized to send emails from toqua.site');
   });
 });

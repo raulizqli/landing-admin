@@ -121,7 +121,7 @@ function BrandBlock({
   );
 }
 
-function MenuLinks({ items, interactive, onNavigate, className = '' }) {
+function MenuLinks({ items, interactive, onNavigate, className = '', hashPrefix = '' }) {
   if (!items.length) return null;
 
   return (
@@ -130,7 +130,7 @@ function MenuLinks({ items, interactive, onNavigate, className = '' }) {
         <li key={item.id}>
           {interactive ? (
             <a
-              href={`#${item.id}`}
+              href={`${hashPrefix}#${item.id}`}
               onClick={() => onNavigate?.()}
               className="text-xs sm:text-sm text-current/80 hover:text-current transition-colors"
             >
@@ -157,6 +157,8 @@ export default function Navbar({
   interactive = true,
   data,
   onLanguageChange,
+  homeHref = '',
+  hashPrefix = '',
 }) {
   const labels = resolvePageLabels(data);
   const logoMode = navMode === 'logo';
@@ -237,6 +239,11 @@ export default function Navbar({
       specialtyCase={specialtyCase}
     />
   );
+  const brandNode = homeHref && interactive ? (
+    <a href={homeHref} className="min-w-0">
+      {brand}
+    </a>
+  ) : brand;
 
   const cta = showCta ? (
     interactive ? (
@@ -272,6 +279,7 @@ export default function Navbar({
       items={menuItems}
       interactive={interactive}
       className="hidden md:flex"
+      hashPrefix={hashPrefix}
     />
   ) : null;
 
@@ -289,7 +297,7 @@ export default function Navbar({
 
   const brandCluster = (
     <div className="min-w-0 flex items-center gap-3 sm:gap-4">
-      {brand}
+      {brandNode}
       {desktopMenu}
       {mobileToggle}
     </div>
@@ -311,7 +319,7 @@ export default function Navbar({
     rowContent = (
       <>
         <div className="min-w-0 flex items-center gap-4 lg:gap-6">
-          {brand}
+          {brandNode}
           {desktopMenu}
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -331,7 +339,7 @@ export default function Navbar({
   } else {
     rowContent = (
       <div className={`min-w-0 flex flex-wrap items-center gap-3 sm:gap-4 ${align === 'center' ? 'justify-center' : ''}`}>
-        {brand}
+        {brandNode}
         {desktopMenu}
         {mobileToggle}
         {languageSwitcher}
@@ -361,6 +369,7 @@ export default function Navbar({
             interactive={interactive}
             onNavigate={() => setMenuOpen(false)}
             className="flex-col items-start"
+            hashPrefix={hashPrefix}
           />
         </div>
       )}

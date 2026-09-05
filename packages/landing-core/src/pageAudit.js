@@ -81,6 +81,9 @@ export const PAGE_AUDIT_KEYS = [
   'termsOfUseBody',
   'privacyPolicyTitle',
   'privacyPolicyBody',
+  'expeditionIssuerName',
+  'expeditionLicenseNumber',
+  'expeditionDocuments',
 ];
 
 function stableStringify(value) {

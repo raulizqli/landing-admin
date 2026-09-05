@@ -43,6 +43,7 @@
     "./CustomEmbedBlock": "./src/CustomEmbedBlock.jsx",
     "./FooterLegalLinks": "./src/FooterLegalLinks.jsx",
     "./LegalDocumentDialog": "./src/LegalDocumentDialog.jsx",
+    "./ExpeditionDocumentsPage": "./src/ExpeditionDocumentsPage.jsx",
     "./PublicityAdsBanner": "./src/PublicityAdsBanner.jsx",
     "./SiteAccessGate": "./src/SiteAccessGate.jsx",
     "./SiteOfflineNotice": "./src/SiteOfflineNotice.jsx"

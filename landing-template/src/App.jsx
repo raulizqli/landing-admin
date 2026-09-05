@@ -4,7 +4,13 @@ import {
   findMarketingRouteByPath,
   isMarketingSite,
 } from '@raulizqli/landing-core/marketingSite';
+import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
+import {
+  normalizePageLanguage,
+  resolvePageLanguage,
+} from '@raulizqli/landing-core/pageTranslations';
 import LandingPage from './components/LandingPage';
+import ExpeditionDocumentsPage from './components/ExpeditionDocumentsPage';
 import { generateRandomPreviewContent, withPreviewContent } from './utils/previewContent';
 import { normalizePageData } from './utils/pageModel';
 import { initLandingAnalytics } from './utils/analytics';
@@ -14,9 +20,11 @@ import { getPageLoadErrorMessage } from './utils/pageLoadErrors';
 import { PAGE_ID } from './firebase';
 import { resolvePageFaviconUrl, setDocumentFavicon } from './utils/documentFavicon';
 import {
-  normalizePageLanguage,
-  resolvePageLanguage,
-} from '@raulizqli/landing-core/pageTranslations';
+  findExpeditionDocument,
+  getExpeditionDocumentLabel,
+  getVisibleExpeditionDocuments,
+  parseExpeditionPath,
+} from './utils/expeditionDocuments';
 
 function getSearchParams() {
   return new URLSearchParams(window.location.search);
@@ -45,6 +53,7 @@ function resolveDocumentTitle(data, { preview = false, labelSuffix = '', path = 
   const name = String(data?.name ?? '').trim();
   const specialty = String(data?.specialty ?? '').trim();
   const seoDefault = String(data?.seo?.defaultTitle ?? '').trim();
+  const expedition = parseExpeditionPath(path);
 
   let title;
   if (isMarketingSite(data)) {
@@ -53,6 +62,14 @@ function resolveDocumentTitle(data, { preview = false, labelSuffix = '', path = 
     if (routeTitle) title = routeTitle;
     else if (name && specialty) title = `${name} — ${specialty}`;
     else title = name || specialty || 'Marketing Site';
+  } else if (expedition) {
+    const labels = resolvePageLabels(data);
+    const documents = getVisibleExpeditionDocuments(data);
+    const current = expedition.slug ? findExpeditionDocument(documents, expedition.slug) : null;
+    const pageTitle = getExpeditionDocumentLabel(current)
+      || (expedition.list && documents.length === 1 ? getExpeditionDocumentLabel(documents[0]) : '')
+      || getLabel(labels, 'expedition.pageTitle');
+    title = name ? `${pageTitle} — ${name}` : pageTitle;
   } else if (name && specialty) {
     title = `${name} — ${specialty}`;
   } else if (name) {
@@ -79,6 +96,20 @@ function upsertJsonLd(id, payload) {
   script.type = 'application/ld+json';
   script.textContent = JSON.stringify(payload);
   if (!existing) document.head.appendChild(script);
+}
+
+function upsertRobots(content) {
+  let meta = document.head.querySelector('meta[name="robots"]');
+  if (!content) {
+    meta?.remove();
+    return;
+  }
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'robots');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', content);
 }
 
 function applyMarketingMeta(data, path = '/') {
@@ -301,7 +332,10 @@ export default function App() {
           : normalized;
 
         setPageData(data);
-        document.title = resolveDocumentTitle(data, { preview: previewMode });
+        document.title = resolveDocumentTitle(data, {
+          preview: previewMode,
+          path: getLocationPathname(),
+        });
       } catch (err) {
         console.error('Error al cargar la página:', err);
         if (cancelled) return;
@@ -377,6 +411,8 @@ export default function App() {
     document.documentElement.lang = displayData.activeLanguage || displayData.labelLanguage || 'es';
     setDocumentFavicon(resolvePageFaviconUrl(displayData));
     applyMarketingMeta(displayData, marketingPath);
+    const expedition = parseExpeditionPath(marketingPath);
+    upsertRobots(expedition && !isMarketingSite(displayData) ? 'noindex, nofollow' : '');
   }, [displayData, previewMode, marketingPath]);
 
   useEffect(() => {
@@ -396,6 +432,7 @@ export default function App() {
   }
 
   const enforceSiteAccess = !previewMode && !usingDemoFallback;
+  const expeditionPath = isMarketingSite(displayData) ? null : parseExpeditionPath(marketingPath);
 
   if (isMarketingSite(displayData)) {
     return (
@@ -412,12 +449,22 @@ export default function App() {
 
   return (
     <SiteAccessGate data={displayData} enforce={enforceSiteAccess}>
-      <LandingPage
-        key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
-        data={displayData}
-        onLanguageChange={handleLanguageChange}
-        lockedHeroSlideIndex={previewMode ? lockedHeroSlideIndex : null}
-      />
+      {expeditionPath ? (
+        <ExpeditionDocumentsPage
+          key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
+          data={displayData}
+          pathInfo={expeditionPath}
+          interactive={!previewMode}
+          onLanguageChange={handleLanguageChange}
+        />
+      ) : (
+        <LandingPage
+          key={displayData.activeLanguage || displayData.labelLanguage || 'default'}
+          data={displayData}
+          onLanguageChange={handleLanguageChange}
+          lockedHeroSlideIndex={previewMode ? lockedHeroSlideIndex : null}
+        />
+      )}
     </SiteAccessGate>
   );
 }

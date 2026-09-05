@@ -29,6 +29,7 @@ import { DEFAULT_VERTICAL, normalizeVertical } from './verticals';
 import { normalizeNavAlign } from './sectionVisibility';
 import { normalizeNavSpecialtyCase } from './navDisplay';
 import { normalizeLegalDocuments } from './legalDocuments';
+import { normalizeExpeditionDocuments, normalizeExpeditionIssuerFields } from './expeditionDocuments';
 import { normalizePreHeroImageSide } from './preHero';
 import { normalizeHostingDeployFields } from './hostingDeploy';
 import {
@@ -175,6 +176,9 @@ export const EMPTY_PAGE = {
   privacyPolicyEnabled: true,
   privacyPolicyTitle: '',
   privacyPolicyBody: '',
+  expeditionIssuerName: '',
+  expeditionLicenseNumber: '',
+  expeditionDocuments: [],
   analyticsMeasurementId: '',
   customDomain: '',
   useExternalFirebase: false,
@@ -411,6 +415,8 @@ export function normalizePageData(data = {}) {
   Object.assign(next, normalizeHostingDeployFields(next));
 
   Object.assign(next, normalizeLegalDocuments(next));
+  Object.assign(next, normalizeExpeditionIssuerFields(next));
+  next.expeditionDocuments = normalizeExpeditionDocuments(next.expeditionDocuments);
   next.translations = normalizePageTranslations(next.translations, next, next.defaultLanguage);
   delete next.activeLanguage;
 

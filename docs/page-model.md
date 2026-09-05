@@ -322,6 +322,22 @@ video, testimonials, blog, contact, social, footer
 
 Los documentos legales permiten términos y privacidad con contenido por defecto o personalizado. Los links se muestran en el footer y abren un diálogo dentro de la landing.
 
+## Documentos de expedición (QR)
+
+`expeditionDocuments[]` son certificados públicos consultables desde un código QR.
+
+Datos generales (de la landing):
+
+- `expeditionIssuerName` — profesional que emite; vacío = `name` de la página
+- `expeditionLicenseNumber` — cédula profesional
+
+Por documento:
+
+- Ruta índice: `/expedicion`
+- Documento: `/expedicion/{slug}`
+- Campos: `id`, `documentType`, `folio`, `issuedAt` (`YYYY-MM-DD`), `slug`, `imageUrl`, `alt`
+- Solo se publican ítems con `imageUrl`. El pie muestra un enlace al índice si hay al menos uno.
+
 ## Ejemplo reducido
 
 ```json

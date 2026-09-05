@@ -116,11 +116,37 @@ export function buildInvitationEmailContent(payload: InvitationEmailPayload) {
   return { subject, text, html, invitationLink };
 }
 
-async function sendViaResend(to: string, subject: string, text: string, html: string) {
+export type EmailSendResult = {
+  sent: boolean;
+  reason:
+    | "resend"
+    | "missing_resend_config"
+    | "resend_error"
+    | "send_error"
+    | "missing_to"
+    | "missing_reset_link"
+    | "missing_invitation_link";
+  emailError?: string;
+};
+
+function parseResendErrorMessage(status: number, body: string): string {
+  const trimmed = String(body ?? "").trim().slice(0, 400);
+  try {
+    const json = JSON.parse(trimmed) as { message?: unknown };
+    const message = String(json.message ?? "").trim();
+    if (message) return message.slice(0, 240);
+  } catch {
+    // body is not JSON
+  }
+  if (trimmed) return `HTTP ${status}: ${trimmed.slice(0, 180)}`;
+  return `HTTP ${status}`;
+}
+
+async function sendViaResend(to: string, subject: string, text: string, html: string): Promise<EmailSendResult> {
   const apiKey = String(process.env.RESEND_API_KEY ?? "").trim();
   const from = String(process.env.APPROVAL_EMAIL_FROM ?? process.env.RESEND_FROM ?? "").trim();
   if (!apiKey || !from) {
-    return { sent: false as const, reason: "missing_resend_config" as const };
+    return { sent: false, reason: "missing_resend_config" };
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -134,17 +160,18 @@ async function sendViaResend(to: string, subject: string, text: string, html: st
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
+    const emailError = parseResendErrorMessage(response.status, body);
     console.error("Resend email failed:", response.status, body);
-    return { sent: false as const, reason: "resend_error" as const };
+    return { sent: false, reason: "resend_error", emailError };
   }
 
-  return { sent: true as const, reason: "resend" as const };
+  return { sent: true, reason: "resend" };
 }
 
-export async function sendTransactionalEmail(payload: SendTransactionalEmailPayload) {
+export async function sendTransactionalEmail(payload: SendTransactionalEmailPayload): Promise<EmailSendResult> {
   const to = String(payload.to ?? "").trim().toLowerCase();
   if (!to) {
-    return { sent: false, reason: "missing_to" as const };
+    return { sent: false, reason: "missing_to" };
   }
 
   const subject = String(payload.subject ?? "").trim();
@@ -167,14 +194,14 @@ export async function sendTransactionalEmail(payload: SendTransactionalEmailPayl
     return await sendViaResend(to, subject, text, html);
   } catch (error) {
     console.error("sendTransactionalEmail error:", error);
-    return { sent: false, reason: "send_error" as const };
+    return { sent: false, reason: "send_error", emailError: "No se pudo contactar el servicio de correo." };
   }
 }
 
-export async function sendAccessApprovedEmail(payload: ApprovalEmailPayload) {
+export async function sendAccessApprovedEmail(payload: ApprovalEmailPayload): Promise<EmailSendResult & { loginUrl?: string }> {
   const to = String(payload.to ?? "").trim().toLowerCase();
   if (!to) {
-    return { sent: false, reason: "missing_to" as const };
+    return { sent: false, reason: "missing_to" };
   }
 
   const { subject, text, html, loginUrl } = buildApprovalEmailContent({
@@ -194,15 +221,15 @@ export async function sendAccessApprovedEmail(payload: ApprovalEmailPayload) {
   return { ...result, loginUrl };
 }
 
-export async function sendPasswordResetEmail(payload: PasswordResetEmailPayload) {
+export async function sendPasswordResetEmail(payload: PasswordResetEmailPayload): Promise<EmailSendResult> {
   const to = String(payload.to ?? "").trim().toLowerCase();
   if (!to) {
-    return { sent: false, reason: "missing_to" as const };
+    return { sent: false, reason: "missing_to" };
   }
 
   const resetLink = String(payload.resetLink ?? "").trim();
   if (!resetLink) {
-    return { sent: false, reason: "missing_reset_link" as const };
+    return { sent: false, reason: "missing_reset_link" };
   }
 
   const { subject, text, html } = buildPasswordResetEmailContent({
@@ -220,15 +247,15 @@ export async function sendPasswordResetEmail(payload: PasswordResetEmailPayload)
   });
 }
 
-export async function sendInvitationEmail(payload: InvitationEmailPayload) {
+export async function sendInvitationEmail(payload: InvitationEmailPayload): Promise<EmailSendResult> {
   const to = String(payload.to ?? "").trim().toLowerCase();
   if (!to) {
-    return { sent: false, reason: "missing_to" as const };
+    return { sent: false, reason: "missing_to" };
   }
 
   const invitationLink = String(payload.invitationLink ?? "").trim();
   if (!invitationLink) {
-    return { sent: false, reason: "missing_invitation_link" as const };
+    return { sent: false, reason: "missing_invitation_link" };
   }
 
   const { subject, text, html } = buildInvitationEmailContent({

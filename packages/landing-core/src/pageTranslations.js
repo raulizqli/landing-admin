@@ -29,6 +29,7 @@ const ROOT_TEXT_FIELDS = [
   'termsOfUseBody',
   'privacyPolicyTitle',
   'privacyPolicyBody',
+  'expeditionIssuerName',
 ];
 
 const COLLECTION_SPECS = {
@@ -43,6 +44,9 @@ const COLLECTION_SPECS = {
   },
   galleryItems: {
     fields: ['caption', 'alt'],
+  },
+  expeditionDocuments: {
+    fields: ['documentType', 'alt'],
   },
   videoSectionItems: {
     fields: ['caption'],

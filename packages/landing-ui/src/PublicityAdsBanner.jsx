@@ -1,6 +1,33 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 const STORAGE_KEY = 'toqua-publicity-chrome-open';
+const ADS_SCRIPT_SELECTOR = 'script[data-platform-ads="1"], script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]';
+
+function ensureAdsScript(adsClient) {
+  const existing = document.querySelector(ADS_SCRIPT_SELECTOR);
+  if (existing) return existing;
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsClient)}`;
+  script.crossOrigin = 'anonymous';
+  script.dataset.platformAds = '1';
+  document.head.appendChild(script);
+  return script;
+}
+
+function waitForAdsScript(script) {
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if (window.adsbygoogle?.loaded) return Promise.resolve(true);
+  if (!script) return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    const done = () => resolve(true);
+    script.addEventListener('load', done, { once: true });
+    script.addEventListener('error', () => resolve(false), { once: true });
+    window.setTimeout(() => resolve(Boolean(window.adsbygoogle)), 4000);
+  });
+}
 
 function readChromeOpen(defaultOpen) {
   if (typeof window === 'undefined') return defaultOpen;
@@ -38,6 +65,8 @@ export default function PublicityAdsBanner({
   const adsClient = String(client ?? '').trim();
   const adsSlot = String(slot ?? '').trim();
   const panelId = useId();
+  const insRef = useRef(null);
+  const pushedRef = useRef(false);
   const [chromeOpen, setChromeOpen] = useState(() => readChromeOpen(defaultChromeOpen));
 
   const positionClass = placement === 'top'
@@ -47,29 +76,30 @@ export default function PublicityAdsBanner({
       : 'fixed inset-x-0 bottom-0 z-50 border-t';
 
   useEffect(() => {
-    if (!adsClient || typeof window === 'undefined') return undefined;
+    if (!adsClient || !adsSlot || typeof window === 'undefined') return undefined;
 
-    const existing = document.querySelector(
-      'script[data-platform-ads="1"], script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
-    );
-    if (!existing) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsClient)}`;
-      script.crossOrigin = 'anonymous';
-      script.dataset.platformAds = '1';
-      document.head.appendChild(script);
-    }
+    let cancelled = false;
+    pushedRef.current = false;
 
-    try {
-      const runtime = window;
-      runtime.adsbygoogle = runtime.adsbygoogle || [];
-      runtime.adsbygoogle.push({});
-    } catch {
-      // Ad blockers / missing slot — banner still shows renewal chrome.
-    }
+    const mountAd = async () => {
+      const script = ensureAdsScript(adsClient);
+      await waitForAdsScript(script);
+      if (cancelled || !insRef.current || pushedRef.current) return;
+      if (insRef.current.getAttribute('data-adsbygoogle-status')) return;
 
-    return undefined;
+      try {
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adsbygoogle.push({});
+        pushedRef.current = true;
+      } catch {
+        // Ad blockers — banner still shows renewal chrome.
+      }
+    };
+
+    mountAd();
+    return () => {
+      cancelled = true;
+    };
   }, [adsClient, adsSlot]);
 
   const toggleChrome = () => {
@@ -89,8 +119,9 @@ export default function PublicityAdsBanner({
 
   const adUnit = adsClient && adsSlot ? (
     <ins
-      className="adsbygoogle block h-[90px] w-full bg-white/5"
-      style={{ display: 'block', width: '100%', height: '90px' }}
+      ref={insRef}
+      className="adsbygoogle block min-h-[90px] w-full bg-white/5"
+      style={{ display: 'block', width: '100%', minHeight: '90px' }}
       data-ad-client={adsClient}
       data-ad-slot={adsSlot}
       data-ad-format="horizontal"
@@ -135,7 +166,7 @@ export default function PublicityAdsBanner({
       aria-label={label}
     >
       <div className="relative w-full overflow-hidden">
-        <div className="w-full min-h-[90px] max-h-[100px] overflow-hidden">
+        <div className="w-full min-h-[90px] max-h-[120px] overflow-hidden">
           {adUnit}
         </div>
 

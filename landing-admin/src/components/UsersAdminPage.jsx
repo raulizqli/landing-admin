@@ -26,6 +26,7 @@ import {
 import {
   buildUserInvitationMessage,
   buildUserInvitationUrl,
+  describeTransactionalEmailFailure,
   INVITATION_CHANNELS,
 } from '../utils/userInvitation';
 import { listPageDocuments } from '../utils/firestoreAccess';
@@ -207,6 +208,15 @@ export default function UsersAdminPage() {
               ? 'Email enviado automáticamente.'
               : '',
           );
+          if (
+            result.invitationEmailSent !== true
+            && form.invitationChannel === INVITATION_CHANNELS.EMAIL
+          ) {
+            setError(
+              'Usuario creado, pero no se pudo enviar el email automático. '
+                + describeTransactionalEmailFailure(result),
+            );
+          }
         } else if (result.invitationError) {
           setError(
             `Usuario creado, pero no se generó la invitación: ${result.invitationError} `
@@ -308,7 +318,7 @@ export default function UsersAdminPage() {
       if (result?.emailSent === false) {
         setError(
           'Usuario aprobado, pero no se pudo enviar el email automático. '
-            + 'Configura RESEND_API_KEY + APPROVAL_EMAIL_FROM en Functions, o la extensión Trigger Email.',
+            + describeTransactionalEmailFailure(result),
         );
       }
     } catch (approveError) {
@@ -350,7 +360,7 @@ export default function UsersAdminPage() {
       } else if (result?.emailSent === false) {
         setError(
           'Enlace generado, pero no se pudo enviar el email automático. '
-            + 'Copia el enlace manualmente o configura RESEND_API_KEY + RESEND_FROM en Functions.',
+            + describeTransactionalEmailFailure(result),
         );
       }
     } catch (invitationError) {

@@ -24,6 +24,7 @@ import PageLanguagesEditor from './components/PageLanguagesEditor';
 import LocationFieldsEditor from './components/LocationFieldsEditor';
 import PhoneFieldsEditor from './components/PhoneFieldsEditor';
 import LegalDocumentsFieldsEditor from './components/LegalDocumentsFieldsEditor';
+import ExpeditionDocumentsFieldsEditor from './components/ExpeditionDocumentsFieldsEditor';
 import EditorSection from './components/EditorSection';
 import ShowContentToggle from './components/ShowContentToggle';
 import DevicePreviewPanel from './components/DevicePreviewPanel';
@@ -1379,6 +1380,12 @@ export default function App() {
                 />
               </PlanGate>
               <LegalDocumentsFieldsEditor formData={editorData} onChange={handleEditorChange} language={editingLanguage} />
+              <ExpeditionDocumentsFieldsEditor
+                formData={editorData}
+                onChange={handleEditorChange}
+                pageId={selectedId}
+                pageOpenUrl={pageOpenUrl}
+              />
               <PageAppearanceEditor formData={editorData} onChange={handleEditorChange} sections={['footer']} />
               <LabelsFieldsEditor key={`labels-footer-${editingLanguage}`} formData={editorData} onChange={handleEditorChange} groupIds={['footer']} showLanguagePicker={false} compact language={editingLanguage} />
             </EditorSection>

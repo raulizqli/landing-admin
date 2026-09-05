@@ -95,6 +95,22 @@ function buildInvitationEmailContent(payload) {
   `.trim();
     return { subject, text, html, invitationLink };
 }
+function parseResendErrorMessage(status, body) {
+    var _a;
+    const trimmed = String(body !== null && body !== void 0 ? body : "").trim().slice(0, 400);
+    try {
+        const json = JSON.parse(trimmed);
+        const message = String((_a = json.message) !== null && _a !== void 0 ? _a : "").trim();
+        if (message)
+            return message.slice(0, 240);
+    }
+    catch (_b) {
+        // body is not JSON
+    }
+    if (trimmed)
+        return `HTTP ${status}: ${trimmed.slice(0, 180)}`;
+    return `HTTP ${status}`;
+}
 async function sendViaResend(to, subject, text, html) {
     var _a, _b, _c;
     const apiKey = String((_a = process.env.RESEND_API_KEY) !== null && _a !== void 0 ? _a : "").trim();
@@ -112,8 +128,9 @@ async function sendViaResend(to, subject, text, html) {
     });
     if (!response.ok) {
         const body = await response.text().catch(() => "");
+        const emailError = parseResendErrorMessage(response.status, body);
         console.error("Resend email failed:", response.status, body);
-        return { sent: false, reason: "resend_error" };
+        return { sent: false, reason: "resend_error", emailError };
     }
     return { sent: true, reason: "resend" };
 }
@@ -143,7 +160,7 @@ async function sendTransactionalEmail(payload) {
     }
     catch (error) {
         console.error("sendTransactionalEmail error:", error);
-        return { sent: false, reason: "send_error" };
+        return { sent: false, reason: "send_error", emailError: "No se pudo contactar el servicio de correo." };
     }
 }
 async function sendAccessApprovedEmail(payload) {

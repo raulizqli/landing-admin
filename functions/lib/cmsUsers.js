@@ -209,7 +209,7 @@ async function resolveBillingSummary(db, uid, accountId, profilePageIds) {
     };
 }
 exports.createCmsUser = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     await assertRootCaller(request);
     const profileData = buildUserProfileData((_a = request.data) !== null && _a !== void 0 ? _a : {});
     const auth = (0, auth_1.getAuth)();
@@ -256,6 +256,7 @@ exports.createCmsUser = (0, https_1.onCall)(callableOptions, async (request) => 
     let invitationError = null;
     let invitationEmailSent = false;
     let invitationEmailReason = null;
+    let invitationEmailError = null;
     if (((_d = request.data) === null || _d === void 0 ? void 0 : _d.createInvitation) === true) {
         try {
             invitationLink = await generateInvitationLink(String(profileData.email));
@@ -266,6 +267,7 @@ exports.createCmsUser = (0, https_1.onCall)(callableOptions, async (request) => 
             });
             invitationEmailSent = emailResult.sent === true;
             invitationEmailReason = (_e = emailResult.reason) !== null && _e !== void 0 ? _e : null;
+            invitationEmailError = (_f = emailResult.emailError) !== null && _f !== void 0 ? _f : null;
         }
         catch (error) {
             invitationError = error instanceof https_1.HttpsError
@@ -282,10 +284,11 @@ exports.createCmsUser = (0, https_1.onCall)(callableOptions, async (request) => 
         invitationError,
         invitationEmailSent,
         invitationEmailReason,
+        invitationEmailError,
     };
 });
 exports.generateCmsUserInvitation = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     await assertRootCaller(request);
     const uid = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.uid) !== null && _b !== void 0 ? _b : "").trim();
     if (!uid) {
@@ -317,6 +320,7 @@ exports.generateCmsUserInvitation = (0, https_1.onCall)(callableOptions, async (
         invitationLink,
         emailSent: emailResult.sent === true,
         emailReason: (_e = emailResult.reason) !== null && _e !== void 0 ? _e : null,
+        emailError: (_f = emailResult.emailError) !== null && _f !== void 0 ? _f : null,
     };
 });
 /**
@@ -637,7 +641,7 @@ exports.requestCmsAccess = (0, https_1.onCall)(publicRegistrationOptions, async 
     };
 });
 exports.approveCmsAccess = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     await assertRootCaller(request);
     const uid = String((_b = (_a = request.data) === null || _a === void 0 ? void 0 : _a.uid) !== null && _b !== void 0 ? _b : "").trim();
     if (!uid) {
@@ -686,7 +690,7 @@ exports.approveCmsAccess = (0, https_1.onCall)(callableOptions, async (request) 
     }
     await userRef.set(Object.assign(Object.assign({}, profileData), { approvalStatus: "approved", disabled: false, approvedAt: firestore_1.FieldValue.serverTimestamp(), updatedAt: new Date().toISOString() }), { merge: true });
     const email = (0, contactValidation_js_1.normalizeEmail)(current.email);
-    let emailResult = { sent: false };
+    let emailResult = { sent: false, reason: "missing_to" };
     if (email) {
         emailResult = await (0, approvalEmail_js_1.sendAccessApprovedEmail)({
             to: email,
@@ -700,6 +704,7 @@ exports.approveCmsAccess = (0, https_1.onCall)(callableOptions, async (request) 
         role: profileData.role,
         emailSent: emailResult.sent === true,
         emailReason: (_j = emailResult.reason) !== null && _j !== void 0 ? _j : null,
+        emailError: (_k = emailResult.emailError) !== null && _k !== void 0 ? _k : null,
     };
 });
 /** Soft reject: keep Auth + Firestore, disable login. */
