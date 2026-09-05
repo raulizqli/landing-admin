@@ -3,6 +3,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 import {
   hasValidFirebaseConfig,
   normalizeFirebaseConfig,
@@ -11,6 +12,7 @@ import {
 export { hasValidFirebaseConfig, normalizeFirebaseConfig };
 
 const HUB_APP_NAME = 'hub';
+let functionsEmulatorConnected = false;
 const firestoreByAppName = new Map();
 
 /**
@@ -58,6 +60,20 @@ export function getHubDb() {
 
 export function getHubStorage() {
   return getStorage(getHubApp());
+}
+
+export function getHubFunctions() {
+  const functions = getFunctions(getHubApp(), 'us-central1');
+  const emulatorHost = String(import.meta.env.VITE_FUNCTIONS_EMULATOR_HOST ?? '').trim();
+
+  if (import.meta.env.DEV && emulatorHost && !functionsEmulatorConnected) {
+    const [host, portValue] = emulatorHost.split(':');
+    const port = Number(portValue) || 5001;
+    connectFunctionsEmulator(functions, host || '127.0.0.1', port);
+    functionsEmulatorConnected = true;
+  }
+
+  return functions;
 }
 
 export function getDbForConfig(config) {

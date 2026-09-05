@@ -23,6 +23,7 @@ import LabelsFieldsEditor from './components/LabelsFieldsEditor';
 import PageLanguagesEditor from './components/PageLanguagesEditor';
 import LocationFieldsEditor from './components/LocationFieldsEditor';
 import PhoneFieldsEditor from './components/PhoneFieldsEditor';
+import ContactInquiryFieldsEditor from './components/ContactInquiryFieldsEditor';
 import LegalDocumentsFieldsEditor from './components/LegalDocumentsFieldsEditor';
 import ExpeditionDocumentsFieldsEditor from './components/ExpeditionDocumentsFieldsEditor';
 import EditorSection from './components/EditorSection';
@@ -1266,6 +1267,11 @@ export default function App() {
                     hint="Desactivado = se omite el subtítulo (no usa el valor por defecto)."
                   />
                 </div>
+                <ContactInquiryFieldsEditor
+                  formData={editorData}
+                  onChange={handleEditorChange}
+                  pageId={selectedId}
+                />
                 <LocationFieldsEditor
                   formData={editorData}
                   onChange={handleEditorChange}

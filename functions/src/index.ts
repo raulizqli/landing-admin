@@ -56,3 +56,4 @@ export {
 export { ensureBootstrapRoot } from "./bootstrapRoot.js";
 export { askOllamaCloud } from "./askOllamaCloud.js";
 export { syncDomainIndexes } from "./domainIndex.js";
+export { submitPageInquiry, listPageInquiries } from "./pageInquiries.js";
