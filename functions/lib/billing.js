@@ -215,7 +215,7 @@ exports.ensureBillingAccount = (0, https_1.onCall)(callableOptions, async (reque
     return { account };
 });
 exports.setBillingPlanManual = (0, https_1.onCall)(callableOptions, async (request) => {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     if (!((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid)) {
         throw new https_1.HttpsError("unauthenticated", "Debes iniciar sesión.");
     }
@@ -223,11 +223,35 @@ exports.setBillingPlanManual = (0, https_1.onCall)(callableOptions, async (reque
     if (profile.role !== "root") {
         throw new https_1.HttpsError("permission-denied", "Solo root puede activar planes manualmente.");
     }
-    const accountId = String((_c = (_b = request.data) === null || _b === void 0 ? void 0 : _b.accountId) !== null && _c !== void 0 ? _c : "").trim();
-    const planId = normalizePlanId((_d = request.data) === null || _d === void 0 ? void 0 : _d.planId);
-    const status = String((_f = (_e = request.data) === null || _e === void 0 ? void 0 : _e.status) !== null && _f !== void 0 ? _f : "active").trim() || "active";
-    if (!accountId) {
-        throw new https_1.HttpsError("invalid-argument", "accountId es obligatorio.");
+    const targetUid = String((_c = (_b = request.data) === null || _b === void 0 ? void 0 : _b.uid) !== null && _c !== void 0 ? _c : "").trim();
+    let accountId = String((_e = (_d = request.data) === null || _d === void 0 ? void 0 : _d.accountId) !== null && _e !== void 0 ? _e : "").trim();
+    const planId = normalizePlanId((_f = request.data) === null || _f === void 0 ? void 0 : _f.planId);
+    const status = String((_h = (_g = request.data) === null || _g === void 0 ? void 0 : _g.status) !== null && _h !== void 0 ? _h : "active").trim() || "active";
+    if (targetUid) {
+        const targetProfile = await getCallerProfile(targetUid);
+        const ensured = await loadOrCreateAccountForUser(targetProfile);
+        accountId = ensured.id;
+    }
+    else if (accountId) {
+        const db = (0, firestore_1.getFirestore)();
+        const existing = await db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId).get();
+        if (!existing.exists) {
+            // Common case: accountId defaults to the owner's Firebase uid.
+            try {
+                const ownerProfile = await getCallerProfile(accountId);
+                const ensured = await loadOrCreateAccountForUser(ownerProfile);
+                accountId = ensured.id;
+            }
+            catch (error) {
+                if (error instanceof https_1.HttpsError && error.code === "permission-denied") {
+                    throw new https_1.HttpsError("not-found", `No existe billingAccounts/${accountId} ni un usuario con ese uid.`);
+                }
+                throw error;
+            }
+        }
+    }
+    else {
+        throw new https_1.HttpsError("invalid-argument", "accountId o uid es obligatorio.");
     }
     const account = await applyPlanToAccount(accountId, {
         plan: planId,

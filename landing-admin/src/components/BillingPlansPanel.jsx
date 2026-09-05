@@ -12,6 +12,7 @@ import {
   defaultBillingCurrencyForLocale,
   getBillingPlan,
   listBillingPlansForDisplay,
+  BILLING_ACCOUNT_STATUSES,
 } from '../utils/billingPlans';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale, LanguageSwitcher } from '../i18n/LocaleContext';
@@ -45,6 +46,8 @@ export default function BillingPlansPanel({ open, onClose }) {
   const [banner, setBanner] = useState('');
   const [providerChoicePlanId, setProviderChoicePlanId] = useState('');
   const [addonAccountId, setAddonAccountId] = useState('');
+  const [manualPlanId, setManualPlanId] = useState('pro');
+  const [manualStatus, setManualStatus] = useState('active');
   const [aiMode, setAiMode] = useState('platform');
   const [aiProvider, setAiProvider] = useState('openai');
   const [aiModel, setAiModel] = useState('gpt-4o-mini');
@@ -123,15 +126,46 @@ export default function BillingPlansPanel({ open, onClose }) {
   };
 
   const activateEnterpriseManual = async () => {
-    if (!canManageUsers(profile) || !billingAccount?.id) return;
+    if (!canManageUsers(profile)) return;
+    const accountId = String(addonAccountId || billingAccount?.id || '').trim();
+    if (!accountId) {
+      setError(t('billing.addonAccountId'));
+      return;
+    }
     setBusyKey('enterprise:manual');
     setError('');
     try {
       await setBillingPlanManual({
-        accountId: billingAccount.id,
+        accountId,
         planId: 'enterprise',
         status: 'active',
       });
+      setBanner(t('billing.manualSuccess'));
+      await refreshBillingAccount?.();
+    } catch (err) {
+      setError(err?.message || t('billing.checkoutError'));
+    } finally {
+      setBusyKey('');
+    }
+  };
+
+  const grantPlanManual = async () => {
+    if (!canManageUsers(profile)) return;
+    const accountId = String(addonAccountId || '').trim();
+    if (!accountId) {
+      setError(t('billing.addonAccountId'));
+      return;
+    }
+    setBusyKey('plan:manual');
+    setError('');
+    setBanner('');
+    try {
+      await setBillingPlanManual({
+        accountId,
+        planId: manualPlanId,
+        status: manualStatus,
+      });
+      setBanner(t('billing.manualSuccess'));
       await refreshBillingAccount?.();
     } catch (err) {
       setError(err?.message || t('billing.checkoutError'));
@@ -308,8 +342,8 @@ export default function BillingPlansPanel({ open, onClose }) {
             <div className="space-y-3">
               <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
                 <div>
-                  <p className="text-sm font-semibold text-[#2A342D]">{t('billing.addonTitle')}</p>
-                  <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.addonSubtitle')}</p>
+                  <p className="text-sm font-semibold text-[#2A342D]">{t('billing.manualTitle')}</p>
+                  <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.manualSubtitle')}</p>
                 </div>
                 <label className="block text-xs text-[#2A342D]/70">
                   {t('billing.addonAccountId')}
@@ -320,6 +354,51 @@ export default function BillingPlansPanel({ open, onClose }) {
                     className="mt-1 w-full rounded-lg border border-[#2A342D]/15 bg-white px-3 py-2 text-sm text-[#2A342D]"
                   />
                 </label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="block text-xs text-[#2A342D]/70">
+                    {t('billing.currentPlan')}
+                    <select
+                      value={manualPlanId}
+                      onChange={(event) => setManualPlanId(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 bg-white px-3 py-2 text-sm capitalize"
+                    >
+                      {plans.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {t(`billing.plans.${plan.id}.name`)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-xs text-[#2A342D]/70">
+                    {t('billing.status')}
+                    <select
+                      value={manualStatus}
+                      onChange={(event) => setManualStatus(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#2A342D]/15 bg-white px-3 py-2 text-sm"
+                    >
+                      {BILLING_ACCOUNT_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {t(`billing.statuses.${status}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  disabled={Boolean(busyKey)}
+                  onClick={grantPlanManual}
+                  className="rounded-lg bg-[#4A5D4E] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3d4d41] disabled:opacity-50"
+                >
+                  {busyKey === 'plan:manual' ? t('common.loading') : t('billing.manualGrant')}
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-[#2A342D]/15 bg-white/80 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#2A342D]">{t('billing.addonTitle')}</p>
+                  <p className="text-xs text-[#2A342D]/60 mt-1">{t('billing.addonSubtitle')}</p>
+                </div>
                 <p className="text-xs font-medium text-[#4A5D4E]">
                   {marketingAddonOn && addonAccountId === billingAccount?.id
                     ? t('billing.addonEnabled')

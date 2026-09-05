@@ -59,12 +59,17 @@ export async function ensureBillingAccountRemote() {
   }
 }
 
-/** Root-only: set plan without payment (ops / enterprise). */
-export async function setBillingPlanManual({ accountId, planId, status = 'active' } = {}) {
+/** Root-only: set plan without payment (ops / any user account). */
+export async function setBillingPlanManual({
+  accountId,
+  uid,
+  planId,
+  status = 'active',
+} = {}) {
   try {
     return await withBillingSession(async () => {
       const callable = httpsCallable(getHubFunctions(), 'setBillingPlanManual');
-      const result = await callable({ accountId, planId, status });
+      const result = await callable({ accountId, uid, planId, status });
       return result.data?.account ?? null;
     });
   } catch (error) {

@@ -297,11 +297,36 @@ export const setBillingPlanManual = onCall(callableOptions, async (request: Call
     throw new HttpsError("permission-denied", "Solo root puede activar planes manualmente.");
   }
 
-  const accountId = String(request.data?.accountId ?? "").trim();
+  const targetUid = String(request.data?.uid ?? "").trim();
+  let accountId = String(request.data?.accountId ?? "").trim();
   const planId = normalizePlanId(request.data?.planId);
   const status = String(request.data?.status ?? "active").trim() || "active";
-  if (!accountId) {
-    throw new HttpsError("invalid-argument", "accountId es obligatorio.");
+
+  if (targetUid) {
+    const targetProfile = await getCallerProfile(targetUid);
+    const ensured = await loadOrCreateAccountForUser(targetProfile);
+    accountId = ensured.id;
+  } else if (accountId) {
+    const db = getFirestore();
+    const existing = await db.collection(BILLING_ACCOUNTS_COLLECTION).doc(accountId).get();
+    if (!existing.exists) {
+      // Common case: accountId defaults to the owner's Firebase uid.
+      try {
+        const ownerProfile = await getCallerProfile(accountId);
+        const ensured = await loadOrCreateAccountForUser(ownerProfile);
+        accountId = ensured.id;
+      } catch (error) {
+        if (error instanceof HttpsError && error.code === "permission-denied") {
+          throw new HttpsError(
+            "not-found",
+            `No existe billingAccounts/${accountId} ni un usuario con ese uid.`,
+          );
+        }
+        throw error;
+      }
+    }
+  } else {
+    throw new HttpsError("invalid-argument", "accountId o uid es obligatorio.");
   }
 
   const account = await applyPlanToAccount(accountId, {

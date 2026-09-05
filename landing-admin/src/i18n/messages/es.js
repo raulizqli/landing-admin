@@ -139,6 +139,10 @@ export default {
     inactiveHint: 'Tu suscripción no está activa. Actualiza el plan para desbloquear funciones.',
     enterpriseCta: 'Enterprise incluye Marketing Site, páginas ilimitadas y soporte 24/7. Te contactamos para onboarding.',
     manualNote: 'Root puede activar Enterprise de forma manual sin checkout.',
+    manualTitle: 'Ops: Asignar suscripción',
+    manualSubtitle: 'Activa cualquier plan para una cuenta (uid o accountId) sin pasar por Stripe o Mercado Pago.',
+    manualGrant: 'Asignar plan',
+    manualSuccess: 'Suscripción actualizada manualmente.',
     health: {
       paidBadge: 'Pagado · al día',
       freeTierBadge: 'Free tier · requiere pago',
