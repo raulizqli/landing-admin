@@ -16,6 +16,8 @@ import {
   approveCmsAccess,
   rejectCmsAccess,
 } from '../utils/userFunctions';
+import { setBillingPlanManual } from '../utils/billingFunctions';
+import { BILLING_ACCOUNT_STATUSES, listBillingPlansForDisplay } from '../utils/billingPlans';
 import { canManageUsers, getRoleLabel, ROLES } from '../utils/permissions';
 import {
   formatAssignedPages,
@@ -98,6 +100,9 @@ export default function UsersAdminPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [approveDraft, setApproveDraft] = useState(null);
   const [approveBusy, setApproveBusy] = useState(false);
+  const [planDraft, setPlanDraft] = useState(null);
+  const [planBusy, setPlanBusy] = useState(false);
+  const billingPlans = useMemo(() => listBillingPlansForDisplay(), []);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -298,6 +303,41 @@ export default function UsersAdminPage() {
       pageId: '',
       assignedPageIds: '',
     });
+  };
+
+  const openPlanGrant = (user) => {
+    setError('');
+    setPlanDraft({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || '',
+      accountId: String(user.accountId || user.uid).trim(),
+      planId: String(user.plan || 'starter').trim() || 'starter',
+      status: ['active', 'trialing'].includes(String(user.planStatus || '').trim())
+        ? String(user.planStatus).trim()
+        : 'active',
+    });
+  };
+
+  const handlePlanGrant = async (event) => {
+    event.preventDefault();
+    if (!planDraft?.uid) return;
+    setPlanBusy(true);
+    setError('');
+    try {
+      await setBillingPlanManual({
+        uid: planDraft.uid,
+        accountId: planDraft.accountId,
+        planId: planDraft.planId,
+        status: planDraft.status,
+      });
+      setPlanDraft(null);
+      await loadUsers();
+    } catch (planError) {
+      setError(planError.message || 'No se pudo asignar la suscripción.');
+    } finally {
+      setPlanBusy(false);
+    }
   };
 
   const handleApprove = async (event) => {
@@ -537,6 +577,16 @@ export default function UsersAdminPage() {
                             >
                               Editar
                             </button>
+                            {!isRootUser && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => openPlanGrant(user)}
+                                className="px-2 py-1 rounded bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                              >
+                                Plan
+                              </button>
+                            )}
                             {!isRootUser && user.approvalStatus === 'approved' && (
                               <button
                                 type="button"
@@ -688,6 +738,70 @@ export default function UsersAdminPage() {
               <button
                 type="button"
                 onClick={() => setApproveDraft(null)}
+                className="rounded-lg border px-3 py-2 text-xs"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {planDraft && (
+        <div className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-4">
+          <form
+            onSubmit={handlePlanGrant}
+            className="w-full max-w-md rounded-2xl bg-white border border-gray-200 shadow-2xl p-5 space-y-4"
+          >
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Asignar suscripción</h3>
+              <p className="mt-1 text-xs text-gray-500">{planDraft.email}</p>
+              {planDraft.displayName ? (
+                <p className="text-[11px] text-gray-500">{planDraft.displayName}</p>
+              ) : null}
+              <p className="mt-2 text-[11px] text-gray-500 leading-relaxed">
+                Activa un plan de forma manual (sin checkout). Se escribe en
+                {' '}
+                <span className="font-mono text-[10px]">billingAccounts/{planDraft.accountId || planDraft.uid}</span>.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Plan</label>
+              <select
+                required
+                value={planDraft.planId}
+                onChange={(event) => setPlanDraft({ ...planDraft, planId: event.target.value })}
+                className="w-full rounded-lg border px-3 py-2 text-xs bg-white capitalize"
+              >
+                {billingPlans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>{plan.id}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Estado</label>
+              <select
+                required
+                value={planDraft.status}
+                onChange={(event) => setPlanDraft({ ...planDraft, status: event.target.value })}
+                className="w-full rounded-lg border px-3 py-2 text-xs bg-white"
+              >
+                {BILLING_ACCOUNT_STATUSES.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={planBusy}
+                className="flex-1 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {planBusy ? 'Guardando…' : 'Asignar plan'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanDraft(null)}
                 className="rounded-lg border px-3 py-2 text-xs"
               >
                 Cancelar

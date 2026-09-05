@@ -179,7 +179,7 @@ No dupliques reglas de entitlement en componentes.
 | `deleteCmsUser` | root | Elimina Auth + perfil |
 | `ensureBillingAccount` | usuario autenticado | Crea o enlaza una cuenta |
 | `createBillingCheckout` | usuario autenticado | Inicia checkout |
-| `setBillingPlanManual` | root | Activa un plan manual |
+| `setBillingPlanManual` | root | Activa un plan manual para cualquier `accountId` o `uid` (crea la cuenta de billing si no existe) |
 | `stripeBillingWebhook` | firma Stripe | Sincroniza suscripción |
 | `mercadoPagoBillingWebhook` | validación Mercado Pago | Sincroniza preapproval |
 | `triggerHostingDeploy` | rol autorizado | Dispara hosting externo |

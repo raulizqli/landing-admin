@@ -139,6 +139,10 @@ export default {
     inactiveHint: 'Your subscription is not active. Upgrade to unlock features.',
     enterpriseCta: 'Enterprise includes Marketing Site, unlimited pages, and 24/7 support. We will reach out for onboarding.',
     manualNote: 'Root can activate Enterprise manually without checkout.',
+    manualTitle: 'Ops: Grant subscription',
+    manualSubtitle: 'Activate any plan for an account (uid or accountId) without Stripe or Mercado Pago checkout.',
+    manualGrant: 'Grant plan',
+    manualSuccess: 'Subscription updated manually.',
     health: {
       paidBadge: 'Paid · in good standing',
       freeTierBadge: 'Free tier · payment required',
