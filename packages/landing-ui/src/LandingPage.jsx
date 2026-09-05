@@ -24,7 +24,7 @@ export default function LandingPage({
   const bookingCta = resolveBookingCta(data);
   const pageStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'page'), { sectionKey: 'page' });
   const footerStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'footer'), { sectionKey: 'footer' });
-  const rootClassName = ['text-[#2A342D] font-sans min-h-full', className].filter(Boolean).join(' ');
+  const rootClassName = ['font-sans min-h-full', className].filter(Boolean).join(' ');
 
   return (
     <div id={SECTION_IDS.top} data-preview-section={SECTION_IDS.top} className={rootClassName} style={pageStyle}>
@@ -53,7 +53,7 @@ export default function LandingPage({
         <footer
           id={SECTION_IDS.footer}
           data-preview-section={SECTION_IDS.footer}
-          className="border-t border-[#2A342D]/10 py-6 text-center"
+          className="border-t border-current/10 py-6 text-center"
           style={footerStyle}
         >
           <p className="text-xs opacity-50">

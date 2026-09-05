@@ -26,7 +26,7 @@ function BlogImage({ src, alt, className = '' }) {
     <img
       src={src}
       alt={alt}
-      className={`w-full object-cover rounded-2xl border border-[#2A342D]/10 bg-[#E8E4DB] ${className}`}
+      className={`w-full object-cover rounded-2xl border border-current/10 bg-current/10 ${className}`}
     />
   );
 }
@@ -107,7 +107,7 @@ export default function BlogSection({ data }) {
   const imageAltFallback = getLabel(labels, 'blog.imageAlt');
 
   return (
-    <section id={SECTION_IDS.blog} className="border-y border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.blog} className="border-y border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         {(showTitle || showIntro) ? (
           <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">

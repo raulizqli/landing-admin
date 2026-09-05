@@ -76,7 +76,7 @@ export function getItemVisualClasses(visualStyle, customStyle) {
 
   if (style === 'editorial') {
     return {
-      article: 'bg-transparent rounded-none border-0 border-b border-[#2A342D]/15 shadow-none overflow-hidden h-full flex flex-col pb-6 transition-transform duration-300 motion-safe:hover:-translate-y-0.5',
+      article: 'bg-transparent rounded-none border-0 border-b border-current/15 shadow-none overflow-hidden h-full flex flex-col pb-6 transition-transform duration-300 motion-safe:hover:-translate-y-0.5',
       articleStyle: undefined,
       media: 'rounded-sm overflow-hidden mb-1',
       body: 'px-0 pt-5 pb-2 flex flex-col flex-1',
@@ -87,7 +87,7 @@ export function getItemVisualClasses(visualStyle, customStyle) {
   }
 
   return {
-    article: 'bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm overflow-hidden h-full flex flex-col transition-transform duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-md',
+    article: 'bg-current/5 rounded-2xl border border-current/10 shadow-sm overflow-hidden h-full flex flex-col transition-transform duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-md',
     articleStyle: undefined,
     media: 'overflow-hidden',
     body: 'p-5 sm:p-6 flex flex-col flex-1',

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import {
   getGalleryPortfolioUrl,
@@ -6,7 +5,15 @@ import {
   shouldShowGallerySection,
   splitGallerySectionText,
 } from '@raulizqli/landing-core/gallery';
-import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
+import {
+  buildSectionBackgroundStyle,
+  getSectionTheme,
+  parseColorToHex,
+} from '@raulizqli/landing-core/sectionBackground';
+import {
+  DEFAULT_NAV_CTA_BG_COLOR,
+  DEFAULT_NAV_CTA_TEXT_COLOR,
+} from '@raulizqli/landing-core/pageModel';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 import { trackCtaClick } from './trackInteraction.js';
@@ -25,6 +32,10 @@ export default function GallerySection({ data, interactive = true }) {
     || getLabel(labels, 'gallery.viewPortfolio');
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'gallery'), { sectionKey: 'gallery' });
   const [activeIndex, setActiveIndex] = useState(null);
+  const ctaStyle = {
+    backgroundColor: parseColorToHex(data?.navCtaBgColor, DEFAULT_NAV_CTA_BG_COLOR),
+    color: parseColorToHex(data?.navCtaTextColor, DEFAULT_NAV_CTA_TEXT_COLOR),
+  };
 
   useEffect(() => {
     if (activeIndex === null || !interactive) return undefined;
@@ -45,7 +56,7 @@ export default function GallerySection({ data, interactive = true }) {
   const portfolioExternal = /^https?:\/\//i.test(portfolioUrl);
 
   return (
-    <section id={SECTION_IDS.gallery} className="border-y border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.gallery} className="border-y border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         {(showTitle || showIntro) ? (
           <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
@@ -80,8 +91,8 @@ export default function GallerySection({ data, interactive = true }) {
                 key={`gallery-item-${index}`}
                 type={interactive ? 'button' : undefined}
                 onClick={interactive ? () => setActiveIndex(index) : undefined}
-                className={`group relative aspect-square overflow-hidden rounded-2xl border border-[#2A342D]/10 bg-[#E8E4DB] text-left ${
-                  interactive ? 'cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] focus:ring-offset-2' : ''
+                className={`group relative aspect-square overflow-hidden rounded-2xl border border-current/10 bg-current/10 text-left ${
+                  interactive ? 'cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-current focus:ring-offset-2 focus:ring-offset-transparent' : ''
                 }`}
               >
                 <img
@@ -90,7 +101,7 @@ export default function GallerySection({ data, interactive = true }) {
                   className="w-full h-full object-cover transition duration-500 group-hover:scale-[1.03]"
                 />
                 {item.caption && (
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2A342D]/70 to-transparent px-3 py-3 text-xs text-white/95">
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-3 text-xs text-white/95">
                     {item.caption}
                   </span>
                 )}
@@ -106,12 +117,16 @@ export default function GallerySection({ data, interactive = true }) {
                 href={portfolioUrl}
                 {...(portfolioExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 onClick={() => trackCtaClick('gallery_portfolio')}
-                className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors"
+                className="inline-flex items-center justify-center text-sm font-medium px-6 py-3 rounded-full hover:opacity-90 transition-opacity"
+                style={ctaStyle}
               >
                 {portfolioLabel}
               </a>
             ) : (
-              <span className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
+              <span
+                className="inline-flex items-center justify-center text-sm font-medium px-6 py-3 rounded-full"
+                style={ctaStyle}
+              >
                 {portfolioLabel}
               </span>
             )}
@@ -121,7 +136,7 @@ export default function GallerySection({ data, interactive = true }) {
 
       {interactive && activeItem && (
         <div
-          className="fixed inset-0 z-50 bg-[#2A342D]/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-label={activeItem.caption || getLabel(labels, 'gallery.imageAlt')}

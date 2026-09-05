@@ -11,6 +11,11 @@ import {
   resolveVisibleLocations,
 } from '@raulizqli/landing-core/locations';
 import { resolvePhoneContact } from '@raulizqli/landing-core/phone';
+import {
+  DEFAULT_NAV_CTA_BG_COLOR,
+  DEFAULT_NAV_CTA_TEXT_COLOR,
+} from '@raulizqli/landing-core/pageModel';
+import { parseColorToHex } from '@raulizqli/landing-core/sectionBackground';
 import { trackCtaClick, trackContactClick } from './trackInteraction.js';
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
@@ -18,7 +23,7 @@ import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 
 function MapEmbed({ title, embedUrl, tall = false }) {
   return (
-    <div className={`rounded-2xl overflow-hidden border border-[#2A342D]/10 shadow-sm bg-white ${tall ? 'h-full min-h-[280px]' : ''}`}>
+    <div className={`rounded-2xl overflow-hidden border border-current/10 shadow-sm bg-current/5 ${tall ? 'h-full min-h-[280px]' : ''}`}>
       <iframe
         title={title}
         src={embedUrl}
@@ -35,21 +40,21 @@ function ContactEmailRow({ email, labels, interactive }) {
   if (!email) return null;
   return (
     <div className="flex items-start gap-3">
-      <span className="text-[#4A5D4E] mt-0.5" aria-hidden="true">✉️</span>
+      <span className="text-current/70 mt-0.5" aria-hidden="true">✉️</span>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#4A5D4E]/80 mb-0.5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-current/70 mb-0.5">
           {getLabel(labels, 'contact.email')}
         </p>
         {interactive ? (
           <a
             href={`mailto:${email}`}
             onClick={() => trackContactClick('email')}
-            className="text-sm text-[#4A5D4E] hover:underline focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] rounded"
+            className="text-sm text-current/85 hover:underline focus:outline-none focus:ring-2 focus:ring-current rounded"
           >
             {email}
           </a>
         ) : (
-          <p className="text-sm text-[#4A5D4E]">{email}</p>
+          <p className="text-sm text-current/85">{email}</p>
         )}
       </div>
     </div>
@@ -60,9 +65,9 @@ function ContactPhoneRow({ phoneContact, labels, interactive }) {
   if (!phoneContact) return null;
   return (
     <div className="flex items-start gap-3">
-      <span className="text-[#4A5D4E] mt-0.5" aria-hidden="true">{phoneContact.isWhatsapp ? '💬' : '📞'}</span>
+      <span className="text-current/70 mt-0.5" aria-hidden="true">{phoneContact.isWhatsapp ? '💬' : '📞'}</span>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#4A5D4E]/80 mb-0.5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-current/70 mb-0.5">
           {phoneContact.isWhatsapp ? getLabel(labels, 'contact.whatsapp') : getLabel(labels, 'contact.phone')}
         </p>
         {interactive && phoneContact.href ? (
@@ -71,12 +76,12 @@ function ContactPhoneRow({ phoneContact, labels, interactive }) {
             target={phoneContact.external ? '_blank' : undefined}
             rel={phoneContact.external ? 'noopener noreferrer' : undefined}
             onClick={() => trackContactClick(phoneContact.isWhatsapp ? 'whatsapp' : 'phone')}
-            className="text-sm text-[#4A5D4E] hover:underline focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] rounded"
+            className="text-sm text-current/85 hover:underline focus:outline-none focus:ring-2 focus:ring-current rounded"
           >
             {phoneContact.display}
           </a>
         ) : (
-          <p className="text-sm text-[#4A5D4E]">{phoneContact.display}</p>
+          <p className="text-sm text-current/85">{phoneContact.display}</p>
         )}
       </div>
     </div>
@@ -96,9 +101,9 @@ function LocationAddressRow({
 
   return (
     <div className="flex items-start gap-3">
-      <span className="text-[#4A5D4E] mt-0.5" aria-hidden="true">📍</span>
+      <span className="text-current/70 mt-0.5" aria-hidden="true">📍</span>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#4A5D4E]/80 mb-0.5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-current/70 mb-0.5">
           {title}
         </p>
         {interactive && maps.linkUrl ? (
@@ -106,33 +111,35 @@ function LocationAddressRow({
             href={maps.linkUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-[#4A5D4E] hover:underline focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] rounded"
+            className="text-sm text-current/85 hover:underline focus:outline-none focus:ring-2 focus:ring-current rounded"
           >
             {location.address || title || maps.linkUrl}
           </a>
         ) : (
-          <p className="text-sm text-[#2A342D]/80">{location.address || title}</p>
+          <p className="text-sm text-current/80">{location.address || title}</p>
         )}
       </div>
     </div>
   );
 }
 
-function SendMessageButton({ email, mailtoHref, labels, interactive }) {
+function SendMessageButton({ email, mailtoHref, labels, interactive, buttonStyle }) {
   if (!email) return null;
+  const className = 'block w-full text-center text-sm font-medium px-6 py-3 rounded-full transition-opacity mt-2 focus:outline-none focus:ring-2 focus:ring-current focus:ring-offset-2 focus:ring-offset-transparent hover:opacity-90';
   if (interactive) {
     return (
       <a
         href={mailtoHref}
         onClick={() => trackCtaClick('send_message')}
-        className="block w-full text-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors mt-2 focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] focus:ring-offset-2"
+        className={className}
+        style={buttonStyle}
       >
         {getLabel(labels, 'contact.sendMessage')}
       </a>
     );
   }
   return (
-    <span className="block w-full text-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full mt-2">
+    <span className={className} style={buttonStyle}>
       {getLabel(labels, 'contact.sendMessage')}
     </span>
   );
@@ -157,6 +164,7 @@ function LocationContactBlock({
   interactive,
   includeContact,
   includeSendMessage,
+  buttonStyle,
 }) {
   const contact = resolveLocationContact(data, location);
   const phoneContact = includeContact ? locationPhoneContact(data, contact) : null;
@@ -186,6 +194,7 @@ function LocationContactBlock({
           mailtoHref={mailtoHref}
           labels={labels}
           interactive={interactive}
+          buttonStyle={buttonStyle}
         />
       )}
     </div>
@@ -199,6 +208,7 @@ function LocationsCarousel({
   labels,
   interactive,
   perLocationContact,
+  buttonStyle,
 }) {
   const [index, setIndex] = useState(0);
   const safeIndex = Math.min(index, Math.max(0, locations.length - 1));
@@ -220,6 +230,7 @@ function LocationsCarousel({
         interactive={interactive}
         includeContact={perLocationContact}
         includeSendMessage={perLocationContact}
+        buttonStyle={buttonStyle}
       />
       {maps?.embedUrl && (
         <MapEmbed
@@ -233,18 +244,18 @@ function LocationsCarousel({
             type="button"
             disabled={!interactive || safeIndex <= 0}
             onClick={() => setIndex((current) => Math.max(0, current - 1))}
-            className="text-sm font-medium px-4 py-2 rounded-full border border-[#2A342D]/20 text-[#2A342D] hover:bg-[#2A342D]/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-sm font-medium px-4 py-2 rounded-full border border-current/20 text-current hover:bg-current/5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {getLabel(labels, 'services.carouselPrevious')}
           </button>
-          <span className="text-xs text-[#2A342D]/55 tabular-nums">
+          <span className="text-xs text-current/55 tabular-nums">
             {safeIndex + 1} / {locations.length}
           </span>
           <button
             type="button"
             disabled={!interactive || safeIndex >= locations.length - 1}
             onClick={() => setIndex((current) => Math.min(locations.length - 1, current + 1))}
-            className="text-sm font-medium px-4 py-2 rounded-full border border-[#2A342D]/20 text-[#2A342D] hover:bg-[#2A342D]/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-sm font-medium px-4 py-2 rounded-full border border-current/20 text-current hover:bg-current/5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {getLabel(labels, 'services.carouselNext')}
           </button>
@@ -281,6 +292,10 @@ export default function ContactSection({ data, interactive = true }) {
     : `#${SECTION_IDS.contact}`;
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'contact'), { sectionKey: 'contact' });
   const locationLabel = getLabel(labels, 'contact.location');
+  const buttonStyle = {
+    backgroundColor: parseColorToHex(data?.navCtaBgColor, DEFAULT_NAV_CTA_BG_COLOR),
+    color: parseColorToHex(data?.navCtaTextColor, DEFAULT_NAV_CTA_TEXT_COLOR),
+  };
 
   const sharedContactRows = !perLocationContact ? (
     <>
@@ -291,12 +306,13 @@ export default function ContactSection({ data, interactive = true }) {
         mailtoHref={sharedMailtoHref}
         labels={labels}
         interactive={interactive}
+        buttonStyle={buttonStyle}
       />
     </>
   ) : null;
 
   const contactCard = (
-    <div className="bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm p-6 sm:p-8 space-y-5 h-full">
+    <div className="bg-current/5 rounded-2xl border border-current/10 shadow-sm p-6 sm:p-8 space-y-5 h-full">
       {displayMode === 'carousel' ? (
         <>
           <LocationsCarousel
@@ -306,6 +322,7 @@ export default function ContactSection({ data, interactive = true }) {
             labels={labels}
             interactive={interactive}
             perLocationContact={perLocationContact}
+            buttonStyle={buttonStyle}
           />
           {sharedContactRows}
         </>
@@ -314,7 +331,7 @@ export default function ContactSection({ data, interactive = true }) {
           {locations.map((location, index) => (
             <div
               key={location.id || index}
-              className={index > 0 ? 'pt-5 border-t border-[#2A342D]/10' : undefined}
+              className={index > 0 ? 'pt-5 border-t border-current/10' : undefined}
             >
               <LocationContactBlock
                 data={data}
@@ -326,6 +343,7 @@ export default function ContactSection({ data, interactive = true }) {
                 interactive={interactive}
                 includeContact={perLocationContact}
                 includeSendMessage={perLocationContact}
+                buttonStyle={buttonStyle}
               />
             </div>
           ))}
@@ -350,7 +368,7 @@ export default function ContactSection({ data, interactive = true }) {
     : [];
 
   return (
-    <section id={SECTION_IDS.contact} className="border-y border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.contact} className="border-y border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         <div className="text-center mb-10">
           {data.contactShowTitle !== false ? (
