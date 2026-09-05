@@ -118,6 +118,13 @@ if (isProd) {
   if (!hasStarter) {
     errors.push('Prod Stripe catalog missing STRIPE_PRICE_STARTER(_USD|_MXN). Run ensure-stripe-catalog.mjs.');
   }
+  const hasYearly = Boolean(
+    merged.STRIPE_PRICE_STARTER_USD_YEARLY
+    || merged.STRIPE_PRICE_STARTER_MXN_YEARLY,
+  );
+  if (!hasYearly) {
+    errors.push('Prod Stripe catalog missing STRIPE_PRICE_STARTER_*_YEARLY. Run ensure-stripe-catalog.mjs.');
+  }
 }
 
 if (isStage) {

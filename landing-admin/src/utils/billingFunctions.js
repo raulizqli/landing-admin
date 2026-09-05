@@ -26,6 +26,7 @@ export async function createBillingCheckout({
   provider,
   locale = 'es',
   currency,
+  interval = 'month',
   successPath = '/?billing=success',
   cancelPath = '/?billing=cancel',
 } = {}) {
@@ -37,6 +38,7 @@ export async function createBillingCheckout({
         provider,
         locale,
         currency,
+        interval,
         successPath,
         cancelPath,
       });

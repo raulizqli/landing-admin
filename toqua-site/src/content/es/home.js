@@ -42,7 +42,7 @@ export const home = {
   pricingTeaser: {
     eyebrow: 'Planes',
     title: 'Precios claros, sin sorpresas',
-    description: 'Desde una página esencial hasta varias prácticas o un equipo.',
+    description: 'Desde una página esencial hasta varias prácticas o un equipo. Ahorra 20% si pagas el año.',
     cta: 'Comparar planes',
   },
   faqTeaser: {

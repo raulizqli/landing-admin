@@ -124,7 +124,7 @@ export const compare = {
       option: 'Toqua',
       fit: 'You want a professional page without hiring someone full-time.',
       time: 'Hours or a weekend for a first version.',
-      cost: 'From $10 USD / month.',
+      cost: 'From $10 USD / month, or $96 / year (20% off).',
       control: 'You edit text and photos whenever you want.',
     },
     {

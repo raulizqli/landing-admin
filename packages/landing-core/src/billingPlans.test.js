@@ -9,12 +9,44 @@ import {
   getAccountLocationLimit,
   getAccountPageCount,
   getAccountQrCodeLimit,
+  getBillingPlan,
+  getBillingPlanPrice,
   isBillingAccountActive,
   isPageSelfServePlan,
+  normalizeBillingInterval,
   normalizeBillingPlanId,
   pageIdsFromUserProfile,
   resolveAccountPageIds,
+  yearlyPriceFromMonthly,
 } from './billingPlans.js';
+
+describe('annual billing (20% off)', () => {
+  it('normalizes interval to month or year', () => {
+    expect(normalizeBillingInterval('year')).toBe('year');
+    expect(normalizeBillingInterval('YEAR')).toBe('year');
+    expect(normalizeBillingInterval('month')).toBe('month');
+    expect(normalizeBillingInterval('')).toBe('month');
+    expect(createEmptyBillingAccount({}).billingInterval).toBe('month');
+    expect(createEmptyBillingAccount({ billingInterval: 'year' }).billingInterval).toBe('year');
+  });
+
+  it('rounds yearly totals from monthly list prices', () => {
+    expect(yearlyPriceFromMonthly(10)).toBe(96);
+    expect(yearlyPriceFromMonthly(25)).toBe(240);
+    expect(yearlyPriceFromMonthly(75)).toBe(720);
+    expect(yearlyPriceFromMonthly(189)).toBe(1814);
+    expect(yearlyPriceFromMonthly(469)).toBe(4502);
+    expect(yearlyPriceFromMonthly(1399)).toBe(13430);
+    expect(yearlyPriceFromMonthly(null)).toBe(null);
+  });
+
+  it('exposes yearly amounts on paid tiers and not on enterprise', () => {
+    expect(getBillingPlanPrice(getBillingPlan('starter'), { currency: 'usd', interval: 'year' })).toBe(96);
+    expect(getBillingPlanPrice(getBillingPlan('pro'), { currency: 'mxn', interval: 'year' })).toBe(4502);
+    expect(getBillingPlanPrice(getBillingPlan('agency'), { currency: 'usd', interval: 'month' })).toBe(75);
+    expect(getBillingPlanPrice(getBillingPlan('enterprise'), { currency: 'usd', interval: 'year' })).toBe(null);
+  });
+});
 
 describe('defaultBillingCurrencyForLocale', () => {
   it('maps English to USD and Spanish to MXN', () => {

@@ -19,7 +19,7 @@ export const faq = {
     {
       question: 'How much does it cost?',
       answer:
-        'Starter is $10 USD per month: one essential page. Pro is $25 with more sections. Agency is $75 for several pages. Enterprise is custom.',
+        'Starter is $10 USD per month or $96 per year (20% off): one essential page. Pro is $25 / $240 per year. Agency is $75 / $720 per year. Enterprise is custom.',
     },
     {
       question: 'Can I cancel?',

@@ -11,14 +11,16 @@ import { useEntitlements } from '../hooks/useEntitlements';
 import {
   defaultBillingCurrencyForLocale,
   getBillingPlan,
+  getBillingPlanPrice,
   listBillingPlansForDisplay,
+  normalizeBillingInterval,
   BILLING_ACCOUNT_STATUSES,
 } from '../utils/billingPlans';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale, LanguageSwitcher } from '../i18n/LocaleContext';
 import { isBillingBypass, canManageUsers } from '../utils/permissions';
 
-function PlanPrice({ plan, currency, t }) {
+function PlanPrice({ plan, currency, interval, t }) {
   if (plan.id === 'enterprise' || plan.monthlyPriceUsd == null) {
     return (
       <p className="text-2xl font-serif text-[#2A342D]">
@@ -26,13 +28,29 @@ function PlanPrice({ plan, currency, t }) {
       </p>
     );
   }
-  const amount = currency === 'mxn' ? plan.monthlyPriceMxn : plan.monthlyPriceUsd;
+  const amount = getBillingPlanPrice(plan, { currency, interval });
   const symbol = currency === 'mxn' ? 'MX$' : 'US$';
+  const yearly = interval === 'year';
+  const monthlyEquiv = yearly && amount != null ? Math.round(amount / 12) : null;
   return (
-    <p className="text-2xl font-serif text-[#2A342D]">
-      {symbol}{amount}
-      <span className="text-sm font-sans text-[#2A342D]/50">{t('billing.perMonth')}</span>
-    </p>
+    <div>
+      {yearly && (
+        <p className="text-[10px] uppercase tracking-wide font-bold text-[#4A5D4E] mb-1">
+          {t('billing.annualSave')}
+        </p>
+      )}
+      <p className="text-2xl font-serif text-[#2A342D]">
+        {symbol}{amount}
+        <span className="text-sm font-sans text-[#2A342D]/50">
+          {yearly ? t('billing.perYear') : t('billing.perMonth')}
+        </span>
+      </p>
+      {monthlyEquiv != null && (
+        <p className="text-[11px] text-[#2A342D]/50 mt-0.5">
+          {t('billing.yearlyEquiv', { amount: `${symbol}${monthlyEquiv}` })}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -41,6 +59,7 @@ export default function BillingPlansPanel({ open, onClose }) {
   const { profile, billingAccount, refreshBillingAccount, user } = useAuth();
   const entitlements = useEntitlements();
   const [currency, setCurrency] = useState(() => defaultBillingCurrencyForLocale(locale));
+  const [billingInterval, setBillingInterval] = useState('month');
   const [busyKey, setBusyKey] = useState('');
   const [error, setError] = useState('');
   const [banner, setBanner] = useState('');
@@ -56,6 +75,7 @@ export default function BillingPlansPanel({ open, onClose }) {
   const bypass = isBillingBypass(profile);
   const plans = listBillingPlansForDisplay();
   const currentPlan = getBillingPlan(billingAccount?.plan);
+  const currentInterval = normalizeBillingInterval(billingAccount?.billingInterval);
   const marketingAddonOn = billingAccount?.addons?.marketingSite === true;
 
   useEffect(() => {
@@ -112,6 +132,7 @@ export default function BillingPlansPanel({ open, onClose }) {
         provider,
         locale,
         currency,
+        interval: billingInterval,
       });
       if (data?.url) {
         window.location.assign(data.url);
@@ -287,7 +308,12 @@ export default function BillingPlansPanel({ open, onClose }) {
               <div className="grid sm:grid-cols-4 gap-3 text-sm bg-white/70 rounded-xl border border-[#2A342D]/10 p-4">
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.currentPlan')}</p>
-                  <p className="font-semibold text-[#2A342D]">{t(`billing.plans.${currentPlan.id}.name`)}</p>
+                  <p className="font-semibold text-[#2A342D]">
+                    {t(`billing.plans.${currentPlan.id}.name`)}
+                    {billingAccount?.status === 'active' || billingAccount?.status === 'trialing'
+                      ? ` · ${t(currentInterval === 'year' ? 'billing.intervalYear' : 'billing.intervalMonth')}`
+                      : ''}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-[#2A342D]/45">{t('billing.status')}</p>
@@ -315,6 +341,25 @@ export default function BillingPlansPanel({ open, onClose }) {
 
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-[11px] uppercase tracking-wide text-[#2A342D]/45">{t('common.plan')}</span>
+            <div className="inline-flex rounded-lg border border-[#2A342D]/15 overflow-hidden text-xs">
+              <button
+                type="button"
+                onClick={() => setBillingInterval('month')}
+                className={`px-3 py-1.5 ${billingInterval === 'month' ? 'bg-[#4A5D4E] text-white' : 'bg-white text-[#2A342D]'}`}
+              >
+                {t('billing.intervalMonth')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingInterval('year')}
+                className={`px-3 py-1.5 ${billingInterval === 'year' ? 'bg-[#4A5D4E] text-white' : 'bg-white text-[#2A342D]'}`}
+              >
+                {t('billing.intervalYear')}
+              </button>
+            </div>
+            {billingInterval === 'year' && (
+              <span className="text-[11px] font-semibold text-[#4A5D4E]">{t('billing.annualSave')}</span>
+            )}
             <div className="inline-flex rounded-lg border border-[#2A342D]/15 overflow-hidden text-xs">
               <button
                 type="button"
@@ -562,7 +607,10 @@ export default function BillingPlansPanel({ open, onClose }) {
 
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
             {plans.map((plan) => {
-              const isCurrent = !bypass && currentPlan.id === plan.id && (billingAccount?.status === 'active' || billingAccount?.status === 'trialing');
+              const isCurrent = !bypass
+                && currentPlan.id === plan.id
+                && currentInterval === billingInterval
+                && (billingAccount?.status === 'active' || billingAccount?.status === 'trialing');
               const isRecommended = plan.id === 'pro';
               return (
                 <article
@@ -582,7 +630,7 @@ export default function BillingPlansPanel({ open, onClose }) {
                       </span>
                     )}
                   </div>
-                  <PlanPrice plan={plan} currency={currency} t={t} />
+                  <PlanPrice plan={plan} currency={currency} interval={billingInterval} t={t} />
                   <ul className="text-xs text-[#2A342D]/75 space-y-1.5 flex-1">
                     <li>· {t(`billing.plans.${plan.id}.f1`)}</li>
                     <li>· {t(`billing.plans.${plan.id}.f2`)}</li>
@@ -657,6 +705,7 @@ export default function BillingPlansPanel({ open, onClose }) {
             <p className="mt-1 text-xs text-[#2A342D]/60">
               {t('billing.chooseProviderHint', {
                 plan: t(`billing.plans.${providerChoicePlanId}.name`),
+                interval: t(billingInterval === 'year' ? 'billing.intervalYear' : 'billing.intervalMonth'),
               })}
             </p>
             <div className="mt-4 space-y-2">
