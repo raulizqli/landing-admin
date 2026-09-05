@@ -159,6 +159,8 @@ Sincronizar secretos desde máquina local (con `.env.production` válido):
 scripts/sync-github-secrets.sh
 ```
 
+Eso también sube `STRIPE_SECRET_KEY` + `STRIPE_PRICE_STARTER(_USD|_MXN)` (y precios Pro/Agency) al Environment **prod**, que **Promote to Prod** inyecta en `check-env`.
+
 ---
 
 ## Responsabilidades del día a día
