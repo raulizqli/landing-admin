@@ -22,6 +22,10 @@ const PLAN_AMOUNTS_MXN: Record<string, number> = {
   agency: 1399,
 };
 
+/** Keep in sync with BILLING_ANNUAL_DISCOUNT in packages/landing-core/src/billingPlans.js */
+const BILLING_ANNUAL_DISCOUNT = 0.2;
+
+type BillingInterval = "month" | "year";
 type BillingProvider = "stripe" | "mercadopago" | "manual";
 
 interface BillingAccountRecord {
@@ -32,6 +36,7 @@ interface BillingAccountRecord {
   status?: string;
   provider?: string;
   currency?: string;
+  billingInterval?: BillingInterval;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   mercadoPagoPreapprovalId?: string;
@@ -63,20 +68,53 @@ function getStripe(): Stripe {
   return new Stripe(key);
 }
 
-function stripePriceEnvCandidates(planId: string, currency: "usd" | "mxn" = "usd"): string[] {
+function normalizeInterval(value: unknown): BillingInterval {
+  return String(value ?? "").trim().toLowerCase() === "year" ? "year" : "month";
+}
+
+function yearlyAmountFromMonthly(monthly: number): number {
+  return Math.round(monthly * 12 * (1 - BILLING_ANNUAL_DISCOUNT));
+}
+
+function mercadoPagoAmountMxn(planId: string, interval: BillingInterval): number | undefined {
+  const monthly = PLAN_AMOUNTS_MXN[planId];
+  if (!monthly) return undefined;
+  return interval === "year" ? yearlyAmountFromMonthly(monthly) : monthly;
+}
+
+function stripePriceEnvCandidates(
+  planId: string,
+  currency: "usd" | "mxn" = "usd",
+  interval: BillingInterval = "month",
+): string[] {
   const plan = planId.toUpperCase();
   const cur = currency.toUpperCase();
-  // Prefer currency-specific prices (Prod USD/MXN), then legacy single-price env.
+  if (interval === "year") {
+    return [
+      `STRIPE_PRICE_${plan}_${cur}_YEARLY`,
+      `STRIPE_PRICE_${plan}_YEARLY_${cur}`,
+    ];
+  }
   return [
     `STRIPE_PRICE_${plan}_${cur}`,
     `STRIPE_PRICE_${plan}`,
   ];
 }
 
-function stripePriceIdForPlan(planId: string, currency: "usd" | "mxn" = "usd"): string {
-  for (const envKey of stripePriceEnvCandidates(planId, currency)) {
+function stripePriceIdForPlan(
+  planId: string,
+  currency: "usd" | "mxn" = "usd",
+  interval: BillingInterval = "month",
+): string {
+  for (const envKey of stripePriceEnvCandidates(planId, currency, interval)) {
     const priceId = String(process.env[envKey] ?? "").trim();
     if (priceId) return priceId;
+  }
+  if (interval === "year") {
+    throw new HttpsError(
+      "failed-precondition",
+      `Falta STRIPE_PRICE_${planId.toUpperCase()}_${currency.toUpperCase()}_YEARLY en Functions.`,
+    );
   }
   throw new HttpsError(
     "failed-precondition",
@@ -84,15 +122,22 @@ function stripePriceIdForPlan(planId: string, currency: "usd" | "mxn" = "usd"): 
   );
 }
 
-function allConfiguredStripePriceIds(): Array<[string, string]> {
+function allConfiguredStripePriceIds(): Array<{
+  planId: string;
+  priceId: string;
+  interval: BillingInterval;
+}> {
   const plans = ["starter", "pro", "agency", "enterprise"];
   const currencies: Array<"usd" | "mxn"> = ["usd", "mxn"];
-  const entries: Array<[string, string]> = [];
+  const intervals: BillingInterval[] = ["month", "year"];
+  const entries: Array<{ planId: string; priceId: string; interval: BillingInterval }> = [];
   for (const planId of plans) {
     for (const currency of currencies) {
-      for (const envKey of stripePriceEnvCandidates(planId, currency)) {
-        const priceId = String(process.env[envKey] ?? "").trim();
-        if (priceId) entries.push([planId, priceId]);
+      for (const interval of intervals) {
+        for (const envKey of stripePriceEnvCandidates(planId, currency, interval)) {
+          const priceId = String(process.env[envKey] ?? "").trim();
+          if (priceId) entries.push({ planId, priceId, interval });
+        }
       }
     }
   }
@@ -350,6 +395,7 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
   const currency = String(request.data?.currency ?? "usd").trim().toLowerCase() === "mxn"
     ? "mxn"
     : "usd";
+  const interval = normalizeInterval(request.data?.interval);
   const successPath = String(request.data?.successPath ?? "/?billing=success").trim() || "/?billing=success";
   const cancelPath = String(request.data?.cancelPath ?? "/?billing=cancel").trim() || "/?billing=cancel";
 
@@ -384,7 +430,7 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: stripePriceIdForPlan(planId, currency), quantity: 1 }],
+      line_items: [{ price: stripePriceIdForPlan(planId, currency, interval), quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: account.id,
@@ -395,12 +441,14 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
         planId,
         uid: profile.uid,
         currency,
+        interval,
       },
       subscription_data: {
         metadata: {
           accountId: account.id,
           planId,
           currency,
+          interval,
         },
       },
     });
@@ -408,6 +456,7 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
     await applyPlanToAccount(account.id, {
       provider: "stripe",
       currency,
+      billingInterval: interval,
       plan: planId,
       status: "incomplete",
     });
@@ -416,7 +465,7 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
   }
 
   // Mercado Pago preapproval (subscription)
-  const amount = PLAN_AMOUNTS_MXN[planId];
+  const amount = mercadoPagoAmountMxn(planId, interval);
   if (!amount) {
     throw new HttpsError("invalid-argument", "Plan sin precio MXN para Mercado Pago.");
   }
@@ -433,12 +482,12 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
   }
 
   const body = {
-    reason: `Toqua — ${planId}`,
-    external_reference: `${account.id}:${planId}`,
+    reason: `Toqua — ${planId}${interval === "year" ? " anual" : ""}`,
+    external_reference: `${account.id}:${planId}:${interval}`,
     payer_email: payerEmail,
     back_url: successUrl,
     auto_recurring: {
-      frequency: 1,
+      frequency: interval === "year" ? 12 : 1,
       frequency_type: "months",
       transaction_amount: amount,
       currency_id: "MXN",
@@ -476,6 +525,7 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
   await applyPlanToAccount(account.id, {
     provider: "mercadopago",
     currency: "mxn",
+    billingInterval: interval,
     plan: planId,
     status: "incomplete",
     mercadoPagoPreapprovalId: String(payload.id ?? ""),
@@ -485,10 +535,18 @@ export const createBillingCheckout = onCall(callableOptions, async (request: Cal
   return { url, provider: "mercadopago", preapprovalId: payload.id };
 });
 
-function planFromStripePrice(priceId: string): string | null {
-  for (const [planId, envPrice] of allConfiguredStripePriceIds()) {
-    if (envPrice && envPrice === priceId) return planId;
+function planFromStripePrice(priceId: string): { planId: string; interval: BillingInterval } | null {
+  for (const entry of allConfiguredStripePriceIds()) {
+    if (entry.priceId === priceId) return { planId: entry.planId, interval: entry.interval };
   }
+  return null;
+}
+
+function intervalFromStripePrice(price: unknown): BillingInterval | null {
+  if (!price || typeof price === "string") return null;
+  const recurring = (price as Stripe.Price).recurring?.interval;
+  if (recurring === "year") return "year";
+  if (recurring === "month") return "month";
   return null;
 }
 
@@ -533,11 +591,13 @@ export const stripeBillingWebhook = onRequest({ cors: false }, async (req, res) 
       const session = event.data.object as Stripe.Checkout.Session;
       const accountId = String(session.client_reference_id || session.metadata?.accountId || "").trim();
       const planId = normalizePlanId(session.metadata?.planId);
+      const interval = normalizeInterval(session.metadata?.interval);
       if (accountId) {
         await applyPlanToAccount(accountId, {
           plan: planId,
           status: "active",
           provider: "stripe",
+          billingInterval: interval,
           stripeCustomerId: String(session.customer ?? ""),
           stripeSubscriptionId: String(session.subscription ?? ""),
         });
@@ -550,9 +610,17 @@ export const stripeBillingWebhook = onRequest({ cors: false }, async (req, res) 
     ) {
       const subscription = event.data.object as Stripe.Subscription;
       const accountId = String(subscription.metadata?.accountId ?? "").trim();
-      const priceId = subscription.items.data[0]?.price?.id ?? "";
+      const price = subscription.items.data[0]?.price;
+      const priceId = typeof price === "string" ? price : price?.id ?? "";
+      const fromPrice = planFromStripePrice(priceId);
       const planId = normalizePlanId(
-        subscription.metadata?.planId || planFromStripePrice(priceId) || "starter",
+        subscription.metadata?.planId || fromPrice?.planId || "starter",
+      );
+      const interval = normalizeInterval(
+        subscription.metadata?.interval
+          || fromPrice?.interval
+          || intervalFromStripePrice(price)
+          || "month",
       );
       const statusMap: Record<string, string> = {
         active: "active",
@@ -574,6 +642,7 @@ export const stripeBillingWebhook = onRequest({ cors: false }, async (req, res) 
           plan: planId,
           status,
           provider: "stripe",
+          billingInterval: interval,
           stripeSubscriptionId: subscription.id,
           cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
           currentPeriodEnd: periodEnd
@@ -620,11 +689,17 @@ export const mercadoPagoBillingWebhook = onRequest({ cors: false }, async (req, 
         id?: string;
         status?: string;
         external_reference?: string;
+        auto_recurring?: { frequency?: number; frequency_type?: string };
       };
 
       if (response.ok && preapproval.external_reference) {
-        const [accountId, planFromRef] = String(preapproval.external_reference).split(":");
+        const [accountId, planFromRef, intervalFromRef] = String(preapproval.external_reference).split(":");
         const planId = normalizePlanId(planFromRef);
+        const fromRecurring = preapproval.auto_recurring?.frequency === 12
+          && String(preapproval.auto_recurring?.frequency_type ?? "").toLowerCase() === "months"
+          ? "year"
+          : "month";
+        const interval = normalizeInterval(intervalFromRef || fromRecurring);
         const statusRaw = String(preapproval.status ?? "").toLowerCase();
         const status = statusRaw === "authorized" || statusRaw === "active"
           ? "active"
@@ -639,6 +714,7 @@ export const mercadoPagoBillingWebhook = onRequest({ cors: false }, async (req, 
             plan: planId,
             status,
             provider: "mercadopago",
+            billingInterval: interval,
             mercadoPagoPreapprovalId: String(preapproval.id ?? dataId),
           });
         }

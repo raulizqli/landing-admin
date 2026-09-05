@@ -1,12 +1,16 @@
 export const pricing = {
   metaTitle: 'Plans and pricing',
   metaDescription:
-    'Toqua plans: Starter from $10 USD, Pro $25, Agency $75. Enterprise custom.',
+    'Toqua plans: Starter from $10 USD/mo or $96/year (20% off). Pro, Agency, and custom Enterprise.',
   eyebrow: 'Plans',
   title: 'Pick the plan that fits your practice',
   description:
-    'Monthly prices in US dollars. Cancel anytime. Explained in clinic language — not tech jargon.',
+    'Pay monthly or save 20% with yearly billing. Cancel anytime. Explained in clinic language — not tech jargon.',
   currencyNote: 'Monthly prices in US dollars (USD).',
+  currencyNoteYear: 'Yearly prices in US dollars (USD). 20% off versus 12 months.',
+  intervalMonth: 'Monthly',
+  intervalYear: 'Yearly',
+  annualSave: 'Save 20%',
   plans: [
     {
       id: 'starter',

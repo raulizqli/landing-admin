@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { getAdminSignupUrl } from '../content/site';
 import Seo from '../components/seo/Seo';
 import Section from '../components/ui/Section';
@@ -11,6 +12,7 @@ export default function PricingPage() {
   const { lang, path, t } = useLang();
   const content = t.pricing;
   const signupUrl = getAdminSignupUrl();
+  const [billingInterval, setBillingInterval] = useState('month');
   const meta = buildPageMeta({
     title: content.metaTitle,
     description: content.metaDescription,
@@ -31,7 +33,30 @@ export default function PricingPage() {
         ]}
       />
       <Section eyebrow={content.eyebrow} title={content.title} description={content.description}>
-        <p className="mb-8 text-sm text-[var(--mute)]">{content.currencyNote}</p>
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <div className="inline-flex overflow-hidden rounded-full border border-[var(--text)]/15 text-sm">
+            <button
+              type="button"
+              onClick={() => setBillingInterval('month')}
+              className={`px-4 py-1.5 ${billingInterval === 'month' ? 'bg-[var(--text-purple)] text-white' : 'bg-[var(--surface)] text-[var(--text)]'}`}
+            >
+              {content.intervalMonth}
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingInterval('year')}
+              className={`px-4 py-1.5 ${billingInterval === 'year' ? 'bg-[var(--text-purple)] text-white' : 'bg-[var(--surface)] text-[var(--text)]'}`}
+            >
+              {content.intervalYear}
+            </button>
+          </div>
+          {billingInterval === 'year' && (
+            <p className="text-sm font-semibold text-[var(--text-purple)]">{content.annualSave}</p>
+          )}
+        </div>
+        <p className="mb-8 text-sm text-[var(--mute)]">
+          {billingInterval === 'year' ? content.currencyNoteYear : content.currencyNote}
+        </p>
         <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
           {content.plans.map((plan) => (
             <article
@@ -48,19 +73,26 @@ export default function PricingPage() {
               </p>
               {planHasDisplayPrice(plan) ? (
                 (() => {
-                  const price = formatPlanPrice(plan, lang);
+                  const price = formatPlanPrice(plan, lang, billingInterval);
                   return (
-                    <p className="mt-3 font-display text-3xl font-semibold">
-                      {price.main}
-                      {price.period ? (
-                        <span
-                          className={`text-lg font-sans font-medium ${plan.featured ? 'text-white/70' : 'text-[var(--mute)]'}`}
-                        >
-                          {' '}
-                          {price.period}
-                        </span>
+                    <>
+                      <p className="mt-3 font-display text-3xl font-semibold">
+                        {price.main}
+                        {price.period ? (
+                          <span
+                            className={`text-lg font-sans font-medium ${plan.featured ? 'text-white/70' : 'text-[var(--mute)]'}`}
+                          >
+                            {' '}
+                            {price.period}
+                          </span>
+                        ) : null}
+                      </p>
+                      {billingInterval === 'year' ? (
+                        <p className={`mt-1 text-xs font-semibold ${plan.featured ? 'text-white/80' : 'text-[var(--text-purple)]'}`}>
+                          {content.annualSave}
+                        </p>
                       ) : null}
-                    </p>
+                    </>
                   );
                 })()
               ) : (
