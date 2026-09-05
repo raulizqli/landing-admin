@@ -15,9 +15,8 @@ import {
   DEFAULT_NAV_CTA_BG_COLOR,
   DEFAULT_NAV_CTA_TEXT_COLOR,
 } from '@raulizqli/landing-core/pageModel';
-import { parseColorToHex } from '@raulizqli/landing-core/sectionBackground';
 import { trackCtaClick, trackContactClick } from './trackInteraction.js';
-import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
+import { buildSectionBackgroundStyle, getSectionTheme, parseColorToHex } from '@raulizqli/landing-core/sectionBackground';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 
