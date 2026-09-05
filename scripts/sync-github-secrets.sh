@@ -105,4 +105,34 @@ set_secret VITE_FACEBOOK_APP_ID "$FACEBOOK_APP_ID"
 set_secret VITE_ADMIN_PUBLIC_URL "$ADMIN_PUBLIC_URL"
 set_secret VITE_ADMIN_ORIGIN "$ADMIN_ORIGIN"
 
+# Prod Environment secrets used by Promote to Prod env guardrails (and ops).
+FUNCTIONS_PROD_ENV="${FUNCTIONS_PROD_ENV:-$ROOT_DIR/functions/.env.production}"
+set_secret_env() {
+  local name="$1"
+  local value="$2"
+  local env_name="$3"
+  if [[ -z "$value" ]]; then
+    echo "skip $env_name/$name (empty)"
+    return
+  fi
+  printf '%s' "$value" | gh secret set "$name" --env "$env_name"
+  echo "set  $env_name/$name"
+}
+
+for key in \
+  STRIPE_SECRET_KEY \
+  STRIPE_PRICE_STARTER \
+  STRIPE_PRICE_STARTER_USD \
+  STRIPE_PRICE_STARTER_MXN \
+  STRIPE_PRICE_PRO \
+  STRIPE_PRICE_PRO_USD \
+  STRIPE_PRICE_PRO_MXN \
+  STRIPE_PRICE_AGENCY \
+  STRIPE_PRICE_AGENCY_USD \
+  STRIPE_PRICE_AGENCY_MXN \
+  MERCADOPAGO_ACCESS_TOKEN
+do
+  set_secret_env "$key" "$(get_env_from "$FUNCTIONS_PROD_ENV" "$key")" prod
+done
+
 echo "Done. Redeploy with: git commit --allow-empty -m 'chore: rebuild with secrets' && git push"
