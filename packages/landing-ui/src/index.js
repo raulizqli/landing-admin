@@ -14,6 +14,8 @@ export { default as VideoSection } from './VideoSection.jsx';
 export { default as TestimonialsSection } from './TestimonialsSection.jsx';
 export { default as BlogSection } from './BlogSection.jsx';
 export { default as ContactSection } from './ContactSection.jsx';
+export { default as ContactInquiryForm } from './ContactInquiryForm.jsx';
+export { default as FloatingWhatsAppButton } from './FloatingWhatsAppButton.jsx';
 export { default as SocialSection } from './SocialSection.jsx';
 export { default as CustomEmbedSlot } from './CustomEmbedSlot.jsx';
 export { default as CustomEmbedBlock } from './CustomEmbedBlock.jsx';

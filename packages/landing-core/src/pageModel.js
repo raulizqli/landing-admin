@@ -46,6 +46,7 @@ import {
 } from './marketingSite.js';
 import { normalizeSiteAccess } from './siteAccess.js';
 import { DEFAULT_PHONE_COUNTRY, normalizePhoneCountry } from './phone.js';
+import { normalizeContactFormProjectTypes } from './contactInquiry.js';
 
 export const DEFAULT_NAV_CTA_BG_COLOR = '#4A5D4E';
 export const DEFAULT_NAV_CTA_TEXT_COLOR = '#FFFFFF';
@@ -148,6 +149,9 @@ export const EMPTY_PAGE = {
   contactSectionEnabled: true,
   contactShowTitle: true,
   contactShowSubtitle: true,
+  contactFormEnabled: false,
+  contactFormProjectTypes: [],
+  floatingWhatsappEnabled: true,
   location: '',
   locationMapsUrl: '',
   showLocationMap: false,
@@ -371,6 +375,11 @@ export function normalizePageData(data = {}) {
   next.contactSectionEnabled = next.contactSectionEnabled !== false;
   next.contactShowTitle = next.contactShowTitle !== false;
   next.contactShowSubtitle = next.contactShowSubtitle !== false;
+  next.contactFormEnabled = next.contactFormEnabled === true;
+  next.contactFormProjectTypes = Array.isArray(next.contactFormProjectTypes) && next.contactFormProjectTypes.length > 0
+    ? normalizeContactFormProjectTypes(next.contactFormProjectTypes)
+    : [];
+  next.floatingWhatsappEnabled = next.floatingWhatsappEnabled !== false;
   next.metaSource = normalizeMetaSource(next.metaSource);
   next.socialSectionEnabled = next.socialSectionEnabled !== false;
   next.footerSectionEnabled = next.footerSectionEnabled !== false;

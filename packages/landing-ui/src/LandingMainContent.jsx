@@ -25,6 +25,8 @@ export default function LandingMainContent({
   specialty,
   interactive = true,
   lockedHeroSlideIndex = null,
+  pageId = '',
+  onSubmitInquiry,
 }) {
   const labels = resolvePageLabels(data);
   const showAboutTitle = data.aboutShowTitle !== false;
@@ -110,7 +112,12 @@ export default function LandingMainContent({
 
       {showContact && (
         <>
-          <ContactSection data={data} interactive={interactive} />
+          <ContactSection
+            data={data}
+            interactive={interactive}
+            pageId={pageId}
+            onSubmitInquiry={onSubmitInquiry}
+          />
           <CustomEmbedSlot data={data} placement="after_contact" interactive={interactive} />
         </>
       )}

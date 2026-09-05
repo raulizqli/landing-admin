@@ -19,6 +19,7 @@ import { trackCtaClick, trackContactClick } from './trackInteraction.js';
 import { buildSectionBackgroundStyle, getSectionTheme, parseColorToHex } from '@raulizqli/landing-core/sectionBackground';
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
+import ContactInquiryForm from './ContactInquiryForm.jsx';
 
 function MapEmbed({ title, embedUrl, tall = false }) {
   return (
@@ -264,7 +265,12 @@ function LocationsCarousel({
   );
 }
 
-export default function ContactSection({ data, interactive = true }) {
+export default function ContactSection({
+  data,
+  interactive = true,
+  pageId = '',
+  onSubmitInquiry,
+}) {
   const labels = resolvePageLabels(data);
   const locations = resolveVisibleLocations(data);
   const contactMode = normalizeLocationsContactMode(data?.locationsContactMode);
@@ -384,6 +390,12 @@ export default function ContactSection({ data, interactive = true }) {
 
         {mapBeside ? (
           <div className="space-y-6">
+            <ContactInquiryForm
+              data={data}
+              interactive={interactive}
+              pageId={pageId}
+              onSubmitInquiry={onSubmitInquiry}
+            />
             <div className="grid gap-6 md:grid-cols-2 md:gap-8 items-stretch">
               <div className="min-w-0">{contactCard}</div>
               <div className="min-w-0 min-h-[280px]">{primaryMapBlock}</div>
@@ -396,6 +408,12 @@ export default function ContactSection({ data, interactive = true }) {
           </div>
         ) : (
           <div className="space-y-6 max-w-lg mx-auto">
+            <ContactInquiryForm
+              data={data}
+              interactive={interactive}
+              pageId={pageId}
+              onSubmitInquiry={onSubmitInquiry}
+            />
             {contactCard}
             {primaryMapBlock}
             {extraMapBlocks}

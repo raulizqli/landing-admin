@@ -12,6 +12,15 @@ import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing
 import { SECTION_IDS } from '@raulizqli/landing-core/sectionAnchors';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
 
+function youtubeThumbFromEmbed(embedUrl) {
+  try {
+    const match = String(embedUrl).match(/\/embed\/([\w-]{11})/);
+    return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : '';
+  } catch {
+    return '';
+  }
+}
+
 function VideoPlayer({ video, title = 'Video' }) {
   if (video.type === 'file') {
     return (
@@ -35,16 +44,48 @@ function VideoPlayer({ video, title = 'Video' }) {
   );
 }
 
-function VideoFrame({ item, index }) {
+function VideoFrame({ item, index, interactive = true }) {
   const video = resolveSectionVideo(item.url);
+  const [playing, setPlaying] = useState(false);
   if (!video) return null;
   const caption = String(item.caption ?? '').trim();
   const title = caption || `Video ${index + 1}`;
+  const thumb = video.type === 'youtube' ? youtubeThumbFromEmbed(video.embedUrl) : '';
+  const showFacade = video.type !== 'file' && !playing;
 
   return (
     <figure className="space-y-3">
       <div className="relative w-full max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-current/10 shadow-sm bg-black">
-        <VideoPlayer video={video} title={title} />
+        {showFacade ? (
+          <button
+            type="button"
+            disabled={!interactive}
+            onClick={() => setPlaying(true)}
+            className="absolute inset-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            aria-label={`Play ${title}`}
+          >
+            {thumb ? (
+              <img src={thumb} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+            ) : (
+              <div className="absolute inset-0 bg-current/20" />
+            )}
+            <span className="absolute inset-0 bg-black/35" />
+            <span className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-black shadow-lg transition group-hover:scale-105">
+              <svg className="ml-0.5 h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+          </button>
+        ) : (
+          <VideoPlayer
+            video={
+              video.type === 'youtube' || video.type === 'vimeo'
+                ? { ...video, embedUrl: `${video.embedUrl}${video.embedUrl.includes('?') ? '&' : '?'}autoplay=1` }
+                : video
+            }
+            title={title}
+          />
+        )}
       </div>
       {caption ? (
         <figcaption className="text-center text-sm text-current/65 max-w-2xl mx-auto">
@@ -115,7 +156,7 @@ function VideoCarousel({
       onMouseLeave={autoplay && interactive ? () => setPaused(false) : undefined}
     >
       {active ? (
-        <VideoFrame key={`video-slide-${active.id || index}`} item={active} index={index} />
+        <VideoFrame key={`video-slide-${active.id || index}`} item={active} index={index} interactive={interactive} />
       ) : null}
 
       {total > 1 && (
@@ -208,7 +249,7 @@ export default function VideoSection({ data, interactive = true }) {
             goToLabel={getLabel(labels, 'video.slideGoTo')}
           />
         ) : (
-          <VideoFrame item={items[0]} index={0} />
+          <VideoFrame item={items[0]} index={0} interactive={interactive} />
         )}
       </div>
     </section>

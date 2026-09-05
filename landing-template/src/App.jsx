@@ -18,6 +18,7 @@ import { resolvePageContext } from './utils/domainRouting';
 import { fetchPageContent } from './utils/pageContent';
 import { getPageLoadErrorMessage } from './utils/pageLoadErrors';
 import { PAGE_ID } from './firebase';
+import { submitPageInquiryRemote } from './utils/inquiryFunctions';
 import { resolvePageFaviconUrl, setDocumentFavicon } from './utils/documentFavicon';
 import {
   findExpeditionDocument,
@@ -463,6 +464,12 @@ export default function App() {
           data={displayData}
           onLanguageChange={handleLanguageChange}
           lockedHeroSlideIndex={previewMode ? lockedHeroSlideIndex : null}
+          pageId={previewMode || usingDemoFallback ? '' : pageId}
+          onSubmitInquiry={
+            previewMode || usingDemoFallback
+              ? undefined
+              : (payload) => submitPageInquiryRemote(payload)
+          }
         />
       )}
     </SiteAccessGate>

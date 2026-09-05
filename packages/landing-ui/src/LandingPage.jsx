@@ -1,6 +1,7 @@
 import Navbar from './Navbar';
 import LandingMainContent from './LandingMainContent';
 import FooterLegalLinks from './FooterLegalLinks';
+import FloatingWhatsAppButton from './FloatingWhatsAppButton.jsx';
 import { resolveBookingCta } from '@raulizqli/landing-core/bookingCta';
 import { buildSectionBackgroundStyle, getSectionTheme } from '@raulizqli/landing-core/sectionBackground';
 import { getLabel, resolvePageLabels } from '@raulizqli/landing-core/labels';
@@ -13,6 +14,8 @@ export default function LandingPage({
   className = '',
   onLanguageChange,
   lockedHeroSlideIndex = null,
+  pageId = '',
+  onSubmitInquiry,
 }) {
   const labels = resolvePageLabels(data);
   const name = data.name || getLabel(labels, 'placeholders.psychologistName');
@@ -47,6 +50,8 @@ export default function LandingPage({
         specialty={specialty}
         interactive={interactive}
         lockedHeroSlideIndex={lockedHeroSlideIndex}
+        pageId={pageId}
+        onSubmitInquiry={onSubmitInquiry}
       />
 
       {isFooterSectionEnabled(data) && (
@@ -77,6 +82,8 @@ export default function LandingPage({
           </p>
         </footer>
       )}
+
+      <FloatingWhatsAppButton data={data} interactive={interactive} />
     </div>
   );
 }
