@@ -28,10 +28,20 @@ jobs:
       - run: npm ci
 
       - name: Unit tests (landing-core)
-        run: npm run test:core
+        run: npm run test:vitest -w @raulizqli/landing-core && npm run test:node -w @raulizqli/landing-core
 
       - name: Unit tests (landing-admin)
         run: npm test --prefix landing-admin
+
+      - name: Jest coverage
+        run: npx jest --coverage
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Lint Firebase client usage (admin)
         run: npm run lint:firebase-clients
