@@ -22,6 +22,9 @@ functions/.env.*
 
 .cursor/
 
+coverage/
+**/coverage/
+
 # Editor
 .vscode/*
 !.vscode/extensions.json
