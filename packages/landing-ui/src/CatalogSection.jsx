@@ -31,7 +31,7 @@ function CatalogCard({ item, interactive = true, labels, visualClasses, entrance
       style={mergeStyles(visualClasses.articleStyle, entranceStyle)}
     >
       {imageUrl ? (
-        <div className={`aspect-[4/3] bg-[#E8E4DB] overflow-hidden ${visualClasses.media}`}>
+        <div className={`aspect-[4/3] bg-current/10 overflow-hidden ${visualClasses.media}`}>
           <img
             src={imageUrl}
             alt={title || getLabel(labels, 'catalog.productAlt')}
@@ -39,8 +39,8 @@ function CatalogCard({ item, interactive = true, labels, visualClasses, entrance
           />
         </div>
       ) : (
-        <div className={`aspect-[4/3] bg-[#E8E4DB] flex items-center justify-center ${visualClasses.media}`}>
-          <span className="text-xs uppercase tracking-widest text-[#2A342D]/35">{getLabel(labels, 'catalog.noImage')}</span>
+        <div className={`aspect-[4/3] bg-current/10 flex items-center justify-center ${visualClasses.media}`}>
+          <span className="text-xs uppercase tracking-widest text-current/35">{getLabel(labels, 'catalog.noImage')}</span>
         </div>
       )}
 
@@ -52,14 +52,14 @@ function CatalogCard({ item, interactive = true, labels, visualClasses, entrance
         )}
 
         {description && (
-          <p className="text-sm text-[#2A342D]/70 leading-relaxed flex-1 mb-4">
+          <p className="text-sm text-current/70 leading-relaxed flex-1 mb-4">
             {description}
           </p>
         )}
 
         <div className="mt-auto flex items-center justify-between gap-3 pt-2">
           {price ? (
-            <p className="text-sm font-semibold text-[#4A5D4E]">{price}</p>
+            <p className="text-sm font-semibold text-current/85">{price}</p>
           ) : (
             <span />
           )}
@@ -70,12 +70,12 @@ function CatalogCard({ item, interactive = true, labels, visualClasses, entrance
                 href={itemLink.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-medium text-[#4A5D4E] hover:underline shrink-0"
+                className="text-xs font-medium text-current/80 hover:underline shrink-0"
               >
                 {getLabel(labels, 'catalog.viewMore')}
               </a>
             ) : (
-              <span className="text-xs font-medium text-[#4A5D4E] shrink-0">{getLabel(labels, 'catalog.viewMore')}</span>
+              <span className="text-xs font-medium text-current/80 shrink-0">{getLabel(labels, 'catalog.viewMore')}</span>
             )
           )}
         </div>
@@ -98,7 +98,7 @@ export default function CatalogSection({ data, interactive = true }) {
   const gapClass = getGridGapClass(data.catalogVisualStyle, data.catalogCustomStyle);
 
   return (
-    <section id={SECTION_IDS.catalog} className="border-y border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.catalog} className="border-y border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         {(showTitle || showIntro) ? (
           <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
@@ -115,7 +115,7 @@ export default function CatalogSection({ data, interactive = true }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-[#2A342D]/60">
+                <p className="text-sm text-current/60">
                   {getLabel(labels, 'catalog.defaultIntro')}
                 </p>
               )

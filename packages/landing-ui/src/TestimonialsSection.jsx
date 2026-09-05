@@ -28,34 +28,34 @@ function TestimonialCard({ item }) {
   const initials = getTitleInitials(title);
 
   return (
-    <article className="bg-white rounded-2xl border border-[#2A342D]/10 shadow-sm p-6 sm:p-8 flex flex-col items-center text-center h-full">
+    <article className="bg-current/5 rounded-2xl border border-current/10 shadow-sm p-6 sm:p-8 flex flex-col items-center text-center h-full">
       {imageUrl ? (
         <img
           src={imageUrl}
           alt={title || ''}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-[#4A5D4E]/15 mb-5"
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-current/15 mb-5"
         />
       ) : (
         <div
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#4A5D4E]/10 flex items-center justify-center mb-5"
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-current/10 flex items-center justify-center mb-5"
           aria-hidden="true"
         >
           {initials ? (
-            <span className="font-sans text-base sm:text-lg font-semibold tracking-wide text-[#4A5D4E]/80">
+            <span className="font-sans text-base sm:text-lg font-semibold tracking-wide text-current/80">
               {initials}
             </span>
           ) : (
-            <span className="font-serif text-2xl text-[#4A5D4E]/60">“</span>
+            <span className="font-serif text-2xl text-current/60">“</span>
           )}
         </div>
       )}
 
-      <blockquote className="flex-1 text-sm sm:text-base text-[#2A342D]/80 leading-relaxed italic">
+      <blockquote className="flex-1 text-sm sm:text-base text-current/80 leading-relaxed italic">
         &ldquo;{quote}&rdquo;
       </blockquote>
 
       {title && (
-        <p className="mt-5 text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#4A5D4E]/80">
+        <p className="mt-5 text-xs sm:text-sm font-semibold uppercase tracking-wider text-current/70">
           {title}
         </p>
       )}
@@ -74,7 +74,7 @@ export default function TestimonialsSection({ data }) {
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'testimonials'), { sectionKey: 'testimonials' });
 
   return (
-    <section id={SECTION_IDS.testimonials} className="border-y border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.testimonials} className="border-y border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         {(showTitle || showSubtitle) ? (
           <div className="text-center mb-10 sm:mb-12">

@@ -124,7 +124,7 @@ function DocumentViewer({
 
       {open ? (
         <div
-          className="fixed inset-0 z-50 bg-[#2A342D]/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
@@ -176,7 +176,7 @@ export default function ExpeditionDocumentsPage({
   const notFound = Boolean(pathInfo?.slug) && !selected;
 
   return (
-    <div className="text-[#2A342D] font-sans min-h-full" style={pageStyle}>
+    <div className="font-sans min-h-full" style={pageStyle}>
       <Navbar
         name={name}
         specialty={navSpecialty}
@@ -224,7 +224,7 @@ export default function ExpeditionDocumentsPage({
                       <img
                         src={doc.imageUrl}
                         alt=""
-                        className="h-16 w-16 shrink-0 rounded-lg object-cover bg-[#E8E4DB]"
+                        className="h-16 w-16 shrink-0 rounded-lg object-cover bg-current/10"
                       />
                       <span className="min-w-0">
                         <span className="block font-medium text-sm sm:text-base">
@@ -251,7 +251,7 @@ export default function ExpeditionDocumentsPage({
       {isFooterSectionEnabled(data) && (
         <footer
           id={SECTION_IDS.footer}
-          className="border-t border-[#2A342D]/10 py-6 text-center"
+          className="border-t border-current/10 py-6 text-center"
           style={footerStyle}
         >
           <p className="text-xs opacity-50">

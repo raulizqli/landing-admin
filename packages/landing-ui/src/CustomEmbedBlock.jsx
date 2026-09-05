@@ -56,7 +56,7 @@ function SectionShell({ embed, children, className = '', copy = COPY.es }) {
 
   return (
     <section
-      className={`border-y border-[#2A342D]/10 custom-embed-section ${className}`.trim()}
+      className={`border-y border-current/10 custom-embed-section ${className}`.trim()}
       data-embed-id={embed.id}
       data-section-type={embed.type || 'embed'}
       aria-label={embed.label || embed.title || copy.customSection}
@@ -116,7 +116,7 @@ function CtaSection({ embed, interactive, copy }) {
     'inline-flex items-center justify-center text-sm font-medium px-6 py-3 rounded-full transition-colors hover:brightness-95';
 
   return (
-    <SectionShell embed={embed} className="bg-[#4A5D4E]/5" copy={copy}>
+    <SectionShell embed={embed} className="bg-current/5" copy={copy}>
       <div className="max-w-2xl mx-auto text-center space-y-5">
         <SectionTitle title={embed.title} />
         {embed.ctaText && (
@@ -266,7 +266,7 @@ function PreHeroEmbedSection({ embed }) {
   if (!splitMode) {
     return (
       <section
-        className="border-y border-[#2A342D]/10 custom-embed-section"
+        className="border-y border-current/10 custom-embed-section"
         data-embed-id={embed.id}
         data-section-type="pre_hero"
         aria-label={embed.label || title || 'Sección principal'}
@@ -294,19 +294,19 @@ function PreHeroEmbedSection({ embed }) {
 
   const textBlock = (
     <div
-      className={`relative z-10 bg-white rounded-xl shadow-sm border border-[#2A342D]/10 p-6 sm:p-8 flex flex-col justify-center md:my-6 ${
+      className={`relative z-10 bg-current/5 rounded-xl shadow-sm border border-current/10 p-6 sm:p-8 flex flex-col justify-center md:my-6 ${
         imageOnRight
           ? 'md:rounded-r-none md:-mr-10'
           : 'md:rounded-l-none md:-ml-10'
       }`}
     >
       {title && (
-        <h2 className="font-serif text-2xl sm:text-3xl text-[#5B7C8E] mb-5 leading-snug">
+        <h2 className="font-serif text-2xl sm:text-3xl text-current mb-5 leading-snug">
           {title}
         </h2>
       )}
       {paragraphs.length > 0 && (
-        <div className="space-y-4 text-sm sm:text-base text-[#2A342D]/75 leading-relaxed">
+        <div className="space-y-4 text-sm sm:text-base text-current/75 leading-relaxed">
           {paragraphs.map((paragraph, index) => (
             <p key={`${embed.id}-prehero-p-${index}`}>{paragraph}</p>
           ))}
@@ -317,7 +317,7 @@ function PreHeroEmbedSection({ embed }) {
 
   return (
     <section
-      className="border-y border-[#2A342D]/10 custom-embed-section"
+      className="border-y border-current/10 custom-embed-section"
       data-embed-id={embed.id}
       data-section-type="pre_hero"
       aria-label={embed.label || title || 'Sección principal'}
@@ -404,12 +404,14 @@ function PortfolioSection({ embed, interactive, copy }) {
               href={portfolioUrl}
               {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               onClick={() => trackCtaClick('portfolio_external')}
-              className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#3d4d40] transition-colors"
+              className="inline-flex items-center justify-center text-sm font-medium px-6 py-3 rounded-full hover:opacity-90 transition-opacity border border-current/20 bg-current/15 text-current"
             >
               {buttonLabel}
             </a>
           ) : (
-            <span className="inline-flex items-center justify-center bg-[#4A5D4E] text-white text-sm font-medium px-6 py-3 rounded-full">
+            <span
+              className="inline-flex items-center justify-center text-sm font-medium px-6 py-3 rounded-full border border-current/20 bg-current/15 text-current"
+            >
               {buttonLabel}
             </span>
           )}

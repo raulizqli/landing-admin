@@ -43,7 +43,7 @@ function VideoFrame({ item, index }) {
 
   return (
     <figure className="space-y-3">
-      <div className="relative w-full max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-[#2A342D]/10 shadow-sm bg-[#2A342D]">
+      <div className="relative w-full max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-current/10 shadow-sm bg-black">
         <VideoPlayer video={video} title={title} />
       </div>
       {caption ? (
@@ -125,18 +125,18 @@ function VideoCarousel({
               type="button"
               disabled={!interactive}
               onClick={goPrev}
-              className="text-sm font-medium px-4 py-2 rounded-full border border-[#2A342D]/20 text-[#2A342D] hover:bg-[#2A342D]/5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-sm font-medium px-4 py-2 rounded-full border border-current/20 text-current hover:bg-current/5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {previousLabel}
             </button>
-            <span className="text-xs text-[#2A342D]/55 tabular-nums">
+            <span className="text-xs text-current/55 tabular-nums">
               {index + 1} / {total}
             </span>
             <button
               type="button"
               disabled={!interactive}
               onClick={goNext}
-              className="text-sm font-medium px-4 py-2 rounded-full border border-[#2A342D]/20 text-[#2A342D] hover:bg-[#2A342D]/5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-sm font-medium px-4 py-2 rounded-full border border-current/20 text-current hover:bg-current/5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {nextLabel}
             </button>
@@ -153,8 +153,8 @@ function VideoCarousel({
                 onClick={() => setIndex(itemIndex)}
                 className={`h-2.5 rounded-full transition-all ${
                   itemIndex === index
-                    ? 'w-6 bg-[#4A5D4E]'
-                    : 'w-2.5 bg-[#2A342D]/25 hover:bg-[#2A342D]/40'
+                    ? 'w-6 bg-current'
+                    : 'w-2.5 bg-current/25 hover:bg-current/40'
                 } disabled:cursor-not-allowed`}
               />
             ))}
@@ -178,7 +178,7 @@ export default function VideoSection({ data, interactive = true }) {
   const useCarousel = shouldUseVideoCarousel(data);
 
   return (
-    <section id={SECTION_IDS.video} className="border-y border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.video} className="border-y border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         {(title || paragraphs.length > 0) && (
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
