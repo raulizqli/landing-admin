@@ -19,7 +19,7 @@ export const faq = {
     {
       question: '¿Cuánto cuesta?',
       answer:
-        'Starter cuesta $189 MXN al mes: una página con lo esencial. Pro cuesta $469 con más secciones. Agency cuesta $1,399 para varias páginas. Enterprise se cotiza a medida.',
+        'Starter cuesta $189 MXN al mes o $1,814 al año (20% de descuento): una página con lo esencial. Pro cuesta $469 / $4,502 al año. Agency $1,399 / $13,430 al año. Enterprise se cotiza a medida.',
     },
     {
       question: '¿Puedo cancelar?',

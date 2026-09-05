@@ -27,7 +27,7 @@ export const GRADIENT_DIRECTIONS = [
   { value: 'to-top-left', label: 'Diagonal ↖' },
 ];
 
-/** Pastel primaries (and a few neutrals) for section backgrounds / text accents. */
+/** Pastel primaries, neutrals, and dark-studio accents for section backgrounds. */
 export const BRAND_COLOR_PRESETS = [
   { value: '#F4F1EA', label: 'Crema' },
   { value: '#FFFFFF', label: 'Blanco' },
@@ -43,6 +43,10 @@ export const BRAND_COLOR_PRESETS = [
   { value: '#DCE8F0', label: 'Cielo pastel' },
   { value: '#4A5D4E', label: 'Sage' },
   { value: '#2A342D', label: 'Verde oscuro' },
+  { value: '#0B0C0E', label: 'Negro estudio' },
+  { value: '#121418', label: 'Carbón profundo' },
+  { value: '#16181C', label: 'Grafito' },
+  { value: '#C9A227', label: 'Oro apagado' },
 ];
 
 export const TEXT_COLOR_PRESETS = [
@@ -55,7 +59,9 @@ export const TEXT_COLOR_PRESETS = [
   { value: '#5A5040', label: 'Café suave' },
   { value: '#374151', label: 'Gris pizarra' },
   { value: '#1F2937', label: 'Carbón' },
+  { value: '#F4F1EA', label: 'Crema' },
   { value: '#FFFFFF', label: 'Blanco' },
+  { value: '#C9A227', label: 'Oro apagado' },
 ];
 
 const GRADIENT_CSS = {

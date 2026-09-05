@@ -66,7 +66,7 @@ function ServiceMedia({ imageUrl, title, prominent, mediaClassName = '' }) {
 
   if (prominent) {
     return (
-      <div className={`aspect-[4/3] bg-[#E8E4DB] ${mediaClassName}`}>
+      <div className={`aspect-[4/3] bg-current/10 ${mediaClassName}`}>
         <img
           src={imageUrl}
           alt={title || ''}
@@ -77,7 +77,7 @@ function ServiceMedia({ imageUrl, title, prominent, mediaClassName = '' }) {
   }
 
   return (
-    <div className={`aspect-[16/10] bg-[#E8E4DB] ${mediaClassName}`}>
+    <div className={`aspect-[16/10] bg-current/10 ${mediaClassName}`}>
       <img
         src={imageUrl}
         alt={title || ''}
@@ -187,12 +187,12 @@ function DescriptionServiceCard({
                 <button
                   type="button"
                   onClick={() => setExpanded((value) => !value)}
-                  className="mt-2 text-xs font-medium text-[#4A5D4E] hover:underline underline-offset-2"
+                  className="mt-2 text-xs font-medium text-current/80 hover:underline underline-offset-2"
                 >
                   {expanded ? viewLessLabel : viewMoreLabel}
                 </button>
               ) : (
-                <span className="mt-2 inline-block text-xs font-medium text-[#4A5D4E]">
+                <span className="mt-2 inline-block text-xs font-medium text-current/80">
                   {viewMoreLabel}
                 </span>
               )
@@ -447,18 +447,18 @@ export function ServicesItemsLayout({
             type="button"
             disabled={!interactive || !canGoPrev}
             onClick={goPrev}
-            className="text-sm font-medium px-4 py-2 rounded-full border border-[#2A342D]/20 text-[#2A342D] hover:bg-[#2A342D]/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-sm font-medium px-4 py-2 rounded-full border border-current/20 text-current hover:bg-current/5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {previousLabel}
           </button>
-          <span className="text-xs text-[#2A342D]/55 tabular-nums">
+          <span className="text-xs text-current/55 tabular-nums">
             {page + 1} / {totalPages}
           </span>
           <button
             type="button"
             disabled={!interactive || !canGoNext}
             onClick={goNext}
-            className="text-sm font-medium px-4 py-2 rounded-full border border-[#2A342D]/20 text-[#2A342D] hover:bg-[#2A342D]/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-sm font-medium px-4 py-2 rounded-full border border-current/20 text-current hover:bg-current/5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {nextLabel}
           </button>
@@ -480,7 +480,7 @@ export default function ServicesSection({ data, interactive = true }) {
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'services'), { sectionKey: 'services' });
 
   return (
-    <section id={SECTION_IDS.services} className="border-y border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.services} className="border-y border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
         {(showTitle || showIntro) ? (
           <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
@@ -497,7 +497,7 @@ export default function ServicesSection({ data, interactive = true }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-[#2A342D]/60">
+                <p className="text-sm text-current/60">
                   {getLabel(labels, 'services.defaultIntro')}
                 </p>
               )

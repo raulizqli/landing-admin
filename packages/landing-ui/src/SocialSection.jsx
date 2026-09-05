@@ -63,8 +63,8 @@ export default function SocialSection({ data, interactive = true }) {
 
   const iconOnly = data?.socialIconOnly === true;
   const itemClass = iconOnly
-    ? 'inline-flex items-center justify-center w-11 h-11 rounded-full border border-[#4A5D4E]/25 bg-white text-[#4A5D4E] transition-colors'
-    : 'inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-[#4A5D4E]/25 bg-white text-[#4A5D4E] text-sm font-medium transition-colors';
+    ? 'inline-flex items-center justify-center w-11 h-11 rounded-full border border-current/25 bg-current/5 text-current transition-colors'
+    : 'inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-current/25 bg-current/5 text-current text-sm font-medium transition-colors';
 
   const renderButtonContent = (link) => (
     <>
@@ -75,7 +75,7 @@ export default function SocialSection({ data, interactive = true }) {
   const sectionStyle = buildSectionBackgroundStyle(getSectionTheme(data, 'social'), { sectionKey: 'social' });
 
   return (
-    <section id={SECTION_IDS.social} className="border-t border-[#2A342D]/10" style={sectionStyle}>
+    <section id={SECTION_IDS.social} className="border-t border-current/10" style={sectionStyle}>
       <div className="max-w-5xl mx-auto px-5 py-14 sm:py-16 text-center">
         <h2 className="font-serif text-2xl sm:text-3xl text-current mb-3">
           {getLabel(labels, 'social.title')}
@@ -95,7 +95,7 @@ export default function SocialSection({ data, interactive = true }) {
                 onClick={() => trackSocialClick(link.key)}
                 aria-label={iconOnly ? link.label : undefined}
                 title={iconOnly ? link.label : undefined}
-                className={`${itemClass} hover:bg-[#4A5D4E]/5 hover:border-[#4A5D4E]/40 focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] focus:ring-offset-2`}
+                className={`${itemClass} hover:bg-current/10 hover:border-current/40 focus:outline-none focus:ring-2 focus:ring-current focus:ring-offset-2 focus:ring-offset-transparent`}
               >
                 {renderButtonContent(link)}
               </a>

@@ -152,6 +152,34 @@ export const BILLING_PLANS = [
 export const BILLING_PLAN_IDS = BILLING_PLANS.map((plan) => plan.id);
 export const DEFAULT_BILLING_PLAN = 'starter';
 export const BILLING_ACCOUNT_STATUSES = ['trialing', 'active', 'past_due', 'canceled', 'incomplete'];
+/** Annual billed amount = monthly × 12 × (1 − this discount). */
+export const BILLING_ANNUAL_DISCOUNT = 0.2;
+export const BILLING_INTERVALS = ['month', 'year'];
+
+export function normalizeBillingInterval(value) {
+  return String(value ?? '').trim().toLowerCase() === 'year' ? 'year' : 'month';
+}
+
+/** Whole-currency yearly total (20% off 12 months). Enterprise / missing monthly → null. */
+export function yearlyPriceFromMonthly(monthly) {
+  if (monthly == null || monthly === '') return null;
+  const n = Number(monthly);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 12 * (1 - BILLING_ANNUAL_DISCOUNT));
+}
+
+/**
+ * Listed checkout amount for a plan.
+ * @param {{ monthlyPriceUsd?: number|null, monthlyPriceMxn?: number|null }} plan
+ * @param {{ currency?: 'usd'|'mxn', interval?: 'month'|'year' }} [opts]
+ */
+export function getBillingPlanPrice(plan, { currency = 'usd', interval = 'month' } = {}) {
+  const monthly = currency === 'mxn' ? plan?.monthlyPriceMxn : plan?.monthlyPriceUsd;
+  if (monthly == null) return null;
+  return normalizeBillingInterval(interval) === 'year'
+    ? yearlyPriceFromMonthly(monthly)
+    : monthly;
+}
 
 const PLAN_BY_ID = new Map(BILLING_PLANS.map((plan) => [plan.id, plan]));
 
@@ -290,6 +318,7 @@ export function createEmptyBillingAccount(overrides = {}) {
     status: normalizeBillingStatus(overrides.status || 'incomplete'),
     provider: normalizeBillingProvider(overrides.provider),
     currency: normalizeBillingCurrency(overrides.currency),
+    billingInterval: normalizeBillingInterval(overrides.billingInterval),
     stripeCustomerId: String(overrides.stripeCustomerId ?? '').trim(),
     stripeSubscriptionId: String(overrides.stripeSubscriptionId ?? '').trim(),
     mercadoPagoPreapprovalId: String(overrides.mercadoPagoPreapprovalId ?? '').trim(),

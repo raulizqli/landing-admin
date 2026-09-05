@@ -124,7 +124,7 @@ export const compare = {
       option: 'Toqua',
       fit: 'Quieres una página profesional sin contratar a alguien a tiempo completo.',
       time: 'Horas o un fin de semana para una primera versión.',
-      cost: 'Desde $189 MXN / mes.',
+      cost: 'Desde $189 MXN / mes, o $1,814 al año (−20%).',
       control: 'Tú editas textos y fotos cuando quieras.',
     },
     {

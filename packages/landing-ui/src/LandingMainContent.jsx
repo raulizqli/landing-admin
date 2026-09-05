@@ -57,7 +57,7 @@ export default function LandingMainContent({
 
       {showAbout && (
         <>
-          <section id={SECTION_IDS.about} className="border-y border-[#2A342D]/10" style={aboutStyle}>
+          <section id={SECTION_IDS.about} className="border-y border-current/10" style={aboutStyle}>
             <div className="max-w-5xl mx-auto px-5 py-14 sm:py-20">
               {showAboutTitle ? (
                 <h2 className="font-serif text-2xl sm:text-3xl text-current mb-8 sm:mb-10 text-center md:text-left">
@@ -73,7 +73,7 @@ export default function LandingMainContent({
                   }
                 >
                   {showAboutTagline ? (
-                    <blockquote className="border-l-2 border-[#4A5D4E] pl-5 italic text-current/80 text-base sm:text-lg leading-relaxed">
+                    <blockquote className="border-l-2 border-current/40 pl-5 italic text-current/80 text-base sm:text-lg leading-relaxed">
                       &ldquo;{aboutTagline}&rdquo;
                     </blockquote>
                   ) : null}

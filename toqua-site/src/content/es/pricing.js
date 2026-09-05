@@ -1,12 +1,16 @@
 export const pricing = {
   metaTitle: 'Planes y precios',
   metaDescription:
-    'Planes Toqua: Starter desde $189 MXN, Pro $469, Agency $1,399. Enterprise a medida.',
+    'Planes Toqua: Starter desde $189 MXN/mes o $1,814 al año (−20%). Pro, Agency y Enterprise.',
   eyebrow: 'Planes',
   title: 'Elige el plan que se ajusta a tu práctica',
   description:
-    'Precios mensuales en pesos mexicanos. Cancela cuando quieras. Todo se explica en lenguaje de consultorio, no de tecnología.',
+    'Paga mes a mes o ahorra 20% con el plan anual. Cancela cuando quieras. Todo se explica en lenguaje de consultorio, no de tecnología.',
   currencyNote: 'Precios mensuales en pesos mexicanos (MXN).',
+  currencyNoteYear: 'Precios anuales en pesos mexicanos (MXN). 20% de descuento frente a 12 meses.',
+  intervalMonth: 'Mensual',
+  intervalYear: 'Anual',
+  annualSave: 'Ahorra 20%',
   plans: [
     {
       id: 'starter',

@@ -21,7 +21,7 @@ export default function PreHeroSection({ data }) {
       <section
         id={SECTION_IDS.preHero}
         data-preview-section={SECTION_IDS.preHero}
-        className="border-b border-[#2A342D]/10"
+        className="border-b border-current/10"
         style={sectionStyle}
         aria-label={getLabel(labels, 'preHero.ariaLabel')}
       >
@@ -48,19 +48,19 @@ export default function PreHeroSection({ data }) {
 
   const textBlock = (
     <div
-      className={`relative z-10 bg-white rounded-xl shadow-sm border border-[#2A342D]/10 p-6 sm:p-8 flex flex-col justify-center md:my-6 ${
+      className={`relative z-10 bg-current/5 rounded-xl shadow-sm border border-current/10 p-6 sm:p-8 flex flex-col justify-center md:my-6 ${
         imageOnRight
           ? 'md:rounded-r-none md:-mr-10'
           : 'md:rounded-l-none md:-ml-10'
       }`}
     >
       {title && (
-        <h2 className="font-serif text-2xl sm:text-3xl text-[#5B7C8E] mb-5 leading-snug">
+        <h2 className="font-serif text-2xl sm:text-3xl text-current mb-5 leading-snug">
           {title}
         </h2>
       )}
       {paragraphs.length > 0 && (
-        <div className="space-y-4 text-sm sm:text-base text-[#2A342D]/75 leading-relaxed">
+        <div className="space-y-4 text-sm sm:text-base text-current/75 leading-relaxed">
           {paragraphs.map((paragraph, index) => (
             <p key={`pre-hero-p-${index}`}>{paragraph}</p>
           ))}
@@ -73,7 +73,7 @@ export default function PreHeroSection({ data }) {
     <section
       id={SECTION_IDS.preHero}
       data-preview-section={SECTION_IDS.preHero}
-      className="border-b border-[#2A342D]/10"
+      className="border-b border-current/10"
       style={sectionStyle}
       aria-label={getLabel(labels, 'preHero.ariaLabel')}
     >

@@ -42,7 +42,7 @@ export const home = {
   pricingTeaser: {
     eyebrow: 'Plans',
     title: 'Clear prices, no surprises',
-    description: 'From one essential page to several practices or a team.',
+    description: 'From one essential page to several practices or a team. Save 20% with yearly billing.',
     cta: 'Compare plans',
   },
   faqTeaser: {

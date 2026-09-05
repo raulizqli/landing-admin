@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Create (or reuse) TapSite Stripe Products + monthly Prices for Starter / Pro / Agency.
+ * Create (or reuse) TapSite Stripe Products + recurring Prices for Starter / Pro / Agency.
+ * Monthly + yearly (20% off 12 months) in USD and MXN.
  *
  * Usage:
  *   STRIPE_SECRET_KEY=sk_live_... node functions/scripts/ensure-stripe-catalog.mjs
@@ -11,7 +12,7 @@
  * Does not print the secret key.
  *
  * Idempotent: looks up products by metadata.tapsite_plan + existing prices by
- * metadata.tapsite_plan + metadata.tapsite_currency.
+ * metadata.tapsite_plan + metadata.tapsite_currency + recurring interval.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -19,6 +20,7 @@ import { resolve } from 'node:path';
 import Stripe from 'stripe';
 
 // Keep in sync with packages/landing-core/src/billingPlans.js (+ MXN Mercado Pago amounts).
+const ANNUAL_DISCOUNT = 0.2;
 const CATALOG = [
   {
     planId: 'starter',
@@ -42,6 +44,11 @@ const CATALOG = [
     mxn: 139900,
   },
 ];
+
+function yearlyUnitAmount(monthlyCents) {
+  const monthlyMajor = monthlyCents / 100;
+  return Math.round(monthlyMajor * 12 * (1 - ANNUAL_DISCOUNT)) * 100;
+}
 
 function loadEnvFile(path) {
   if (!path || !existsSync(path)) return {};
@@ -75,7 +82,7 @@ async function findProduct(stripe, planId) {
   return listed.data[0] || null;
 }
 
-async function listPlanPrices(stripe, productId, planId, currency) {
+async function listPlanPrices(stripe, productId, planId, currency, interval) {
   const prices = await stripe.prices.list({
     product: productId,
     active: true,
@@ -84,22 +91,21 @@ async function listPlanPrices(stripe, productId, planId, currency) {
   });
   return prices.data.filter((price) => (
     price.currency === currency
-    && price.recurring?.interval === 'month'
+    && price.recurring?.interval === interval
     && price.metadata?.tapsite_plan === planId
     && price.metadata?.tapsite_currency === currency
   ));
 }
 
-async function ensurePrice(stripe, productId, plan, currency, unitAmount) {
-  const matches = await listPlanPrices(stripe, productId, plan.planId, currency);
+async function ensurePrice(stripe, productId, plan, currency, unitAmount, interval) {
+  const matches = await listPlanPrices(stripe, productId, plan.planId, currency, interval);
   const exact = matches.find((price) => price.unit_amount === unitAmount);
   if (exact) return exact;
 
-  // Stripe prices are immutable — archive outdated amounts, then create the new one.
   for (const outdated of matches) {
     try {
       await stripe.prices.update(outdated.id, { active: false });
-      console.error(`  archived old ${currency} price ${outdated.id} (${outdated.unit_amount})`);
+      console.error(`  archived old ${currency} ${interval} price ${outdated.id} (${outdated.unit_amount})`);
     } catch (error) {
       console.error(`  could not archive ${outdated.id}:`, error.message || error);
     }
@@ -109,11 +115,12 @@ async function ensurePrice(stripe, productId, plan, currency, unitAmount) {
     product: productId,
     currency,
     unit_amount: unitAmount,
-    recurring: { interval: 'month' },
-    nickname: `${plan.planId}_${currency}_monthly`,
+    recurring: { interval },
+    nickname: `${plan.planId}_${currency}_${interval === 'year' ? 'yearly' : 'monthly'}`,
     metadata: {
       tapsite_plan: plan.planId,
       tapsite_currency: currency,
+      tapsite_interval: interval,
     },
   });
 }
@@ -158,14 +165,32 @@ async function main() {
       console.error(`reuse product ${plan.planId}: ${product.id}`);
     }
 
-    const usd = await ensurePrice(stripe, product.id, plan, 'usd', plan.usd);
-    const mxn = await ensurePrice(stripe, product.id, plan, 'mxn', plan.mxn);
-    console.error(`  usd=${usd.id}  mxn=${mxn.id}`);
+    const usd = await ensurePrice(stripe, product.id, plan, 'usd', plan.usd, 'month');
+    const mxn = await ensurePrice(stripe, product.id, plan, 'mxn', plan.mxn, 'month');
+    const usdYear = await ensurePrice(
+      stripe,
+      product.id,
+      plan,
+      'usd',
+      yearlyUnitAmount(plan.usd),
+      'year',
+    );
+    const mxnYear = await ensurePrice(
+      stripe,
+      product.id,
+      plan,
+      'mxn',
+      yearlyUnitAmount(plan.mxn),
+      'year',
+    );
+    console.error(`  usd=${usd.id}  mxn=${mxn.id}  usd_yearly=${usdYear.id}  mxn_yearly=${mxnYear.id}`);
 
-    envLines.push(`STRIPE_PRICE_${plan.planId.toUpperCase()}_USD=${usd.id}`);
-    envLines.push(`STRIPE_PRICE_${plan.planId.toUpperCase()}_MXN=${mxn.id}`);
-    // Legacy single-price fallback = USD (common default in admin).
-    envLines.push(`STRIPE_PRICE_${plan.planId.toUpperCase()}=${usd.id}`);
+    const planEnv = plan.planId.toUpperCase();
+    envLines.push(`STRIPE_PRICE_${planEnv}_USD=${usd.id}`);
+    envLines.push(`STRIPE_PRICE_${planEnv}_MXN=${mxn.id}`);
+    envLines.push(`STRIPE_PRICE_${planEnv}_USD_YEARLY=${usdYear.id}`);
+    envLines.push(`STRIPE_PRICE_${planEnv}_MXN_YEARLY=${mxnYear.id}`);
+    envLines.push(`STRIPE_PRICE_${planEnv}=${usd.id}`);
   }
 
   console.log('');

@@ -95,8 +95,8 @@ function HeroSlideBackground({ slide, isActive, fallbackStyle, fluid = false }) 
     <>
       <div className="absolute inset-0" style={fallbackStyle} />
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#4A5D4E]/15 blur-3xl" />
-        <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-[#4A5D4E]/10 blur-2xl" />
+        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-current/15 blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-current/10 blur-2xl" />
       </div>
     </>
   );
@@ -260,7 +260,7 @@ export default function HeroCarousel({
             >
               <HeroSlideBackground slide={slide} isActive={isActive} fallbackStyle={fallbackStyle} fluid={fluidHeight} />
               {slide.showGradient !== false && (
-                <div className="absolute inset-0 z-[2] bg-gradient-to-b from-[#2A342D]/50 via-[#2A342D]/35 to-[#2A342D]/55" />
+                <div className="absolute inset-0 z-[2] bg-gradient-to-b from-black/50 via-black/35 to-black/55" />
               )}
 
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center">
@@ -309,7 +309,7 @@ export default function HeroCarousel({
           <button
             type="button"
             onClick={goPrev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-[#2A342D] shadow hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#4A5D4E]"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-black shadow hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-white"
             aria-label={getLabel(labels, 'hero.slidePrevious')}
           >
             ‹
@@ -317,7 +317,7 @@ export default function HeroCarousel({
           <button
             type="button"
             onClick={goNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-[#2A342D] shadow hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#4A5D4E]"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-black shadow hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-white"
             aria-label={getLabel(labels, 'hero.slideNext')}
           >
             ›

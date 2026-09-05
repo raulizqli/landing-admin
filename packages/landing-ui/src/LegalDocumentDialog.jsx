@@ -39,7 +39,7 @@ export default function LegalDocumentDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#2A342D]/70 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
